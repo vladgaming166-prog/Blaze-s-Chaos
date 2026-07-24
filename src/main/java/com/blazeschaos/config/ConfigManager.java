@@ -110,9 +110,27 @@ public final class ConfigManager {
                     changed = true;
                 }
             }
+            // Restore classic premium colors (strip legacy hex brand gradients)
+            for (String key : config.getKeys(true)) {
+                if (config.isConfigurationSection(key) || config.isList(key)) {
+                    continue;
+                }
+                String value = config.getString(key);
+                if (value == null || !value.contains("gradient:#")) {
+                    continue;
+                }
+                String migrated = value
+                        .replaceAll("(?i)<gradient:#FF4500:#FFD700>(.*?)</gradient>", "<gold>$1</gold>")
+                        .replaceAll("(?i)<gradient:#FFD700:#FF4500>(.*?)</gradient>", "<gold>$1</gold>")
+                        .replaceAll("(?i)<gradient:#FF6347:#FFA500>(.*?)</gradient>", "<gold>$1</gold>");
+                if (!migrated.equals(value)) {
+                    config.set(key, migrated);
+                    changed = true;
+                }
+            }
             if (changed) {
                 plugin.saveConfig();
-                plugin.getLogger().info("Migrated config.yml with new default keys (existing values preserved).");
+                plugin.getLogger().info("Migrated config.yml with classic premium colors (existing custom text preserved).");
             }
         } catch (IOException exception) {
             plugin.getLogger().log(Level.WARNING, "Failed to migrate config.yml", exception);
@@ -136,8 +154,11 @@ public final class ConfigManager {
         }
         int diskVersion = yaml.getInt("config-version", 0);
         if (diskVersion < jarVersion) {
-            // Animation schemas changed (RGB/gradient) — refresh jar defaults with backup
-            if (name.equals("scoreboardanimations.yml") || name.equals("animations.yml")) {
+            // Visual / schema upgrades — refresh jar defaults with backup
+            if (name.equals("scoreboardanimations.yml")
+                    || name.equals("animations.yml")
+                    || name.equals("scoreboardconfig.yml")
+                    || name.equals("tablist.yml")) {
                 try {
                     File backup = new File(plugin.getDataFolder(),
                             name + ".v" + diskVersion + "-" + System.currentTimeMillis() + ".bak");
@@ -145,14 +166,26 @@ public final class ConfigManager {
                     plugin.saveResource(name, true);
                     plugin.getLogger().info("Upgraded " + name + " to config-version " + jarVersion
                             + " (backup: " + backup.getName() + ").");
-                    if (name.equals("scoreboardanimations.yml")) {
-                        scoreboardAnimations = YamlConfiguration.loadConfiguration(
-                                new File(plugin.getDataFolder(), name));
-                        mergeDefaults(scoreboardAnimations, name);
-                    } else {
-                        globalAnimations = YamlConfiguration.loadConfiguration(
-                                new File(plugin.getDataFolder(), name));
-                        mergeDefaults(globalAnimations, name);
+                    File refreshed = new File(plugin.getDataFolder(), name);
+                    switch (name) {
+                        case "scoreboardanimations.yml" -> {
+                            scoreboardAnimations = YamlConfiguration.loadConfiguration(refreshed);
+                            mergeDefaults(scoreboardAnimations, name);
+                        }
+                        case "animations.yml" -> {
+                            globalAnimations = YamlConfiguration.loadConfiguration(refreshed);
+                            mergeDefaults(globalAnimations, name);
+                        }
+                        case "scoreboardconfig.yml" -> {
+                            scoreboard = YamlConfiguration.loadConfiguration(refreshed);
+                            mergeDefaults(scoreboard, name);
+                        }
+                        case "tablist.yml" -> {
+                            tablist = YamlConfiguration.loadConfiguration(refreshed);
+                            mergeDefaults(tablist, name);
+                        }
+                        default -> {
+                        }
                     }
                     return;
                 } catch (IOException ex) {

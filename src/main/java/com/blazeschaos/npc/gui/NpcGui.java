@@ -49,7 +49,7 @@ public final class NpcGui implements Listener {
     public void showMain(@NotNull Player player, @NotNull NpcMode preferred) {
         MainHolder holder = new MainHolder(preferred);
         Inventory inventory = Bukkit.createInventory(holder, 54,
-                ColorUtil.parse("<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"));
+                ColorUtil.parse("<gold><bold>Blaze's Chaos</bold></gold>"));
         holder.bind(inventory);
 
         fillBorder(inventory);
@@ -78,7 +78,7 @@ public final class NpcGui implements Listener {
                 List.of("<gray>Survive chaotic events.</gray>", "<gray>Last player standing wins!</gray>")));
 
         inventory.setItem(48, actionItem("back", Material.ARROW, "<red>Close</red>", List.of("<gray>Close this menu</gray>")));
-        inventory.setItem(49, actionItem("quick", Material.COMPASS, "<gradient:#FF4500:#FFD700><bold>Quick Join</bold></gradient>",
+        inventory.setItem(49, actionItem("quick", Material.COMPASS, "<gold><bold>Quick Join</bold></gold>",
                 List.of("<gray>Join the best available arena</gray>", "<yellow>Click to queue</yellow>")));
         inventory.setItem(50, actionItem("shop", Material.EMERALD, "<green>Shop</green>",
                 List.of("<gray>Spend your coins</gray>")));

@@ -1,4 +1,4 @@
-prefix: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> "
+prefix: "<gold><bold>Blaze's Chaos</bold></gold> <gray>»</gray> "
 
 general:
   no-permission: "<red>You don't have permission to do that.</red>"
@@ -75,7 +75,7 @@ game:
   already-in: "<red>You are already in a game.</red>"
   not-in: "<red>You are not in a game.</red>"
   starting: "<gold>Game starting in <yellow>%time%</yellow> seconds!</gold>"
-  started: "<gradient:#FF4500:#FFD700><bold>CHAOS BEGINS!</bold></gradient>"
+  started: "<gold><bold>CHAOS BEGINS!</bold></gold>"
   eliminated: "<red>%player%</red> <gray>was eliminated! <yellow>%alive%</yellow> remain.</gray>"
   winner: "<gold><bold>%player%</bold></gold> <yellow>wins Blaze's Chaos!</yellow>"
   no-winner: "<yellow>No winner — the chaos consumed everyone.</yellow>"
@@ -88,7 +88,7 @@ game:
   no-arenas: "<red>No playable arenas found. Ask an admin to finish setup.</red>"
 
 event:
-  starting: "<gradient:#FF4500:#FFD700><bold>CHAOS EVENT:</bold></gradient> <yellow>%event%</yellow>"
+  starting: "<gold><bold>CHAOS EVENT:</bold></gold> <yellow>%event%</yellow>"
   ending: "<gray>Chaos event <yellow>%event%</yellow> has ended.</gray>"
   next: "<aqua>Next event in <yellow>%time%</yellow>s</aqua>"
   forced: "<green>Forced next chaos event.</green>"
@@ -109,7 +109,7 @@ setup-items:
     lore:
       - "<gray>Right-click to cycle arenas</gray>"
   create-arena:
-    name: "<gradient:#FF4500:#FFD700>Create New Arena</gradient>"
+    name: "<gold>Create New Arena</gold>"
     lore:
       - "<gray>Right-click, then type a name in chat</gray>"
   save-arena:
@@ -159,7 +159,7 @@ setup-items:
       - "<gray>Right-click to cycle & edit settings</gray>"
 
 help:
-  - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos Commands</bold></gradient>"
+  - "<gold><bold>Blaze's Chaos Commands</bold></gold>"
   - "<yellow>/bc join [arena]</yellow> <gray>- Join a game</gray>"
   - "<yellow>/bc leave</yellow> <gray>- Leave your game</gray>"
   - "<yellow>/bc lobby</yellow> <gray>- Go to lobby</gray>"
@@ -203,7 +203,7 @@ browser:
 
 info:
   lines:
-    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
+    - "<gold><bold>Blaze's Chaos</bold></gold>"
     - "<gray>Survive random chaos events. Last player wins.</gray>"
     - "<yellow>/bc join</yellow> <gray>- join a game</gray>"
     - "<yellow>/bc shop</yellow> <gray>- open the shop</gray>"

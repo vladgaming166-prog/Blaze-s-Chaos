@@ -1,5 +1,5 @@
 setup:
-  title: "<gradient:#FF4500:#FFD700><bold>Arena Setup</bold></gradient>"
+  title: "<gold><bold>Arena Setup</bold></gold>"
   size: 54
   border-material: ORANGE_STAINED_GLASS_PANE
   border-name: " "
@@ -82,11 +82,11 @@ setup:
     finish:
       slot: 50
       material: NETHER_STAR
-      name: "<gradient:#FF4500:#FFD700><bold>Finish Setup</bold></gradient>"
+      name: "<gold><bold>Finish Setup</bold></gold>"
       lore:
         - "<gray>Mark arena as ready</gray>"
 
 join-menu:
-  title: "<gradient:#FF4500:#FFD700><bold>Select Arena</bold></gradient>"
+  title: "<gold><bold>Select Arena</bold></gold>"
   size: 27
   border-material: GRAY_STAINED_GLASS_PANE

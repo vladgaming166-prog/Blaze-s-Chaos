@@ -1,23 +1,16 @@
-# Scoreboard / tablist / hologram / message animations (TAB-style)
+# Scoreboard / tablist animations (TAB-style)
+# Use: %blazechaosanimation_name%  |  %animation:name%  |  %blazechaos_animation_name%
 #
-# Each placeholder maps to EXACTLY one animation by name:
-#   %blazechaosanimation_title%  → only "title"
-#   %blazechaosanimation_server% → only "server"
-#
-# RGB / gradient generators are OPT-IN only:
-#   rgb: true
-#   type: gradient
-# Do not enable those unless you want Birdflop-style effects.
-#
-# interval = server ticks between frame advances
-config-version: 4
+# Default frames use clean legacy colors (&a &2 &6 &7 &e &f).
+# RGB / gradient generators are OPT-IN only (rgb: true / type: gradient).
+config-version: 5
 
 title:
-  interval: 2
+  interval: 10
   frames:
-    - "&aBlaze's Chaos"
-    - "&2Blaze's Chaos"
-    - "&fBlaze's Chaos"
+    - "&6&lBLAZE'S CHAOS"
+    - "&e&lBLAZE'S CHAOS"
+    - "&a&lBLAZE'S CHAOS"
 
 server:
   interval: 5

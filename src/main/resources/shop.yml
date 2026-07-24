@@ -1,4 +1,4 @@
-title: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos Shop</bold></gradient>"
+title: "<gold><bold>Blaze's Chaos Shop</bold></gold>"
 size: 27
 balance-slot: 22
 
@@ -46,7 +46,7 @@ items:
   title_chaos:
     slot: 15
     material: NAME_TAG
-    name: "<gradient:#FF4500:#FFD700>Title: Chaos King</gradient>"
+    name: "<gold>Title: Chaos King</gold>"
     category: title
     cost: 400
     lore:

@@ -43,6 +43,71 @@ public final class LanguageManager {
         if (!fileName.equals("english.yml")) {
             mergeDefaults(lang, "lang/english.yml");
         }
+        if (migrateLegacyHexGradients(lang)) {
+            try {
+                lang.save(file);
+                plugin.getLogger().info("Migrated legacy hex gradients in lang/" + fileName
+                        + " to clean gold/named colors.");
+            } catch (IOException ex) {
+                plugin.getLogger().log(Level.WARNING, "Failed to save migrated language file", ex);
+            }
+        }
+    }
+
+    /**
+     * Replaces old orange/gold hex {@code <gradient:#...>} brand tags with clean named colors.
+     * Keeps all message text; only restores the classic premium palette.
+     */
+    private boolean migrateLegacyHexGradients(@NotNull FileConfiguration yaml) {
+        boolean changed = false;
+        for (String key : yaml.getKeys(true)) {
+            if (yaml.isConfigurationSection(key)) {
+                continue;
+            }
+            if (yaml.isList(key)) {
+                List<?> list = yaml.getList(key);
+                if (list == null || list.isEmpty()) {
+                    continue;
+                }
+                List<Object> updated = new java.util.ArrayList<>(list.size());
+                boolean listChanged = false;
+                for (Object entry : list) {
+                    if (entry instanceof String s) {
+                        String migrated = replaceLegacyHexGradients(s);
+                        updated.add(migrated);
+                        if (!migrated.equals(s)) {
+                            listChanged = true;
+                        }
+                    } else {
+                        updated.add(entry);
+                    }
+                }
+                if (listChanged) {
+                    yaml.set(key, updated);
+                    changed = true;
+                }
+                continue;
+            }
+            String value = yaml.getString(key);
+            if (value == null || !value.contains("gradient:#")) {
+                continue;
+            }
+            String migrated = replaceLegacyHexGradients(value);
+            if (!migrated.equals(value)) {
+                yaml.set(key, migrated);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private static @NotNull String replaceLegacyHexGradients(@NotNull String input) {
+        String text = input;
+        text = text.replaceAll("(?i)<gradient:#FF4500:#FFD700>(.*?)</gradient>", "<gold>$1</gold>");
+        text = text.replaceAll("(?i)<gradient:#FFD700:#FF4500>(.*?)</gradient>", "<gold>$1</gold>");
+        text = text.replaceAll("(?i)<gradient:#FF6347:#FFA500>(.*?)</gradient>", "<gold>$1</gold>");
+        text = text.replaceAll("(?i)<gradient:#888888:#CCCCCC>(.*?)</gradient>", "<gray>$1</gray>");
+        return text;
     }
 
     private void ensureLangFiles() {

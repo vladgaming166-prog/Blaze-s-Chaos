@@ -1,53 +1,57 @@
+# Tablist — classic clean premium style
+config-version: 3
+
 enabled: true
-# Match animation smoothness (animation engine ticks every 1 server tick)
-update-interval: 2
+update-interval: 40
 
 animations:
   enabled: true
-  frame-interval: 1
+  frame-interval: 20
   header-frames:
-    - "%blazechaosanimation_title%"
+    - "&6&lBlaze's Chaos"
+    - "&e&lBlaze's Chaos"
   footer-frames:
-    - "%blazechaosanimation_footer%"
+    - "&7Survive the chaos"
+    - "&eLast player standing"
 
 server-lobby:
   header:
-    - "%blazechaosanimation_title%"
-    - "%blazechaosanimation_server%"
+    - "&6&lBlaze's Chaos"
+    - "&7play.example.ro"
   footer:
     - ""
-    - "<white>Online:</white> <aqua>%server_online%</aqua>"
-    - "<white>Wins:</white> <green>%blazechaos_wins%</green>"
-    - "%blazechaosanimation_discord%"
+    - "&fOnline: &a%server_online%"
+    - "&fWins: &a%blazechaos_wins%"
+    - "&7discord.gg/example"
 
 waiting:
   header:
-    - "%blazechaosanimation_title%"
-    - "<aqua>%blazechaos_map%</aqua>"
+    - "&6&lWaiting"
+    - "&b%blazechaos_map%"
   footer:
-    - "<gray>Players:</gray> <yellow>%blazechaos_players%</yellow>"
+    - "&7Players: &e%blazechaos_players%"
 
 starting:
   header:
-    - "<gold><bold>Starting...</bold></gold>"
+    - "&6&lStarting..."
   footer:
-    - "<yellow>%blazechaos_players% players</yellow>"
+    - "&e%blazechaos_players% players"
 
 playing:
   header:
-    - "%blazechaosanimation_title%"
-    - "<yellow>%blazechaos_event%</yellow>"
+    - "&6&lIN GAME"
+    - "&e%blazechaos_event%"
   footer:
-    - "<red>Alive: %blazechaos_alive%</red> <gray>|</gray> <aqua>Next: %blazechaos_next_event%s</aqua>"
+    - "&cAlive: %blazechaos_alive% &7| &bNext: %blazechaos_next_event%s"
 
 spectator:
   header:
-    - "<gray><bold>Spectating</bold></gray>"
+    - "&7&lSpectating"
   footer:
-    - "<dark_gray>You were eliminated</dark_gray>"
+    - "&8You were eliminated"
 
 ending:
   header:
-    - "<gold><bold>Game Over</bold></gold>"
+    - "&6&lGame Over"
   footer:
-    - "<yellow>Thanks for playing!</yellow>"
+    - "&eThanks for playing!"

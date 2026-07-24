@@ -233,7 +233,7 @@ public final class ChaosEventManager {
             plugin.lang().send(player, "event.starting", placeholders);
             if (eventsConfig.getBoolean("announce-title", true)) {
                 String title = plugin.placeholders().apply(player, game,
-                        "<gradient:#FF4500:#FFD700><bold>CHAOS!</bold></gradient>");
+                        "<gold><bold>CHAOS!</bold></gold>");
                 String subtitle = plugin.placeholders().apply(player, game, display);
                 player.showTitle(Title.title(
                         ColorUtil.parse(title),
