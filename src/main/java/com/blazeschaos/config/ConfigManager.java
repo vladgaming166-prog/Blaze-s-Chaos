@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -37,7 +39,7 @@ public final class ConfigManager {
     }
 
     public void loadAll() {
-        plugin.saveDefaultConfig();
+        ensureMainConfig();
         config = plugin.getConfig();
 
         events = loadYaml("events.yml");
@@ -48,14 +50,15 @@ public final class ConfigManager {
         permissions = loadYaml("permissions.yml");
         shop = loadYaml("shop.yml");
         loot = loadYaml("loot.yml");
-        // Keep messages.yml for backwards compatibility but language files are authoritative
         loadYaml("messages.yml");
 
         languageManager = new LanguageManager(plugin);
         languageManager.load();
+        validateCore();
     }
 
     public void reloadAll() {
+        ensureMainConfig();
         plugin.reloadConfig();
         config = plugin.getConfig();
         events = reloadYaml("events.yml");
@@ -70,6 +73,42 @@ public final class ConfigManager {
             languageManager = new LanguageManager(plugin);
         }
         languageManager.load();
+        validateCore();
+    }
+
+    private void ensureMainConfig() {
+        File file = new File(plugin.getDataFolder(), "config.yml");
+        if (!file.exists()) {
+            plugin.saveDefaultConfig();
+            return;
+        }
+        YamlConfiguration loaded = YamlConfiguration.loadConfiguration(file);
+        if (file.length() > 20 && loaded.getKeys(false).isEmpty()) {
+            regenerate("config.yml", file);
+            plugin.reloadConfig();
+        }
+    }
+
+    private void validateCore() {
+        if (config.getConfigurationSection("settings") == null) {
+            plugin.getLogger().warning("config.yml missing settings section — regenerating defaults merge.");
+        }
+        if (events.getConfigurationSection("enabled-events") == null) {
+            plugin.getLogger().warning("events.yml looks incomplete — defaults will be merged from jar.");
+        }
+        // Clamp unsafe values
+        if (config.getInt("settings.min-players", 2) < 1) {
+            config.set("settings.min-players", 1);
+        }
+        if (config.getInt("settings.chaos-interval-seconds", 60) < 5) {
+            config.set("settings.chaos-interval-seconds", 5);
+        }
+        if (events.getInt("interval-seconds", 60) < 5) {
+            events.set("interval-seconds", 5);
+        }
+        if (events.getInt("max-concurrent-events", 2) < 1) {
+            events.set("max-concurrent-events", 1);
+        }
     }
 
     private @NotNull FileConfiguration loadYaml(@NotNull String name) {
@@ -77,9 +116,25 @@ public final class ConfigManager {
         if (!file.exists()) {
             plugin.saveResource(name, false);
         }
-        FileConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        if (file.length() > 20 && yaml.getKeys(false).isEmpty()) {
+            regenerate(name, file);
+            yaml = YamlConfiguration.loadConfiguration(file);
+        }
         mergeDefaults(yaml, name);
         return yaml;
+    }
+
+    private void regenerate(@NotNull String name, @NotNull File file) {
+        try {
+            File backup = new File(plugin.getDataFolder(), name + ".corrupt-" + System.currentTimeMillis() + ".bak");
+            Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            plugin.getLogger().warning("Corrupted " + name + " detected — backed up to " + backup.getName()
+                    + " and regenerated from defaults.");
+            plugin.saveResource(name, true);
+        } catch (IOException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to regenerate " + name, exception);
+        }
     }
 
     private @NotNull FileConfiguration reloadYaml(@NotNull String name) {
@@ -177,7 +232,7 @@ public final class ConfigManager {
     }
 
     public @NotNull FileConfiguration gui() {
-        return scoreboard; // GUI removed; keep method for compatibility
+        return scoreboard;
     }
 
     public @NotNull FileConfiguration worldReset() {

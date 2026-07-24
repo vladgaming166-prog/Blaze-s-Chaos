@@ -67,6 +67,10 @@ public final class GameInstance {
         return Math.max(0, countdown);
     }
 
+    public @NotNull BlazesChaosPlugin plugin() {
+        return plugin;
+    }
+
     public @NotNull Arena getArena() {
         return arena;
     }
@@ -399,6 +403,7 @@ public final class GameInstance {
         resetChaosTimer();
         // First chaos after a short delay so players can loot/gear up
         int firstDelay = plugin.configs().events().getInt("first-event-delay-seconds", 20);
+        firstDelay = plugin.difficultyManager().scaledIntervalSeconds(firstDelay);
         chaosTicksRemaining = Math.max(5, firstDelay) * 20;
         graceTicksRemaining = plugin.configs().config().getInt("settings.spawn-grace-seconds", 5) * 20;
         alive.clear();
@@ -535,6 +540,14 @@ public final class GameInstance {
         Iterator<ActiveChaos> iterator = activeEvents.iterator();
         while (iterator.hasNext()) {
             ActiveChaos active = iterator.next();
+            if (active.startDelayTicks > 0) {
+                active.startDelayTicks--;
+                if (active.startDelayTicks == 0) {
+                    active.event().start(this);
+                    plugin.eventManager().announce(this, active.event());
+                }
+                continue;
+            }
             active.event().tick(this, gameTicks);
             active.ticksLeft--;
             if (active.ticksLeft <= 0) {
@@ -593,15 +606,20 @@ public final class GameInstance {
     }
 
     public void startChaosEvent(@NotNull ChaosEvent event) {
-        int durationTicks = Math.max(20, event.getDurationSeconds() * 20);
-        activeEvents.add(new ActiveChaos(event, durationTicks));
+        int scaledDuration = plugin.difficultyManager().scaledDuration(event.getDurationSeconds());
+        int durationTicks = Math.max(20, scaledDuration * 20);
+        int delayTicks = Math.max(0, event.getStartDelaySeconds()) * 20;
+        activeEvents.add(new ActiveChaos(event, durationTicks, delayTicks));
         if (state != GameState.DEATHMATCH) {
             state = GameState.CHAOS_EVENT;
         }
-        event.start(this);
-        plugin.eventManager().announce(this, event);
+        if (delayTicks <= 0) {
+            event.start(this);
+            plugin.eventManager().announce(this, event);
+        }
         if (plugin.configs().debug()) {
-            plugin.getLogger().info("Started chaos event " + event.getId() + " in " + arena.getName());
+            plugin.getLogger().info("Queued chaos event " + event.getId() + " in " + arena.getName()
+                    + " (delay=" + delayTicks + ", duration=" + durationTicks + ")");
         }
     }
 
@@ -871,10 +889,12 @@ public final class GameInstance {
     private static final class ActiveChaos {
         private final ChaosEvent event;
         private int ticksLeft;
+        private int startDelayTicks;
 
-        private ActiveChaos(@NotNull ChaosEvent event, int ticksLeft) {
+        private ActiveChaos(@NotNull ChaosEvent event, int ticksLeft, int startDelayTicks) {
             this.event = event;
             this.ticksLeft = ticksLeft;
+            this.startDelayTicks = startDelayTicks;
         }
 
         private ChaosEvent event() {

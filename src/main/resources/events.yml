@@ -1,5 +1,4 @@
-# Chaos Event Configuration
-
+# Chaos Event Configuration - fully configurable per event
 interval-seconds: 60
 first-event-delay-seconds: 20
 max-concurrent-events: 2
@@ -8,175 +7,402 @@ announce-sound: ENTITY_ENDER_DRAGON_GROWL
 announce-title: true
 
 enabled-events:
-  lava-rising: true
-  tnt-rain: true
+  acid-rain: true
+  blindness-storm: true
   block-party: true
-  spleef: true
-  lightning-storm: true
-  strong-wind: true
-  ice-age: true
-  darkness: true
-  meteor-shower: true
-  flood: true
+  blood-moon: true
   chicken-madness: true
-  random-explosions: true
-  tree-growth: true
-  falling-blocks: true
+  creeper-madness: true
+  darkness: true
   double-damage: true
-  only-bows: true
-  knockback-madness: true
-  low-gravity: true
-  resistance: true
+  earthquake: true
+  enderman-chaos: true
+  exploding-chickens: true
+  falling-anvils: true
+  falling-blocks: true
+  fast-mining: true
   fire-spread: true
+  firestorm: true
+  flood: true
+  freeze: true
+  high-gravity: true
+  ice-age: true
+  inventory-shuffle: true
+  invisible-players: true
+  knockback-madness: true
+  lava-geysers: true
+  lava-rising: true
+  lightning-storm: true
+  low-gravity: true
+  meteor-shower: true
+  mob-invasion: true
+  night-vision-only: true
+  no-jump: true
+  only-bows: true
+  poison-cloud: true
+  random-explosions: true
+  random-fireballs: true
+  random-potions: true
+  random-teleport: true
+  resistance: true
+  sandstorm: true
+  silverfish-infestation: true
+  skeleton-army: true
+  solar-flare: true
+  spider-nest: true
+  spleef: true
+  strong-wind: true
+  tnt-rain: true
+  tornado: true
+  tree-explosion: true
+  tree-growth: true
+  volcano: true
+  water-tornado: true
+  wither-curse: true
+  zombie-apocalypse: true
 
 duration:
-  lava-rising: 45
-  tnt-rain: 30
-  block-party: 20
-  spleef: 25
-  lightning-storm: 30
-  strong-wind: 25
-  ice-age: 40
-  darkness: 35
-  meteor-shower: 25
-  flood: 40
+  acid-rain: 30
+  blindness-storm: 30
+  block-party: 30
+  blood-moon: 30
   chicken-madness: 30
-  random-explosions: 25
-  tree-growth: 20
+  creeper-madness: 30
+  darkness: 30
+  double-damage: 30
+  earthquake: 30
+  enderman-chaos: 30
+  exploding-chickens: 30
+  falling-anvils: 30
   falling-blocks: 30
-  double-damage: 40
-  only-bows: 35
+  fast-mining: 30
+  fire-spread: 30
+  firestorm: 30
+  flood: 30
+  freeze: 30
+  high-gravity: 30
+  ice-age: 30
+  inventory-shuffle: 30
+  invisible-players: 30
   knockback-madness: 30
-  low-gravity: 35
+  lava-geysers: 30
+  lava-rising: 30
+  lightning-storm: 30
+  low-gravity: 30
+  meteor-shower: 30
+  mob-invasion: 30
+  night-vision-only: 30
+  no-jump: 30
+  only-bows: 30
+  poison-cloud: 30
+  random-explosions: 30
+  random-fireballs: 30
+  random-potions: 30
+  random-teleport: 30
   resistance: 30
-  fire-spread: 40
+  sandstorm: 30
+  silverfish-infestation: 30
+  skeleton-army: 30
+  solar-flare: 30
+  spider-nest: 30
+  spleef: 30
+  strong-wind: 30
+  tnt-rain: 30
+  tornado: 30
+  tree-explosion: 30
+  tree-growth: 30
+  volcano: 30
+  water-tornado: 30
+  wither-curse: 30
+  zombie-apocalypse: 30
 
 chance:
-  lava-rising: 15
-  tnt-rain: 12
+  acid-rain: 10
+  blindness-storm: 10
   block-party: 10
-  spleef: 12
-  lightning-storm: 14
-  strong-wind: 12
-  ice-age: 10
+  blood-moon: 10
+  chicken-madness: 10
+  creeper-madness: 10
   darkness: 10
-  meteor-shower: 5
-  flood: 12
-  chicken-madness: 15
-  random-explosions: 10
-  tree-growth: 12
-  falling-blocks: 12
-  double-damage: 14
-  only-bows: 10
-  knockback-madness: 12
-  low-gravity: 12
-  resistance: 8
+  double-damage: 10
+  earthquake: 10
+  enderman-chaos: 10
+  exploding-chickens: 10
+  falling-anvils: 10
+  falling-blocks: 10
+  fast-mining: 10
   fire-spread: 10
+  firestorm: 10
+  flood: 10
+  freeze: 10
+  high-gravity: 10
+  ice-age: 10
+  inventory-shuffle: 10
+  invisible-players: 10
+  knockback-madness: 10
+  lava-geysers: 10
+  lava-rising: 10
+  lightning-storm: 10
+  low-gravity: 10
+  meteor-shower: 10
+  mob-invasion: 10
+  night-vision-only: 10
+  no-jump: 10
+  only-bows: 10
+  poison-cloud: 10
+  random-explosions: 10
+  random-fireballs: 10
+  random-potions: 10
+  random-teleport: 10
+  resistance: 10
+  sandstorm: 10
+  silverfish-infestation: 10
+  skeleton-army: 10
+  solar-flare: 10
+  spider-nest: 10
+  spleef: 10
+  strong-wind: 10
+  tnt-rain: 10
+  tornado: 10
+  tree-explosion: 10
+  tree-growth: 10
+  volcano: 10
+  water-tornado: 7
+  wither-curse: 10
+  zombie-apocalypse: 10
 
 cooldown:
-  lava-rising: 120
-  tnt-rain: 90
-  block-party: 100
-  spleef: 90
-  lightning-storm: 80
-  strong-wind: 70
-  ice-age: 100
+  acid-rain: 90
+  blindness-storm: 90
+  block-party: 90
+  blood-moon: 90
+  chicken-madness: 90
+  creeper-madness: 90
   darkness: 90
-  meteor-shower: 150
-  flood: 120
-  chicken-madness: 60
-  random-explosions: 90
-  tree-growth: 70
-  falling-blocks: 80
-  double-damage: 100
-  only-bows: 110
-  knockback-madness: 80
-  low-gravity: 90
-  resistance: 100
+  double-damage: 90
+  earthquake: 90
+  enderman-chaos: 90
+  exploding-chickens: 90
+  falling-anvils: 90
+  falling-blocks: 90
+  fast-mining: 90
   fire-spread: 90
+  firestorm: 90
+  flood: 90
+  freeze: 90
+  high-gravity: 90
+  ice-age: 90
+  inventory-shuffle: 90
+  invisible-players: 90
+  knockback-madness: 90
+  lava-geysers: 90
+  lava-rising: 90
+  lightning-storm: 90
+  low-gravity: 90
+  meteor-shower: 90
+  mob-invasion: 90
+  night-vision-only: 90
+  no-jump: 90
+  only-bows: 90
+  poison-cloud: 90
+  random-explosions: 90
+  random-fireballs: 90
+  random-potions: 90
+  random-teleport: 90
+  resistance: 90
+  sandstorm: 90
+  silverfish-infestation: 90
+  skeleton-army: 90
+  solar-flare: 90
+  spider-nest: 90
+  spleef: 90
+  strong-wind: 90
+  tnt-rain: 90
+  tornado: 90
+  tree-explosion: 90
+  tree-growth: 90
+  volcano: 90
+  water-tornado: 90
+  wither-curse: 90
+  zombie-apocalypse: 90
+
+start-delay:
+  acid-rain: 0
+  blindness-storm: 0
+  block-party: 0
+  blood-moon: 0
+  chicken-madness: 0
+  creeper-madness: 0
+  darkness: 0
+  double-damage: 0
+  earthquake: 0
+  enderman-chaos: 0
+  exploding-chickens: 0
+  falling-anvils: 0
+  falling-blocks: 0
+  fast-mining: 0
+  fire-spread: 0
+  firestorm: 0
+  flood: 0
+  freeze: 0
+  high-gravity: 0
+  ice-age: 0
+  inventory-shuffle: 0
+  invisible-players: 0
+  knockback-madness: 0
+  lava-geysers: 0
+  lava-rising: 0
+  lightning-storm: 0
+  low-gravity: 0
+  meteor-shower: 0
+  mob-invasion: 0
+  night-vision-only: 0
+  no-jump: 0
+  only-bows: 0
+  poison-cloud: 0
+  random-explosions: 0
+  random-fireballs: 0
+  random-potions: 0
+  random-teleport: 0
+  resistance: 0
+  sandstorm: 0
+  silverfish-infestation: 0
+  skeleton-army: 0
+  solar-flare: 0
+  spider-nest: 0
+  spleef: 0
+  strong-wind: 0
+  tnt-rain: 0
+  tornado: 0
+  tree-explosion: 0
+  tree-growth: 0
+  volcano: 0
+  water-tornado: 0
+  wither-curse: 0
+  zombie-apocalypse: 0
+
+display-names:
+  acid-rain: "<green>Acid Rain</green>"
+  blindness-storm: "<dark_gray>Blindness Storm</dark_gray>"
+  block-party: "<light_purple>Block Party</light_purple>"
+  blood-moon: "<dark_red>Blood Moon</dark_red>"
+  chicken-madness: "<yellow>Chicken Madness</yellow>"
+  creeper-madness: "<green>Creeper Madness</green>"
+  darkness: "<dark_gray>Darkness</dark_gray>"
+  double-damage: "<dark_red>Double Damage</dark_red>"
+  earthquake: "<gold>Earthquake</gold>"
+  enderman-chaos: "<dark_purple>Enderman Chaos</dark_purple>"
+  exploding-chickens: "<yellow>Exploding Chickens</yellow>"
+  falling-anvils: "<gray>Falling Anvils</gray>"
+  falling-blocks: "<gray>Falling Blocks</gray>"
+  fast-mining: "<gold>Fast Mining</gold>"
+  fire-spread: "<gold>Fire Spread</gold>"
+  firestorm: "<red>Firestorm</red>"
+  flood: "<blue>Flood</blue>"
+  freeze: "<aqua>Freeze</aqua>"
+  high-gravity: "<gray>High Gravity</gray>"
+  ice-age: "<aqua>Ice Age</aqua>"
+  inventory-shuffle: "<yellow>Inventory Shuffle</yellow>"
+  invisible-players: "<white>Invisible Players</white>"
+  knockback-madness: "<light_purple>Knockback Madness</light_purple>"
+  lava-geysers: "<gold>Lava Geysers</gold>"
+  lava-rising: "<red>Lava Rising</red>"
+  lightning-storm: "<yellow>Lightning Storm</yellow>"
+  low-gravity: "<white>Low Gravity</white>"
+  meteor-shower: "<gold>Meteor Shower</gold>"
+  mob-invasion: "<red>Mob Invasion</red>"
+  night-vision-only: "<dark_aqua>Night Vision Only</dark_aqua>"
+  no-jump: "<red>No Jump</red>"
+  only-bows: "<green>Only Bows</green>"
+  poison-cloud: "<dark_green>Poison Cloud</dark_green>"
+  random-explosions: "<red>Random Explosions</red>"
+  random-fireballs: "<gold>Random Fireballs</gold>"
+  random-potions: "<blue>Random Potions</blue>"
+  random-teleport: "<light_purple>Random Teleport</light_purple>"
+  resistance: "<aqua>Resistance</aqua>"
+  sandstorm: "<yellow>Sandstorm</yellow>"
+  silverfish-infestation: "<gray>Silverfish Infestation</gray>"
+  skeleton-army: "<gray>Skeleton Army</gray>"
+  solar-flare: "<gold>Solar Flare</gold>"
+  spider-nest: "<dark_purple>Spider Nest</dark_purple>"
+  spleef: "<aqua>Spleef</aqua>"
+  strong-wind: "<white>Strong Wind</white>"
+  tnt-rain: "<gold>TNT Rain</gold>"
+  tornado: "<white>Tornado</white>"
+  tree-explosion: "<green>Tree Explosion</green>"
+  tree-growth: "<green>Tree Growth</green>"
+  volcano: "<red>Volcano</red>"
+  water-tornado: "<aqua>Water Tornado</aqua>"
+  wither-curse: "<dark_gray>Wither Curse</dark_gray>"
+  zombie-apocalypse: "<dark_green>Zombie Apocalypse</dark_green>"
 
 settings:
+
   lava-rising:
     rise-interval-ticks: 40
     blocks-per-rise: 1
     start-y-offset: -5
+  flood:
+    rise-interval-ticks: 40
+    blocks-per-rise: 1
   tnt-rain:
     interval-ticks: 20
     tnt-per-wave: 3
     fuse-ticks: 40
-  block-party:
-    safe-colors:
-      - RED
-      - BLUE
-      - GREEN
-      - YELLOW
-      - ORANGE
-      - PURPLE
-      - WHITE
-      - BLACK
-  spleef:
-    radius: 3
-    interval-ticks: 15
+  meteor-shower:
+    interval-ticks: 30
+    meteors-per-wave: 2
+    explosion-power: 2.5
   lightning-storm:
     interval-ticks: 25
     strikes-per-wave: 2
   strong-wind:
     strength: 1.2
     interval-ticks: 10
-  ice-age:
-    apply-slowness: true
-  darkness:
-    blindness-amplifier: 0
-  meteor-shower:
-    interval-ticks: 30
-    meteors-per-wave: 2
-    explosion-power: 2.5
-  flood:
-    rise-interval-ticks: 40
-    blocks-per-rise: 1
-  chicken-madness:
-    chickens-per-player: 20
-  random-explosions:
-    interval-ticks: 35
-    power: 2.0
-  tree-growth:
-    trees-per-wave: 4
-    interval-ticks: 40
-  falling-blocks:
-    interval-ticks: 20
-    blocks-per-wave: 8
-  double-damage:
-    multiplier: 2.0
-  only-bows: {}
   knockback-madness:
     multiplier: 3.0
-  low-gravity:
-    jump-amplifier: 2
-    slow-falling: true
-  resistance:
-    amplifier: 1
-  fire-spread:
+  double-damage:
+    multiplier: 2.0
+  acid-rain:
+    interval-ticks: 20
+    damage: 1.0
+  poison-cloud:
+    radius: 4.0
+    amplifier: 0
+  earthquake:
+    interval-ticks: 8
+    strength: 0.45
+  tornado:
+    pull-strength: 0.35
+  firestorm:
+    interval-ticks: 15
+    fires-per-wave: 8
+  solar-flare:
+    damage: 1.5
+  volcano:
+    interval-ticks: 15
+    power: 1.2
+  lava-geysers:
     interval-ticks: 30
-    fires-per-wave: 5
-
-display-names:
-  lava-rising: "<red>Lava Rising</red>"
-  tnt-rain: "<gold>TNT Rain</gold>"
-  block-party: "<light_purple>Block Party</light_purple>"
-  spleef: "<aqua>Spleef</aqua>"
-  lightning-storm: "<yellow>Lightning Storm</yellow>"
-  strong-wind: "<white>Strong Wind</white>"
-  ice-age: "<aqua>Ice Age</aqua>"
-  darkness: "<dark_gray>Darkness</dark_gray>"
-  meteor-shower: "<gold>Meteor Shower</gold>"
-  flood: "<blue>Flood</blue>"
-  chicken-madness: "<yellow>Chicken Madness</yellow>"
-  random-explosions: "<red>Random Explosions</red>"
-  tree-growth: "<green>Tree Growth</green>"
-  falling-blocks: "<gray>Falling Blocks</gray>"
-  double-damage: "<dark_red>Double Damage</dark_red>"
-  only-bows: "<green>Only Bows</green>"
-  knockback-madness: "<light_purple>Knockback Madness</light_purple>"
-  low-gravity: "<white>Low Gravity</white>"
-  resistance: "<aqua>Resistance</aqua>"
-  fire-spread: "<gold>Fire Spread</gold>"
+    height: 5
+  exploding-chickens:
+    per-player: 6
+    explode-interval-ticks: 60
+    power: 1.5
+  falling-anvils:
+    interval-ticks: 25
+    amount: 3
+  random-fireballs:
+    interval-ticks: 25
+    power: 1.8
+  zombie-apocalypse:
+    mobs-per-player: 10
+  skeleton-army:
+    mobs-per-player: 8
+  creeper-madness:
+    mobs-per-player: 4
+  mob-invasion:
+    mobs-per-player: 6
+  water-tornado:
+    pull-strength: 0.4
+    damage: 0.5

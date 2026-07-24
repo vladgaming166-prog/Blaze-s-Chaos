@@ -13,6 +13,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class LightningStormEvent extends ChaosEvent {
 
     private int tickCounter;
+    private int interval;
 
     public LightningStormEvent() {
         super("lightning-storm", "Lightning Storm");
@@ -21,6 +22,7 @@ public final class LightningStormEvent extends ChaosEvent {
     @Override
     public void start(@NotNull GameInstance game) {
         tickCounter = 0;
+        interval = scaledInterval(game, settingInt("interval-ticks", 25));
         World world = game.getArena().getWorld();
         if (world != null) {
             world.setStorm(true);
@@ -30,22 +32,23 @@ public final class LightningStormEvent extends ChaosEvent {
 
     @Override
     public void tick(@NotNull GameInstance game, int tick) {
-        int interval = settingInt("interval-ticks", 25);
         tickCounter++;
-        if (tickCounter % interval != 0) {
+        if (tickCounter % Math.max(5, interval) != 0) {
             return;
         }
         List<Player> alive = game.getAlivePlayers();
         if (alive.isEmpty()) {
             return;
         }
-        int strikes = settingInt("strikes-per-wave", 2);
+        int strikes = Math.max(1, (int) Math.round(settingInt("strikes-per-wave", 2) * lightningScale(game)));
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int i = 0; i < strikes; i++) {
             Player target = alive.get(random.nextInt(alive.size()));
             Location loc = target.getLocation().clone().add(
                     random.nextInt(-8, 9), 0, random.nextInt(-8, 9));
-            loc.getWorld().strikeLightning(loc);
+            if (loc.getWorld() != null) {
+                loc.getWorld().strikeLightning(loc);
+            }
         }
     }
 

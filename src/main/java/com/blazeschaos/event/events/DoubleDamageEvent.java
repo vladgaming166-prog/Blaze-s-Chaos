@@ -26,7 +26,7 @@ public final class DoubleDamageEvent extends ChaosEvent {
 
     @Override
     public void onPlayerDamage(@NotNull GameInstance game, @NotNull Player victim, @NotNull EntityDamageEvent event) {
-        double multiplier = settingDouble("multiplier", 2.0);
+        double multiplier = settingDouble("multiplier", 2.0) * damageScale(game);
         event.setDamage(event.getDamage() * multiplier);
     }
 }

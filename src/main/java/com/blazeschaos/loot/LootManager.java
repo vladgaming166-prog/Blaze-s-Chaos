@@ -8,12 +8,16 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class LootManager {
@@ -28,6 +32,7 @@ public final class LootManager {
 
     public void reload() {
         enabled = plugin.configs().loot().getBoolean("enabled", false);
+        plugin.lootRarityManager().reload();
     }
 
     public boolean isEnabled() {
@@ -61,7 +66,7 @@ public final class LootManager {
         for (int cx = minChunkX; cx <= maxChunkX; cx++) {
             for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
                 if (!world.isChunkLoaded(cx, cz)) {
-                    world.loadChunk(cx, cz);
+                    continue;
                 }
                 for (BlockState state : world.getChunkAt(cx, cz).getTileEntities()) {
                     if (state instanceof Chest chest) {
@@ -71,14 +76,14 @@ public final class LootManager {
                 }
             }
         }
-        plugin.getLogger().info("Filled " + filled + " chests in arena " + arena.getName());
+        plugin.getLogger().info("Filled " + filled + " chests in arena " + arena.getName()
+                + " (rarity=" + plugin.lootRarityManager().get().name().toLowerCase(Locale.ROOT) + ")");
     }
 
     public void fillChest(@NotNull Inventory inventory) {
         inventory.clear();
-        FileConfiguration loot = plugin.configs().loot();
-        int min = loot.getInt("items-per-chest.min", 4);
-        int max = loot.getInt("items-per-chest.max", 8);
+        int min = plugin.lootRarityManager().itemsMin();
+        int max = Math.max(min, plugin.lootRarityManager().itemsMax());
         int count = ThreadLocalRandom.current().nextInt(min, max + 1);
         List<ItemStack> pool = buildPool();
         if (pool.isEmpty()) {
@@ -92,29 +97,63 @@ public final class LootManager {
     }
 
     private @NotNull List<ItemStack> buildPool() {
-        List<ItemStack> pool = new ArrayList<>();
-        ConfigurationSection section = plugin.configs().loot().getConfigurationSection("pool");
+        FileConfiguration loot = plugin.configs().loot();
+        String path = plugin.lootRarityManager().poolPath();
+        ConfigurationSection section = loot.getConfigurationSection(path);
         if (section == null) {
-            return defaultPool();
+            section = loot.getConfigurationSection("pool");
         }
-        for (String key : section.getKeys(false)) {
-            ConfigurationSection entry = section.getConfigurationSection(key);
-            if (entry == null) {
-                continue;
-            }
-            Material material = Material.matchMaterial(entry.getString("material", "STONE"));
-            if (material == null) {
-                continue;
-            }
-            int weight = Math.max(1, entry.getInt("weight", 1));
-            int amountMin = entry.getInt("amount-min", 1);
-            int amountMax = Math.max(amountMin, entry.getInt("amount-max", amountMin));
-            for (int i = 0; i < weight; i++) {
-                int amount = ThreadLocalRandom.current().nextInt(amountMin, amountMax + 1);
-                pool.add(new ItemStack(material, amount));
+        List<ItemStack> pool = new ArrayList<>();
+        if (section != null) {
+            for (String key : section.getKeys(false)) {
+                ConfigurationSection entry = section.getConfigurationSection(key);
+                if (entry == null) {
+                    continue;
+                }
+                Material material = Material.matchMaterial(entry.getString("material", "STONE"));
+                if (material == null) {
+                    continue;
+                }
+                int weight = Math.max(1, entry.getInt("weight", 1));
+                int amountMin = entry.getInt("amount-min", 1);
+                int amountMax = Math.max(amountMin, entry.getInt("amount-max", amountMin));
+                for (int i = 0; i < weight; i++) {
+                    int amount = ThreadLocalRandom.current().nextInt(amountMin, amountMax + 1);
+                    ItemStack stack = new ItemStack(material, amount);
+                    applyEnchants(stack, entry.getConfigurationSection("enchants"));
+                    pool.add(stack);
+                }
             }
         }
         return pool.isEmpty() ? defaultPool() : pool;
+    }
+
+    private void applyEnchants(@NotNull ItemStack stack, @Nullable ConfigurationSection enchants) {
+        if (enchants == null) {
+            return;
+        }
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return;
+        }
+        for (String key : enchants.getKeys(false)) {
+            Enchantment enchantment = Enchantment.getByName(key.toUpperCase(Locale.ROOT));
+            if (enchantment == null) {
+                // Try namespaced key style (e.g. minecraft:sharpness via Registry)
+                try {
+                    var namespaced = org.bukkit.NamespacedKey.minecraft(key.toLowerCase(Locale.ROOT));
+                    enchantment = org.bukkit.Registry.ENCHANTMENT.get(namespaced);
+                } catch (Throwable ignored) {
+                    enchantment = null;
+                }
+            }
+            if (enchantment == null) {
+                continue;
+            }
+            int level = Math.max(1, enchants.getInt(key, 1));
+            meta.addEnchant(enchantment, level, true);
+        }
+        stack.setItemMeta(meta);
     }
 
     private @NotNull List<ItemStack> defaultPool() {

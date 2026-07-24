@@ -34,8 +34,12 @@ public final class KnockbackMadnessEvent extends ChaosEvent {
         if (!(byEntity.getDamager() instanceof Player attacker)) {
             return;
         }
-        double multiplier = settingDouble("multiplier", 3.0);
-        Vector direction = victim.getLocation().toVector().subtract(attacker.getLocation().toVector()).normalize();
+        double multiplier = settingDouble("multiplier", 3.0) * knockbackScale(game);
+        Vector direction = victim.getLocation().toVector().subtract(attacker.getLocation().toVector());
+        if (direction.lengthSquared() < 0.0001) {
+            direction = attacker.getLocation().getDirection();
+        }
+        direction = direction.normalize();
         direction.setY(0.35);
         victim.setVelocity(direction.multiply(multiplier));
     }

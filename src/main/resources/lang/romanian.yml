@@ -170,6 +170,12 @@ help:
   - "<yellow>/bc next</yellow> <gray>- Forțează următorul eveniment</gray>"
   - "<yellow>/bc reload</yellow> <gray>- Reîncarcă configurile</gray>"
   - "<yellow>/bc debug</yellow> <gray>- Comută debug</gray>"
+  - "<yellow>/bc shop</yellow> <gray>- Deschide shop-ul</gray>"
+  - "<yellow>/bc coins</yellow> <gray>- Vezi balanța</gray>"
+  - "<yellow>/bc language <en|ro></yellow> <gray>- Schimbă limba</gray>"
+  - "<yellow>/bc eventsdifficulty <mode></yellow> <gray>- Setează dificultatea</gray>"
+  - "<yellow>/bc chestlootrarity <rarity></yellow> <gray>- Setează raritatea loot</gray>"
+  - "<yellow>/bc enablerandomchestloot</yellow> <gray>- Comută loot cufere</gray>"
 
 coins:
   balance: "<gold>Coins:</gold> <yellow>%balance%</yellow>"
@@ -219,9 +225,17 @@ language:
 loot:
   enabled: "<green>Loot random pentru cufere activat.</green>"
   disabled: "<yellow>Loot random pentru cufere dezactivat.</yellow>"
+  rarity-current: "<gold>Raritate loot:</gold> <yellow>%rarity%</yellow>"
+  rarity-usage: "<gray>Folosire:</gray> <yellow>/bc chestlootrarity <common|uncommon|normal|mythic|legendary|extreme></yellow>"
+  rarity-changed: "<green>Raritatea loot a fost setată pe <yellow>%rarity%</yellow>.</green>"
 
 lobby-items:
   leave-game:
     name: "<red>Părăsește Jocul</red>"
     lore:
       - "<gray>Click dreapta pentru a ieși</gray>"
+
+difficulty:
+  current: "<gold>Dificultate evenimente:</gold> <yellow>%difficulty%</yellow>"
+  usage: "<gray>Folosire:</gray> <yellow>/bc eventsdifficulty <easy|normal|hard|hardcore|extreme|impossible></yellow>"
+  changed: "<green>Dificultatea a fost setată pe <yellow>%difficulty%</yellow>.</green>"

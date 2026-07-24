@@ -49,9 +49,27 @@ public final class GameListener implements Listener {
         if (plugin.gameManager().getByPlayer(player) != null) {
             return;
         }
-        plugin.lobbyManager().giveLobbyItems(player);
+        if (plugin.lobbyManager().isLobbyWorld(player.getWorld())) {
+            plugin.lobbyManager().giveLobbyItems(player);
+        } else {
+            plugin.lobbyManager().removeLobbyItems(player);
+        }
         plugin.scoreboardManager().applyLobby(player);
         plugin.tablistManager().apply(player);
+    }
+
+    @EventHandler
+    public void onWorldChange(@NotNull org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+        // Games / setup manage their own inventories — never strip leave-game or setup tools here
+        if (plugin.gameManager().getByPlayer(player) != null || plugin.setupMode().isInSetup(player)) {
+            return;
+        }
+        if (plugin.lobbyManager().isLobbyWorld(player.getWorld())) {
+            plugin.lobbyManager().giveLobbyItems(player);
+        } else {
+            plugin.lobbyManager().removeLobbyItems(player);
+        }
     }
 
     @EventHandler

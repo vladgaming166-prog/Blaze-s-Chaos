@@ -54,12 +54,56 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             case "shop" -> handleShop(sender);
             case "language", "lang" -> handleLanguage(sender, args);
             case "enablerandomchestloot" -> handleLootToggle(sender);
+            case "eventsdifficulty", "difficulty" -> handleDifficulty(sender, args);
+            case "chestlootrarity", "lootrarity" -> handleLootRarity(sender, args);
             case "version" -> plugin.lang().send(sender, "general.version",
                     Map.of("version", plugin.getPluginMeta().getVersion()));
             case "createarena" -> plugin.lang().send(sender, "general.unknown-command");
             default -> plugin.lang().send(sender, "general.unknown-command");
         }
         return true;
+    }
+
+    private void handleDifficulty(@NotNull CommandSender sender, @NotNull String[] args) {
+        if (!sender.hasPermission("blazechaos.admin") && !sender.hasPermission("blazechaos.setup")) {
+            plugin.lang().send(sender, "general.no-permission");
+            return;
+        }
+        if (args.length < 2) {
+            plugin.lang().send(sender, "difficulty.current", Map.of(
+                    "difficulty", plugin.difficultyManager().get().name().toLowerCase(Locale.ROOT)
+            ));
+            plugin.lang().send(sender, "difficulty.usage");
+            return;
+        }
+        if (!plugin.difficultyManager().set(args[1])) {
+            plugin.lang().send(sender, "difficulty.usage");
+            return;
+        }
+        plugin.lang().send(sender, "difficulty.changed", Map.of(
+                "difficulty", plugin.difficultyManager().get().name().toLowerCase(Locale.ROOT)
+        ));
+    }
+
+    private void handleLootRarity(@NotNull CommandSender sender, @NotNull String[] args) {
+        if (!sender.hasPermission("blazechaos.admin") && !sender.hasPermission("blazechaos.setup")) {
+            plugin.lang().send(sender, "general.no-permission");
+            return;
+        }
+        if (args.length < 2) {
+            plugin.lang().send(sender, "loot.rarity-current", Map.of(
+                    "rarity", plugin.lootRarityManager().get().name().toLowerCase(Locale.ROOT)
+            ));
+            plugin.lang().send(sender, "loot.rarity-usage");
+            return;
+        }
+        if (!plugin.lootRarityManager().set(args[1])) {
+            plugin.lang().send(sender, "loot.rarity-usage");
+            return;
+        }
+        plugin.lang().send(sender, "loot.rarity-changed", Map.of(
+                "rarity", plugin.lootRarityManager().get().name().toLowerCase(Locale.ROOT)
+        ));
     }
 
     private void handleCoins(@NotNull CommandSender sender) {
@@ -322,7 +366,8 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             return filter(args[0], Arrays.asList(
                     "help", "join", "leave", "lobby", "setlobby", "list", "deletearena",
                     "setup", "reload", "forcestart", "stop", "next", "debug", "info", "version",
-                    "coins", "balance", "shop", "language", "enablerandomchestloot"
+                    "coins", "balance", "shop", "language", "enablerandomchestloot",
+                    "eventsdifficulty", "chestlootrarity"
             ));
         }
         if (args.length == 2) {
@@ -332,6 +377,12 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             }
             if (sub.equals("language") || sub.equals("lang")) {
                 return filter(args[1], Arrays.asList("english", "romanian", "en", "ro"));
+            }
+            if (sub.equals("eventsdifficulty") || sub.equals("difficulty")) {
+                return filter(args[1], Arrays.asList("easy", "normal", "hard", "hardcore", "extreme", "impossible"));
+            }
+            if (sub.equals("chestlootrarity") || sub.equals("lootrarity")) {
+                return filter(args[1], Arrays.asList("common", "uncommon", "normal", "mythic", "legendary", "extreme"));
             }
         }
         return List.of();

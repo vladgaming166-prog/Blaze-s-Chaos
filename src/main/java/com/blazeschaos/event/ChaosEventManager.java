@@ -1,26 +1,59 @@
 package com.blazeschaos.event;
 
 import com.blazeschaos.BlazesChaosPlugin;
+import com.blazeschaos.event.events.AcidRainEvent;
+import com.blazeschaos.event.events.BlindnessStormEvent;
 import com.blazeschaos.event.events.BlockPartyEvent;
+import com.blazeschaos.event.events.BloodMoonEvent;
 import com.blazeschaos.event.events.ChickenMadnessEvent;
+import com.blazeschaos.event.events.CreeperMadnessEvent;
 import com.blazeschaos.event.events.DarknessEvent;
 import com.blazeschaos.event.events.DoubleDamageEvent;
+import com.blazeschaos.event.events.EarthquakeEvent;
+import com.blazeschaos.event.events.EndermanChaosEvent;
+import com.blazeschaos.event.events.ExplodingChickensEvent;
+import com.blazeschaos.event.events.FallingAnvilsEvent;
 import com.blazeschaos.event.events.FallingBlocksEvent;
+import com.blazeschaos.event.events.FastMiningEvent;
 import com.blazeschaos.event.events.FireSpreadEvent;
+import com.blazeschaos.event.events.FirestormEvent;
 import com.blazeschaos.event.events.FloodEvent;
+import com.blazeschaos.event.events.FreezeEvent;
+import com.blazeschaos.event.events.HighGravityEvent;
 import com.blazeschaos.event.events.IceAgeEvent;
+import com.blazeschaos.event.events.InventoryShuffleEvent;
+import com.blazeschaos.event.events.InvisiblePlayersEvent;
 import com.blazeschaos.event.events.KnockbackMadnessEvent;
+import com.blazeschaos.event.events.LavaGeysersEvent;
 import com.blazeschaos.event.events.LavaRisingEvent;
 import com.blazeschaos.event.events.LightningStormEvent;
 import com.blazeschaos.event.events.LowGravityEvent;
 import com.blazeschaos.event.events.MeteorShowerEvent;
+import com.blazeschaos.event.events.MobInvasionEvent;
+import com.blazeschaos.event.events.NightVisionOnlyEvent;
+import com.blazeschaos.event.events.NoJumpEvent;
 import com.blazeschaos.event.events.OnlyBowsEvent;
+import com.blazeschaos.event.events.PoisonCloudEvent;
 import com.blazeschaos.event.events.RandomExplosionsEvent;
+import com.blazeschaos.event.events.RandomFireballsEvent;
+import com.blazeschaos.event.events.RandomPotionsEvent;
+import com.blazeschaos.event.events.RandomTeleportEvent;
 import com.blazeschaos.event.events.ResistanceEvent;
+import com.blazeschaos.event.events.SandstormEvent;
+import com.blazeschaos.event.events.SilverfishInfestationEvent;
+import com.blazeschaos.event.events.SkeletonArmyEvent;
+import com.blazeschaos.event.events.SolarFlareEvent;
+import com.blazeschaos.event.events.SpiderNestEvent;
 import com.blazeschaos.event.events.SpleefEvent;
 import com.blazeschaos.event.events.StrongWindEvent;
 import com.blazeschaos.event.events.TNTRainEvent;
+import com.blazeschaos.event.events.TornadoEvent;
+import com.blazeschaos.event.events.TreeExplosionEvent;
 import com.blazeschaos.event.events.TreeGrowthEvent;
+import com.blazeschaos.event.events.VolcanoEvent;
+import com.blazeschaos.event.events.WaterTornadoEvent;
+import com.blazeschaos.event.events.WitherCurseEvent;
+import com.blazeschaos.event.events.ZombieApocalypseEvent;
 import com.blazeschaos.game.GameInstance;
 import com.blazeschaos.util.ColorUtil;
 import net.kyori.adventure.title.Title;
@@ -52,26 +85,59 @@ public final class ChaosEventManager {
     }
 
     private void registerDefaults() {
-        register(new LavaRisingEvent());
-        register(new TNTRainEvent());
+        register(new AcidRainEvent());
+        register(new BlindnessStormEvent());
         register(new BlockPartyEvent());
-        register(new SpleefEvent());
-        register(new LightningStormEvent());
-        register(new StrongWindEvent());
-        register(new IceAgeEvent());
-        register(new DarknessEvent());
-        register(new MeteorShowerEvent());
-        register(new FloodEvent());
+        register(new BloodMoonEvent());
         register(new ChickenMadnessEvent());
-        register(new RandomExplosionsEvent());
-        register(new TreeGrowthEvent());
-        register(new FallingBlocksEvent());
+        register(new CreeperMadnessEvent());
+        register(new DarknessEvent());
         register(new DoubleDamageEvent());
-        register(new OnlyBowsEvent());
-        register(new KnockbackMadnessEvent());
-        register(new LowGravityEvent());
-        register(new ResistanceEvent());
+        register(new EarthquakeEvent());
+        register(new EndermanChaosEvent());
+        register(new ExplodingChickensEvent());
+        register(new FallingAnvilsEvent());
+        register(new FallingBlocksEvent());
+        register(new FastMiningEvent());
         register(new FireSpreadEvent());
+        register(new FirestormEvent());
+        register(new FloodEvent());
+        register(new FreezeEvent());
+        register(new HighGravityEvent());
+        register(new IceAgeEvent());
+        register(new InventoryShuffleEvent());
+        register(new InvisiblePlayersEvent());
+        register(new KnockbackMadnessEvent());
+        register(new LavaGeysersEvent());
+        register(new LavaRisingEvent());
+        register(new LightningStormEvent());
+        register(new LowGravityEvent());
+        register(new MeteorShowerEvent());
+        register(new MobInvasionEvent());
+        register(new NightVisionOnlyEvent());
+        register(new NoJumpEvent());
+        register(new OnlyBowsEvent());
+        register(new PoisonCloudEvent());
+        register(new RandomExplosionsEvent());
+        register(new RandomFireballsEvent());
+        register(new RandomPotionsEvent());
+        register(new RandomTeleportEvent());
+        register(new ResistanceEvent());
+        register(new SandstormEvent());
+        register(new SilverfishInfestationEvent());
+        register(new SkeletonArmyEvent());
+        register(new SolarFlareEvent());
+        register(new SpiderNestEvent());
+        register(new SpleefEvent());
+        register(new StrongWindEvent());
+        register(new TNTRainEvent());
+        register(new TornadoEvent());
+        register(new TreeExplosionEvent());
+        register(new TreeGrowthEvent());
+        register(new VolcanoEvent());
+        register(new WaterTornadoEvent());
+        register(new WitherCurseEvent());
+        register(new ZombieApocalypseEvent());
     }
 
     public void register(@NotNull ChaosEvent event) {
@@ -94,12 +160,12 @@ public final class ChaosEventManager {
     }
 
     public int intervalSeconds() {
-        return Math.max(5, plugin.configs().events().getInt("interval-seconds", 60));
+        int base = Math.max(5, plugin.configs().events().getInt("interval-seconds", 60));
+        return plugin.difficultyManager().scaledIntervalSeconds(base);
     }
 
     public @Nullable ChaosEvent pickRandom(@Nullable ChaosEvent exclude) {
-        List<ChaosEvent> list = exclude == null ? List.of() : List.of(exclude);
-        return pickRandom(list);
+        return pickRandom(exclude == null ? List.of() : List.of(exclude));
     }
 
     public @Nullable ChaosEvent pickRandom(@Nullable Collection<ChaosEvent> exclude) {
@@ -132,7 +198,11 @@ public final class ChaosEventManager {
             }
         }
         if (pool.isEmpty() || totalWeight <= 0) {
-            // Last resort: any enabled event
+            for (ChaosEvent event : events.values()) {
+                if (event.isEnabled() && !excluded.contains(event.getId())) {
+                    return event;
+                }
+            }
             for (ChaosEvent event : events.values()) {
                 if (event.isEnabled()) {
                     return event;
@@ -178,7 +248,6 @@ public final class ChaosEventManager {
     }
 
     public void endEvent(@NotNull GameInstance game) {
-        // Compatibility: force-end current primary event by starting a clean wave timer
         ChaosEvent active = game.getActiveEvent();
         if (active != null) {
             active.end(game);

@@ -13,6 +13,7 @@ public final class LavaRisingEvent extends ChaosEvent {
 
     private int currentY;
     private int tickCounter;
+    private int riseInterval;
 
     public LavaRisingEvent() {
         super("lava-rising", "Lava Rising");
@@ -21,6 +22,7 @@ public final class LavaRisingEvent extends ChaosEvent {
     @Override
     public void start(@NotNull GameInstance game) {
         tickCounter = 0;
+        riseInterval = scaledInterval(game, settingInt("rise-interval-ticks", 40));
         World world = game.getArena().getWorld();
         int minY = Integer.MAX_VALUE;
         for (Player player : game.getAlivePlayers()) {
@@ -37,16 +39,15 @@ public final class LavaRisingEvent extends ChaosEvent {
 
     @Override
     public void tick(@NotNull GameInstance game, int tick) {
-        int interval = settingInt("rise-interval-ticks", 40);
         tickCounter++;
-        if (tickCounter % interval != 0) {
+        if (tickCounter % Math.max(5, riseInterval) != 0) {
             return;
         }
         World world = game.getArena().getWorld();
         if (world == null) {
             return;
         }
-        int rise = settingInt("blocks-per-rise", 1);
+        int rise = Math.max(1, scaledCount(game, settingInt("blocks-per-rise", 1)));
         Location center = game.getArena().getSpawn();
         if (center == null) {
             return;

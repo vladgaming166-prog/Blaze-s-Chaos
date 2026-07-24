@@ -26,6 +26,7 @@ public final class LobbyManager {
     public static final String KEY_INFO = "info";
     public static final String KEY_SHOP = "shop";
     public static final String KEY_LEAVE = "leave";
+    public static final String KEY_LEAVE_GAME = "leave_game";
 
     private final BlazesChaosPlugin plugin;
     private final NamespacedKey itemKey;
@@ -91,6 +92,10 @@ public final class LobbyManager {
         if (plugin.setupMode().isInSetup(player)) {
             return;
         }
+        if (!isLobbyWorld(player.getWorld())) {
+            removeLobbyItems(player);
+            return;
+        }
         FileConfiguration config = plugin.configs().config();
         if (!config.getBoolean("lobby-items.enabled", true)) {
             giveJoinItemLegacy(player);
@@ -101,6 +106,19 @@ public final class LobbyManager {
         setLobbyItem(player, 4, KEY_INFO, Material.BOOK, "lobby-items.info");
         setLobbyItem(player, 7, KEY_SHOP, Material.EMERALD, "lobby-items.shop");
         setLobbyItem(player, 8, KEY_LEAVE, Material.RED_BED, "lobby-items.leave");
+    }
+
+    public void removeLobbyItems(@NotNull Player player) {
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (isLobbyItem(stack)) {
+                player.getInventory().setItem(slot, null);
+            }
+        }
+        ItemStack off = player.getInventory().getItemInOffHand();
+        if (isLobbyItem(off)) {
+            player.getInventory().setItemInOffHand(null);
+        }
     }
 
     private void giveJoinItemLegacy(@NotNull Player player) {
@@ -165,7 +183,7 @@ public final class LobbyManager {
         ItemStack item = tagged(new ItemBuilder(Material.RED_BED)
                 .name(plugin.lang().raw("lobby-items.leave-game.name"))
                 .lore(plugin.lang().list("lobby-items.leave-game.lore"))
-                .build(), KEY_LEAVE);
+                .build(), KEY_LEAVE_GAME);
         player.getInventory().setItem(8, item);
     }
 
@@ -175,7 +193,8 @@ public final class LobbyManager {
     }
 
     public boolean isLeaveItem(@Nullable ItemStack item) {
-        return KEY_LEAVE.equals(lobbyItemId(item)) || isLegacyLeave(item);
+        String id = lobbyItemId(item);
+        return KEY_LEAVE.equals(id) || KEY_LEAVE_GAME.equals(id) || isLegacyLeave(item);
     }
 
     private boolean isLegacyJoin(@Nullable ItemStack item) {
@@ -200,7 +219,7 @@ public final class LobbyManager {
             case KEY_QUICK_JOIN -> plugin.gameManager().join(player, null);
             case KEY_INFO -> sendInfo(player);
             case KEY_SHOP -> plugin.shopManager().open(player);
-            case KEY_LEAVE -> {
+            case KEY_LEAVE, KEY_LEAVE_GAME -> {
                 if (plugin.gameManager().getByPlayer(player) != null) {
                     plugin.gameManager().leave(player);
                 } else if (lobbyLocation != null) {

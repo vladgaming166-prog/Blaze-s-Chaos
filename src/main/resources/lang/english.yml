@@ -170,6 +170,12 @@ help:
   - "<yellow>/bc next</yellow> <gray>- Force next event</gray>"
   - "<yellow>/bc reload</yellow> <gray>- Reload configs</gray>"
   - "<yellow>/bc debug</yellow> <gray>- Toggle debug</gray>"
+  - "<yellow>/bc shop</yellow> <gray>- Open coin shop</gray>"
+  - "<yellow>/bc coins</yellow> <gray>- View coin balance</gray>"
+  - "<yellow>/bc language <en|ro></yellow> <gray>- Change language</gray>"
+  - "<yellow>/bc eventsdifficulty <mode></yellow> <gray>- Set chaos difficulty</gray>"
+  - "<yellow>/bc chestlootrarity <rarity></yellow> <gray>- Set chest loot rarity</gray>"
+  - "<yellow>/bc enablerandomchestloot</yellow> <gray>- Toggle chest loot</gray>"
 
 coins:
   balance: "<gold>Coins:</gold> <yellow>%balance%</yellow>"
@@ -219,9 +225,17 @@ language:
 loot:
   enabled: "<green>Random chest loot enabled.</green>"
   disabled: "<yellow>Random chest loot disabled.</yellow>"
+  rarity-current: "<gold>Chest loot rarity:</gold> <yellow>%rarity%</yellow>"
+  rarity-usage: "<gray>Usage:</gray> <yellow>/bc chestlootrarity <common|uncommon|normal|mythic|legendary|extreme></yellow>"
+  rarity-changed: "<green>Chest loot rarity set to <yellow>%rarity%</yellow>.</green>"
 
 lobby-items:
   leave-game:
     name: "<red>Leave Game</red>"
     lore:
       - "<gray>Right-click to leave</gray>"
+
+difficulty:
+  current: "<gold>Event difficulty:</gold> <yellow>%difficulty%</yellow>"
+  usage: "<gray>Usage:</gray> <yellow>/bc eventsdifficulty <easy|normal|hard|hardcore|extreme|impossible></yellow>"
+  changed: "<green>Event difficulty set to <yellow>%difficulty%</yellow>.</green>"

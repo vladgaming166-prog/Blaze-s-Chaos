@@ -14,8 +14,10 @@ public abstract class ChaosEvent {
     private int durationSeconds = 30;
     private int chance = 10;
     private int cooldownSeconds = 60;
+    private int startDelaySeconds = 0;
     private long lastEndedAt;
     private @Nullable ConfigurationSection settings;
+    private @Nullable ConfigurationSection root;
 
     protected ChaosEvent(@NotNull String id, @NotNull String defaultDisplayName) {
         this.id = id;
@@ -62,6 +64,10 @@ public abstract class ChaosEvent {
         this.cooldownSeconds = Math.max(0, cooldownSeconds);
     }
 
+    public int getStartDelaySeconds() {
+        return startDelaySeconds;
+    }
+
     public boolean isOnCooldown() {
         if (cooldownSeconds <= 0 || lastEndedAt <= 0) {
             return false;
@@ -73,12 +79,27 @@ public abstract class ChaosEvent {
         this.lastEndedAt = System.currentTimeMillis();
     }
 
-    public void applyConfig(@NotNull ConfigurationSection root) {
-        this.enabled = root.getBoolean("enabled-events." + id, true);
-        this.durationSeconds = root.getInt("duration." + id, durationSeconds);
-        this.chance = root.getInt("chance." + id, chance);
-        this.cooldownSeconds = root.getInt("cooldown." + id, cooldownSeconds);
-        this.settings = root.getConfigurationSection("settings." + id);
+    public void applyConfig(@NotNull ConfigurationSection configRoot) {
+        this.root = configRoot;
+        this.enabled = configRoot.getBoolean("enabled-events." + id, true);
+        this.durationSeconds = configRoot.getInt("duration." + id, durationSeconds);
+        this.chance = configRoot.getInt("chance." + id, chance);
+        this.cooldownSeconds = configRoot.getInt("cooldown." + id, cooldownSeconds);
+        this.startDelaySeconds = configRoot.getInt("start-delay." + id, 0);
+        // Prefer nested event block if present
+        ConfigurationSection nested = configRoot.getConfigurationSection("events." + id);
+        if (nested != null) {
+            this.enabled = nested.getBoolean("enabled", enabled);
+            this.durationSeconds = nested.getInt("duration", durationSeconds);
+            this.chance = nested.getInt("chance", chance);
+            this.cooldownSeconds = nested.getInt("cooldown", cooldownSeconds);
+            this.startDelaySeconds = nested.getInt("start-delay", startDelaySeconds);
+            this.settings = nested.getConfigurationSection("settings") != null
+                    ? nested.getConfigurationSection("settings")
+                    : nested;
+        } else {
+            this.settings = configRoot.getConfigurationSection("settings." + id);
+        }
     }
 
     public @Nullable ConfigurationSection settings() {
@@ -95,6 +116,38 @@ public abstract class ChaosEvent {
 
     public boolean settingBool(@NotNull String path, boolean def) {
         return settings == null ? def : settings.getBoolean(path, def);
+    }
+
+    protected int scaledInterval(@NotNull GameInstance game, int baseTicks) {
+        return game.plugin().difficultyManager().scaleTicksFaster(baseTicks);
+    }
+
+    protected int scaledCount(@NotNull GameInstance game, int base) {
+        return game.plugin().difficultyManager().scaleCount(base);
+    }
+
+    protected double damageScale(@NotNull GameInstance game) {
+        return game.plugin().difficultyManager().damageMultiplier();
+    }
+
+    protected double explosionScale(@NotNull GameInstance game) {
+        return game.plugin().difficultyManager().explosionMultiplier();
+    }
+
+    protected double knockbackScale(@NotNull GameInstance game) {
+        return game.plugin().difficultyManager().knockbackMultiplier();
+    }
+
+    protected double meteorScale(@NotNull GameInstance game) {
+        return game.plugin().difficultyManager().meteorMultiplier();
+    }
+
+    protected double lightningScale(@NotNull GameInstance game) {
+        return game.plugin().difficultyManager().lightningMultiplier();
+    }
+
+    protected double mobScale(@NotNull GameInstance game) {
+        return game.plugin().difficultyManager().mobMultiplier();
     }
 
     public abstract void start(@NotNull GameInstance game);

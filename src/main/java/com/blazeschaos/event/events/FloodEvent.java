@@ -13,6 +13,7 @@ public final class FloodEvent extends ChaosEvent {
 
     private int currentY;
     private int tickCounter;
+    private int riseInterval;
 
     public FloodEvent() {
         super("flood", "Flood");
@@ -21,6 +22,7 @@ public final class FloodEvent extends ChaosEvent {
     @Override
     public void start(@NotNull GameInstance game) {
         tickCounter = 0;
+        riseInterval = scaledInterval(game, settingInt("rise-interval-ticks", 40));
         int minY = Integer.MAX_VALUE;
         for (Player player : game.getAlivePlayers()) {
             minY = Math.min(minY, player.getLocation().getBlockY());
@@ -34,9 +36,8 @@ public final class FloodEvent extends ChaosEvent {
 
     @Override
     public void tick(@NotNull GameInstance game, int tick) {
-        int interval = settingInt("rise-interval-ticks", 40);
         tickCounter++;
-        if (tickCounter % interval != 0) {
+        if (tickCounter % Math.max(5, riseInterval) != 0) {
             return;
         }
         World world = game.getArena().getWorld();
@@ -44,7 +45,7 @@ public final class FloodEvent extends ChaosEvent {
         if (world == null || center == null) {
             return;
         }
-        int rise = settingInt("blocks-per-rise", 1);
+        int rise = Math.max(1, scaledCount(game, settingInt("blocks-per-rise", 1)));
         int radius = (int) Math.ceil(game.getArena().getBorderSize() / 2.0);
         for (int i = 0; i < rise; i++) {
             currentY++;

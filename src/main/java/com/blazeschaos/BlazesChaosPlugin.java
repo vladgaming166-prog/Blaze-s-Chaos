@@ -6,11 +6,13 @@ import com.blazeschaos.command.BlazeChaosCommand;
 import com.blazeschaos.config.ConfigManager;
 import com.blazeschaos.database.DatabaseManager;
 import com.blazeschaos.event.ChaosEventManager;
+import com.blazeschaos.event.EventDifficultyManager;
 import com.blazeschaos.game.GameManager;
 import com.blazeschaos.lang.LanguageManager;
 import com.blazeschaos.listener.GameListener;
 import com.blazeschaos.lobby.LobbyManager;
 import com.blazeschaos.loot.LootManager;
+import com.blazeschaos.loot.LootRarityManager;
 import com.blazeschaos.placeholder.BlazeChaosExpansion;
 import com.blazeschaos.scoreboard.ScoreboardManager;
 import com.blazeschaos.setup.SetupModeManager;
@@ -39,6 +41,8 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private CoinsManager coinsManager;
     private ShopManager shopManager;
     private LootManager lootManager;
+    private EventDifficultyManager difficultyManager;
+    private LootRarityManager lootRarityManager;
 
     @Override
     public void onEnable() {
@@ -52,6 +56,8 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         vaultHook.hook();
 
         this.coinsManager = new CoinsManager(this);
+        this.difficultyManager = new EventDifficultyManager(this);
+        this.lootRarityManager = new LootRarityManager(this);
         this.lootManager = new LootManager(this);
         this.shopManager = new ShopManager(this);
 
@@ -112,6 +118,8 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         lobbyManager.load();
         arenaManager.load();
         lootManager.reload();
+        difficultyManager.reload();
+        lootRarityManager.reload();
         scoreboardManager.start();
         tablistManager.start();
     }
@@ -174,5 +182,13 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
     public @NotNull LootManager lootManager() {
         return lootManager;
+    }
+
+    public @NotNull EventDifficultyManager difficultyManager() {
+        return difficultyManager;
+    }
+
+    public @NotNull LootRarityManager lootRarityManager() {
+        return lootRarityManager;
     }
 }
