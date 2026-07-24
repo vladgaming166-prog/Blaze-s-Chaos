@@ -1,0 +1,170 @@
+prefix: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> "
+
+general:
+  no-permission: "<red>Nu ai permisiunea să faci asta.</red>"
+  player-only: "<red>Doar jucătorii pot folosi această comandă.</red>"
+  reload-success: "<green>Configurația a fost reîncărcată cu succes.</green>"
+  unknown-command: "<red>Subcomandă necunoscută. Folosește <yellow>/bc help</yellow>.</red>"
+  version: "<yellow>Blaze's Chaos</yellow> <gray>v%version%</gray>"
+  cancelled: "<yellow>Anulat.</yellow>"
+  invalid-number: "<red>Te rog introdu un număr valid.</red>"
+  invalid-input: "<red>Input invalid.</red>"
+
+lobby:
+  teleported: "<green>Te-ai teleportat în lobby.</green>"
+  set: "<green>Locația lobby-ului global a fost setată.</green>"
+  not-set: "<red>Locația lobby-ului nu este setată.</red>"
+
+arena:
+  created: "<green>Arena <yellow>%arena%</yellow> a fost creată. Ești acum în Setup Mode.</green>"
+  deleted: "<green>Arena <yellow>%arena%</yellow> a fost ștearsă.</green>"
+  not-found: "<red>Arena nu a fost găsită.</red>"
+  already-exists: "<red>Există deja o arenă cu acest nume.</red>"
+  not-setup: "<red>Această arenă nu este configurată complet. Lipsește: <yellow>%missing%</yellow></red>"
+  saved: "<green>Arena <yellow>%arena%</yellow> a fost salvată și este gata!</green>"
+  saved-incomplete: "<yellow>Arena a fost salvată, dar încă lipsește: <red>%missing%</red></yellow>"
+  setup-finished: "<green>Arena <yellow>%arena%</yellow> este gata de joc!</green>"
+  in-use: "<red>Această arenă este folosită acum.</red>"
+  list-header: "<gold>Arene:</gold>"
+  list-entry: "<gray>- <yellow>%arena%</yellow> <dark_gray>(%state%)</dark_gray> <aqua>%players%/%max%</aqua>"
+  selected: "<green>Arenă selectată: <yellow>%arena%</yellow></green>"
+  none-available: "<red>Nu există arene. Creează una cu Nether Star.</red>"
+  cycle: "<aqua>Arenă: <yellow>%arena%</yellow> <gray>(%index%/%total%)</gray></aqua>"
+  info-header: "<gold>Info Arenă: <yellow>%arena%</yellow></gold>"
+  info-line: "<gray>%key%: <white>%value%</white></gray>"
+  setting-updated: "<green>%setting%</green> <gray>setat la</gray> <yellow>%value%</yellow>"
+  prompt-name: "<yellow>Tastează numele arenei în chat</yellow> <gray>(sau <white>cancel</white>)</gray>"
+  prompt-display-name: "<yellow>Tastează numele afișat în chat</yellow> <gray>(sau <white>cancel</white>)</gray>"
+  prompt-min-players: "<yellow>Tastează numărul minim de jucători</yellow>"
+  prompt-max-players: "<yellow>Tastează numărul maxim de jucători</yellow>"
+  prompt-countdown: "<yellow>Tastează countdown-ul (secunde)</yellow>"
+  prompt-deathmatch: "<yellow>Tastează timpul pentru deathmatch (secunde)</yellow>"
+  prompt-border-size: "<yellow>Tastează dimensiunea borderului</yellow>"
+  prompt-border-speed: "<yellow>Tastează viteza borderului</yellow>"
+  prompt-border-damage: "<yellow>Tastează damage-ul borderului</yellow>"
+  prompt-respawn-delay: "<yellow>Tastează delay-ul de respawn (ticks)</yellow>"
+  prompt-settings: "<aqua>Apasă din nou pe Paper pentru a schimba setarea, sau tastează o valoare.</aqua>"
+  lobby-set: "<green>Lobby spawn setat.</green>"
+  spawn-set: "<green>Game spawn setat.</green>"
+  spectator-set: "<green>Spectator spawn setat.</green>"
+  center-set: "<green>Centrul arenei a fost setat.</green>"
+  death-height-set: "<green>Death height setat la <yellow>%value%</yellow>.</green>"
+  world-bound: "<green>Lumea legată de <yellow>%world%</yellow>.</green>"
+  auto-reset-on: "<green>Auto reset activat.</green>"
+  auto-reset-off: "<yellow>Auto reset dezactivat.</yellow>"
+  loot-hint: "<gray>Loot: plasează cufere în lumea arenei. Conținutul este păstrat de template-ul de reset.</gray>"
+  border-configured: "<green>Border size <yellow>%size%</yellow>, speed <yellow>%speed%</yellow>, damage <yellow>%damage%</yellow></green>"
+
+setup:
+  entered: "<green>Ai intrat în Setup Mode</green> <gray>pentru</gray> <yellow>%arena%</yellow>"
+  entered-select: "<green>Ai intrat în Setup Mode.</green> <gray>Folosește Compass pentru selectare sau Nether Star pentru creare.</gray>"
+  exited: "<yellow>Ai ieșit din Setup Mode.</yellow>"
+  no-arena: "<red>Selectează sau creează o arenă mai întâi.</red>"
+  items-given: "<gray>Itemele de setup au fost puse în hotbar.</gray>"
+  cancel: "<yellow>Setup anulat.</yellow>"
+
+game:
+  joined: "<green>Te-ai alăturat arenei <yellow>%arena%</yellow>!</green>"
+  left: "<yellow>Ai părăsit jocul.</yellow>"
+  full: "<red>Jocul este plin.</red>"
+  already-in: "<red>Ești deja într-un joc.</red>"
+  not-in: "<red>Nu ești într-un joc.</red>"
+  starting: "<gold>Jocul începe în <yellow>%time%</yellow> secunde!</gold>"
+  started: "<gradient:#FF4500:#FFD700><bold>HAOSUL ÎNCEPE!</bold></gradient>"
+  eliminated: "<red>%player%</red> <gray>a fost eliminat! Mai rămân <yellow>%alive%</yellow>.</gray>"
+  winner: "<gold><bold>%player%</bold></gold> <yellow>câștigă Blaze's Chaos!</yellow>"
+  no-winner: "<yellow>Niciun câștigător — haosul i-a consumat pe toți.</yellow>"
+  force-started: "<green>Jocul a fost forțat să înceapă.</green>"
+  stopped: "<red>Jocul a fost oprit de un admin.</red>"
+  deathmatch: "<dark_red><bold>DEATHMATCH!</bold></dark_red> <red>Borderul se micșorează!</red>"
+  countdown-cancelled: "<yellow>Countdown anulat — nu sunt destui jucători.</yellow>"
+  no-arenas: "<red>Nu există arene jucabile. Cere unui admin să termine setup-ul.</red>"
+
+event:
+  starting: "<gradient:#FF4500:#FFD700><bold>EVENIMENT HAOS:</bold></gradient> <yellow>%event%</yellow>"
+  ending: "<gray>Evenimentul <yellow>%event%</yellow> s-a terminat.</gray>"
+  next: "<aqua>Următorul eveniment în <yellow>%time%</yellow>s</aqua>"
+  forced: "<green>Următorul eveniment a fost forțat.</green>"
+
+admin:
+  debug-on: "<green>Modul debug activat.</green>"
+  debug-off: "<yellow>Modul debug dezactivat.</yellow>"
+  info: "<gold>Arenă:</gold> <yellow>%arena%</yellow> <gray>|</gray> <gold>Stare:</gold> <yellow>%state%</yellow> <gray>|</gray> <gold>Jucători:</gold> <yellow>%players%</yellow> <gray>|</gray> <gold>Eveniment:</gold> <yellow>%event%</yellow>"
+
+world:
+  resetting: "<yellow>Se resetează lumea arenei...</yellow>"
+  reset-complete: "<green>Lumea arenei a fost restaurată.</green>"
+  reset-failed: "<red>Resetarea lumii a eșuat. Verifică consola.</red>"
+
+setup-items:
+  select-arena:
+    name: "<aqua>Selectează Arena</aqua>"
+    lore:
+      - "<gray>Click dreapta pentru a schimba arena</gray>"
+  create-arena:
+    name: "<gradient:#FF4500:#FFD700>Creează Arenă Nouă</gradient>"
+    lore:
+      - "<gray>Click dreapta, apoi tastează numele în chat</gray>"
+  save-arena:
+    name: "<green>Salvează Arena</green>"
+    lore:
+      - "<gray>Salvează și marchează gata dacă e completă</gray>"
+  cancel:
+    name: "<red>Anulează Setup</red>"
+    lore:
+      - "<gray>Ieși din setup mode</gray>"
+  set-lobby:
+    name: "<yellow>Setează Lobby</yellow>"
+    lore:
+      - "<gray>Click dreapta pentru lobby spawn</gray>"
+  set-spawn:
+    name: "<green>Setează Game Spawn</green>"
+    lore:
+      - "<gray>Click dreapta pentru game spawn</gray>"
+  set-spectator:
+    name: "<light_purple>Setează Spectator Spawn</light_purple>"
+    lore:
+      - "<gray>Click dreapta pentru spectator spawn</gray>"
+  set-center:
+    name: "<gold>Setează Centrul</gold>"
+    lore:
+      - "<gray>Click dreapta pentru centrul borderului</gray>"
+  set-death-height:
+    name: "<red>Setează Death Height</red>"
+    lore:
+      - "<gray>Click dreapta pentru a folosi Y-ul tău</gray>"
+  configure-border:
+    name: "<aqua>Configurează Border</aqua>"
+    lore:
+      - "<gray>Stânga: size+10 | Dreapta: size-10</gray>"
+      - "<gray>Shift-Stânga: speed+0.5 | Shift-Dreapta: damage+0.5</gray>"
+  configure-loot:
+    name: "<gold>Configurează Loot</gold>"
+    lore:
+      - "<gray>Informații despre cuferele din arenă</gray>"
+  arena-info:
+    name: "<white>Informații Arenă</white>"
+    lore:
+      - "<gray>Click dreapta pentru detalii</gray>"
+  arena-settings:
+    name: "<yellow>Setări Arenă</yellow>"
+    lore:
+      - "<gray>Click dreapta pentru a edita setările</gray>"
+
+help:
+  - "<gradient:#FF4500:#FFD700><bold>Comenzi Blaze's Chaos</bold></gradient>"
+  - "<yellow>/bc join [arena]</yellow> <gray>- Intră într-un joc</gray>"
+  - "<yellow>/bc leave</yellow> <gray>- Părăsește jocul</gray>"
+  - "<yellow>/bc lobby</yellow> <gray>- Mergi în lobby</gray>"
+  - "<yellow>/bc list</yellow> <gray>- Listează arenele</gray>"
+  - "<yellow>/bc info</yellow> <gray>- Info joc</gray>"
+  - "<yellow>/bc version</yellow> <gray>- Versiunea pluginului</gray>"
+  - "<gray>---</gray>"
+  - "<yellow>/bc setup</yellow> <gray>- Intră în setup mode</gray>"
+  - "<yellow>/bc deletearena <name></yellow> <gray>- Șterge o arenă</gray>"
+  - "<yellow>/bc setlobby</yellow> <gray>- Setează lobby-ul global</gray>"
+  - "<yellow>/bc forcestart</yellow> <gray>- Forțează startul</gray>"
+  - "<yellow>/bc stop</yellow> <gray>- Oprește jocul</gray>"
+  - "<yellow>/bc next</yellow> <gray>- Forțează următorul eveniment</gray>"
+  - "<yellow>/bc reload</yellow> <gray>- Reîncarcă configurile</gray>"
+  - "<yellow>/bc debug</yellow> <gray>- Comută debug</gray>"

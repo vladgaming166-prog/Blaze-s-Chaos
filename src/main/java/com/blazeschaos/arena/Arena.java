@@ -1,6 +1,6 @@
 package com.blazeschaos.arena;
 
-import com.blazeschaos.util.LocationUtil;
+import com.blazeschaos.util.StoredLocation;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -8,60 +8,117 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
 public final class Arena {
 
     private final String name;
-    private @Nullable Location lobby;
-    private @Nullable Location spawn;
-    private @Nullable Location spectator;
+    private String displayName;
+    private @Nullable StoredLocation lobby;
+    private @Nullable StoredLocation spawn;
+    private @Nullable StoredLocation spectator;
+    private @Nullable StoredLocation center;
     private @Nullable String worldName;
     private @Nullable String templateWorldName;
     private int minPlayers = 2;
     private int maxPlayers = 24;
+    private int countdownSeconds = 30;
+    private int deathmatchAfterSeconds = 600;
     private double borderSize = 200.0;
     private double borderSpeed = 1.0;
     private double borderDamage = 1.0;
     private int deathHeight = -64;
-    private boolean enabled;
+    private int respawnDelayTicks = 0;
+    private boolean autoReset = true;
+    private boolean enabled = true;
     private boolean setupComplete;
 
     public Arena(@NotNull String name) {
-        this.name = name.toLowerCase();
+        this.name = name.toLowerCase(Locale.ROOT);
+        this.displayName = name;
     }
 
     public @NotNull String getName() {
         return name;
     }
 
-    public @Nullable Location getLobby() {
+    public @NotNull String getDisplayName() {
+        return displayName == null || displayName.isBlank() ? name : displayName;
+    }
+
+    public void setDisplayName(@NotNull String displayName) {
+        this.displayName = displayName;
+    }
+
+    public @Nullable StoredLocation getLobbyStored() {
         return lobby;
     }
 
-    public void setLobby(@Nullable Location lobby) {
-        this.lobby = lobby == null ? null : lobby.clone();
+    public @Nullable Location getLobby() {
+        return lobby == null ? null : lobby.toLocation();
     }
 
-    public @Nullable Location getSpawn() {
-        return spawn;
-    }
-
-    public void setSpawn(@Nullable Location spawn) {
-        this.spawn = spawn == null ? null : spawn.clone();
-        if (spawn != null && spawn.getWorld() != null) {
-            this.worldName = spawn.getWorld().getName();
+    public void setLobby(@Nullable Location location) {
+        this.lobby = StoredLocation.from(location);
+        if (location != null && location.getWorld() != null && worldName == null) {
+            worldName = location.getWorld().getName();
         }
     }
 
-    public @Nullable Location getSpectator() {
+    public @Nullable StoredLocation getSpawnStored() {
+        return spawn;
+    }
+
+    public @Nullable Location getSpawn() {
+        return spawn == null ? null : spawn.toLocation();
+    }
+
+    public void setSpawn(@Nullable Location location) {
+        this.spawn = StoredLocation.from(location);
+        if (location != null && location.getWorld() != null) {
+            this.worldName = location.getWorld().getName();
+        }
+    }
+
+    public @Nullable StoredLocation getSpectatorStored() {
         return spectator;
     }
 
-    public void setSpectator(@Nullable Location spectator) {
-        this.spectator = spectator == null ? null : spectator.clone();
+    public @Nullable Location getSpectator() {
+        return spectator == null ? null : spectator.toLocation();
+    }
+
+    public void setSpectator(@Nullable Location location) {
+        this.spectator = StoredLocation.from(location);
+        if (location != null && location.getWorld() != null && worldName == null) {
+            worldName = location.getWorld().getName();
+        }
+    }
+
+    public @Nullable StoredLocation getCenterStored() {
+        return center;
+    }
+
+    public @Nullable Location getCenter() {
+        if (center != null) {
+            Location resolved = center.toLocation();
+            if (resolved != null) {
+                return resolved;
+            }
+        }
+        return getSpawn();
+    }
+
+    public void setCenter(@Nullable Location location) {
+        this.center = StoredLocation.from(location);
+        if (location != null && location.getWorld() != null && worldName == null) {
+            worldName = location.getWorld().getName();
+        }
     }
 
     public @Nullable String getWorldName() {
@@ -90,6 +147,9 @@ public final class Arena {
 
     public void setMinPlayers(int minPlayers) {
         this.minPlayers = Math.max(1, minPlayers);
+        if (this.maxPlayers < this.minPlayers) {
+            this.maxPlayers = this.minPlayers;
+        }
     }
 
     public int getMaxPlayers() {
@@ -98,6 +158,22 @@ public final class Arena {
 
     public void setMaxPlayers(int maxPlayers) {
         this.maxPlayers = Math.max(this.minPlayers, maxPlayers);
+    }
+
+    public int getCountdownSeconds() {
+        return countdownSeconds;
+    }
+
+    public void setCountdownSeconds(int countdownSeconds) {
+        this.countdownSeconds = Math.max(3, countdownSeconds);
+    }
+
+    public int getDeathmatchAfterSeconds() {
+        return deathmatchAfterSeconds;
+    }
+
+    public void setDeathmatchAfterSeconds(int deathmatchAfterSeconds) {
+        this.deathmatchAfterSeconds = Math.max(30, deathmatchAfterSeconds);
     }
 
     public double getBorderSize() {
@@ -132,6 +208,22 @@ public final class Arena {
         this.deathHeight = deathHeight;
     }
 
+    public int getRespawnDelayTicks() {
+        return respawnDelayTicks;
+    }
+
+    public void setRespawnDelayTicks(int respawnDelayTicks) {
+        this.respawnDelayTicks = Math.max(0, respawnDelayTicks);
+    }
+
+    public boolean isAutoReset() {
+        return autoReset;
+    }
+
+    public void setAutoReset(boolean autoReset) {
+        this.autoReset = autoReset;
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -148,35 +240,98 @@ public final class Arena {
         this.setupComplete = setupComplete;
     }
 
-    public boolean isReady() {
-        return setupComplete
-                && lobby != null
-                && spawn != null
-                && spectator != null
-                && worldName != null
-                && Bukkit.getWorld(worldName) != null;
-    }
-
     public void bindWorld(@NotNull World world) {
         this.worldName = world.getName();
         if (this.templateWorldName == null) {
             this.templateWorldName = world.getName();
         }
+        rebindLocationsToWorld(world.getName());
+    }
+
+    public void rebindLocationsToWorld(@NotNull String newWorldName) {
+        this.worldName = newWorldName;
+        if (lobby != null) {
+            lobby = lobby.withWorld(newWorldName);
+        }
+        if (spawn != null) {
+            spawn = spawn.withWorld(newWorldName);
+        }
+        if (spectator != null) {
+            spectator = spectator.withWorld(newWorldName);
+        }
+        if (center != null) {
+            center = center.withWorld(newWorldName);
+        }
+    }
+
+    /**
+     * Returns missing required setup keys, empty when playable.
+     */
+    public @NotNull List<String> missingRequirements() {
+        List<String> missing = new ArrayList<>();
+        if (lobby == null || !lobby.isConfigured()) {
+            missing.add("lobby");
+        }
+        if (spawn == null || !spawn.isConfigured()) {
+            missing.add("spawn");
+        }
+        if (spectator == null || !spectator.isConfigured()) {
+            missing.add("spectator");
+        }
+        if (worldName == null || worldName.isBlank()) {
+            missing.add("world");
+        }
+        return missing;
+    }
+
+    /**
+     * Marks the arena playable when all required points are configured.
+     * Does not require the world to be currently loaded (locations are stored by name).
+     */
+    public boolean tryMarkReady() {
+        List<String> missing = missingRequirements();
+        if (!missing.isEmpty()) {
+            setupComplete = false;
+            return false;
+        }
+        if (center == null && spawn != null) {
+            center = spawn;
+        }
+        setupComplete = true;
+        enabled = true;
+        return true;
+    }
+
+    public boolean isReady() {
+        if (!missingRequirements().isEmpty()) {
+            return false;
+        }
+        // Auto-heal legacy arenas that were saved without finish flag
+        if (!setupComplete) {
+            setupComplete = true;
+        }
+        return enabled;
     }
 
     public @NotNull Map<String, Object> serialize() {
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("lobby", LocationUtil.serialize(lobby));
-        map.put("spawn", LocationUtil.serialize(spawn));
-        map.put("spectator", LocationUtil.serialize(spectator));
+        map.put("display-name", displayName);
+        map.put("lobby", lobby == null ? Map.of() : lobby.serialize());
+        map.put("spawn", spawn == null ? Map.of() : spawn.serialize());
+        map.put("spectator", spectator == null ? Map.of() : spectator.serialize());
+        map.put("center", center == null ? Map.of() : center.serialize());
         map.put("world", worldName);
         map.put("template-world", templateWorldName);
         map.put("min-players", minPlayers);
         map.put("max-players", maxPlayers);
+        map.put("countdown-seconds", countdownSeconds);
+        map.put("deathmatch-after-seconds", deathmatchAfterSeconds);
         map.put("border-size", borderSize);
         map.put("border-speed", borderSpeed);
         map.put("border-damage", borderDamage);
         map.put("death-height", deathHeight);
+        map.put("respawn-delay-ticks", respawnDelayTicks);
+        map.put("auto-reset", autoReset);
         map.put("enabled", enabled);
         map.put("setup-complete", setupComplete);
         return map;
@@ -184,19 +339,34 @@ public final class Arena {
 
     public static @NotNull Arena deserialize(@NotNull String name, @NotNull ConfigurationSection section) {
         Arena arena = new Arena(name);
-        arena.setLobby(LocationUtil.deserialize(section.getConfigurationSection("lobby")));
-        arena.setSpawn(LocationUtil.deserialize(section.getConfigurationSection("spawn")));
-        arena.setSpectator(LocationUtil.deserialize(section.getConfigurationSection("spectator")));
+        arena.setDisplayName(section.getString("display-name", name));
+        arena.lobby = StoredLocation.deserialize(section.getConfigurationSection("lobby"));
+        arena.spawn = StoredLocation.deserialize(section.getConfigurationSection("spawn"));
+        arena.spectator = StoredLocation.deserialize(section.getConfigurationSection("spectator"));
+        arena.center = StoredLocation.deserialize(section.getConfigurationSection("center"));
         arena.setWorldName(section.getString("world"));
+        if (arena.worldName == null && arena.spawn != null) {
+            arena.worldName = arena.spawn.worldName();
+        }
         arena.setTemplateWorldName(section.getString("template-world", arena.getWorldName()));
         arena.setMinPlayers(section.getInt("min-players", 2));
         arena.setMaxPlayers(section.getInt("max-players", 24));
+        arena.setCountdownSeconds(section.getInt("countdown-seconds", 30));
+        arena.setDeathmatchAfterSeconds(section.getInt("deathmatch-after-seconds", 600));
         arena.setBorderSize(section.getDouble("border-size", 200.0));
         arena.setBorderSpeed(section.getDouble("border-speed", 1.0));
         arena.setBorderDamage(section.getDouble("border-damage", 1.0));
         arena.setDeathHeight(section.getInt("death-height", -64));
+        arena.setRespawnDelayTicks(section.getInt("respawn-delay-ticks", 0));
+        arena.setAutoReset(section.getBoolean("auto-reset", true));
         arena.setEnabled(section.getBoolean("enabled", true));
         arena.setSetupComplete(section.getBoolean("setup-complete", false));
+        // Heal ready state for arenas that already have all required points
+        if (!arena.missingRequirements().isEmpty()) {
+            arena.setupComplete = false;
+        } else {
+            arena.setupComplete = true;
+        }
         return arena;
     }
 

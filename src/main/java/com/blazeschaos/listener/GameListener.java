@@ -31,11 +31,12 @@ public final class GameListener implements Listener {
     @EventHandler
     public void onJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (plugin.lobbyManager().getLobbyLocation() != null
-                && plugin.gameManager().getByPlayer(player) == null) {
-            plugin.lobbyManager().giveJoinItem(player);
-            plugin.lobbyManager().setupLobbyScoreboard(player);
+        if (plugin.gameManager().getByPlayer(player) != null) {
+            return;
         }
+        plugin.lobbyManager().giveJoinItem(player);
+        plugin.scoreboardManager().applyLobby(player);
+        plugin.tablistManager().apply(player);
     }
 
     @EventHandler
@@ -125,7 +126,10 @@ public final class GameListener implements Listener {
         }
         if (plugin.lobbyManager().isJoinItem(event.getItem())) {
             event.setCancelled(true);
-            plugin.setupGui().openJoinMenu(player);
+            if (plugin.setupMode().isInSetup(player)) {
+                return;
+            }
+            plugin.gameManager().join(player, null);
             return;
         }
         if (plugin.lobbyManager().isLeaveItem(event.getItem())) {

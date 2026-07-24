@@ -1,5 +1,8 @@
 # Blaze's Chaos - Main Configuration
 
+language: en
+# language: ro
+
 settings:
   prefix: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> "
   min-players: 2

@@ -54,12 +54,12 @@ public final class LobbyManager {
 
     public boolean teleport(@NotNull Player player) {
         if (lobbyLocation == null) {
-            plugin.configs().send(player, "lobby.not-set");
+            plugin.lang().send(player, "lobby.not-set");
             return false;
         }
         player.teleport(lobbyLocation);
         giveJoinItem(player);
-        plugin.configs().send(player, "lobby.teleported");
+        plugin.lang().send(player, "lobby.teleported");
         return true;
     }
 

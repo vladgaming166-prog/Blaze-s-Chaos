@@ -27,9 +27,8 @@ Aliases: `/bc`, `/bchaos`, `/blazechaos`
 | `/bc lobby` | Teleport to lobby |
 | `/bc setlobby` | Set global lobby |
 | `/bc list` | List arenas |
-| `/bc createarena <name>` | Create an arena |
 | `/bc deletearena <name>` | Delete an arena |
-| `/bc setup [arena]` | Open setup GUI |
+| `/bc setup` | Enter hotbar setup mode (chat-create if needed) |
 | `/bc forcestart` | Force start |
 | `/bc stop` | Stop the game |
 | `/bc next` | Force next chaos event |
@@ -53,3 +52,8 @@ Aliases: `/bc`, `/bchaos`, `/blazechaos`
 ## Config Files
 
 `config.yml`, `messages.yml`, `events.yml`, `arenas.yml`, `scoreboardconfig.yml`, `gui.yml`, `worldreset.yml`, `permissions.yml`
+
+## Language
+
+Set `language: en` or `language: ro` in `config.yml`.
+Files: `lang/english.yml`, `lang/romanian.yml`.

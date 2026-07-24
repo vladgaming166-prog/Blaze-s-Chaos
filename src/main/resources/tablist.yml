@@ -1,0 +1,54 @@
+enabled: true
+update-interval: 40
+
+animations:
+  enabled: true
+  frame-interval: 20
+  header-frames:
+    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
+    - "<gradient:#FFD700:#FF4500><bold>Blaze's Chaos</bold></gradient>"
+  footer-frames:
+    - "<gray>Survive the chaos</gray>"
+    - "<yellow>Last player standing</yellow>"
+
+server-lobby:
+  header:
+    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
+    - "<gray>play.example.ro</gray>"
+  footer:
+    - ""
+    - "<white>Online:</white> <aqua>%server_online%</aqua>"
+    - "<white>Wins:</white> <green>%blazechaos_wins%</green>"
+    - "<gray>discord.gg/example</gray>"
+
+waiting:
+  header:
+    - "<gradient:#FF4500:#FFD700><bold>Waiting</bold></gradient>"
+    - "<aqua>%blazechaos_map%</aqua>"
+  footer:
+    - "<gray>Players:</gray> <yellow>%blazechaos_players%</yellow>"
+
+starting:
+  header:
+    - "<gold><bold>Starting...</bold></gold>"
+  footer:
+    - "<yellow>%blazechaos_players% players</yellow>"
+
+playing:
+  header:
+    - "<gradient:#FF4500:#FFD700><bold>IN GAME</bold></gradient>"
+    - "<yellow>%blazechaos_event%</yellow>"
+  footer:
+    - "<red>Alive: %blazechaos_alive%</red> <gray>|</gray> <aqua>Next: %blazechaos_next_event%s</aqua>"
+
+spectator:
+  header:
+    - "<gray><bold>Spectating</bold></gray>"
+  footer:
+    - "<dark_gray>You were eliminated</dark_gray>"
+
+ending:
+  header:
+    - "<gold><bold>Game Over</bold></gold>"
+  footer:
+    - "<yellow>Thanks for playing!</yellow>"

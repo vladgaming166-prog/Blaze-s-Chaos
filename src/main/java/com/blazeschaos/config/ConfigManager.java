@@ -1,7 +1,7 @@
 package com.blazeschaos.config;
 
 import com.blazeschaos.BlazesChaosPlugin;
-import com.blazeschaos.util.ColorUtil;
+import com.blazeschaos.lang.LanguageManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -23,13 +22,13 @@ public final class ConfigManager {
     private final BlazesChaosPlugin plugin;
 
     private FileConfiguration config;
-    private FileConfiguration messages;
     private FileConfiguration events;
     private FileConfiguration arenas;
     private FileConfiguration scoreboard;
-    private FileConfiguration gui;
+    private FileConfiguration tablist;
     private FileConfiguration worldReset;
     private FileConfiguration permissions;
+    private LanguageManager languageManager;
 
     public ConfigManager(@NotNull BlazesChaosPlugin plugin) {
         this.plugin = plugin;
@@ -39,25 +38,32 @@ public final class ConfigManager {
         plugin.saveDefaultConfig();
         config = plugin.getConfig();
 
-        messages = loadYaml("messages.yml");
         events = loadYaml("events.yml");
         arenas = loadYaml("arenas.yml");
         scoreboard = loadYaml("scoreboardconfig.yml");
-        gui = loadYaml("gui.yml");
+        tablist = loadYaml("tablist.yml");
         worldReset = loadYaml("worldreset.yml");
         permissions = loadYaml("permissions.yml");
+        // Keep messages.yml for backwards compatibility but language files are authoritative
+        loadYaml("messages.yml");
+
+        languageManager = new LanguageManager(plugin);
+        languageManager.load();
     }
 
     public void reloadAll() {
         plugin.reloadConfig();
         config = plugin.getConfig();
-        messages = reloadYaml("messages.yml");
         events = reloadYaml("events.yml");
         arenas = reloadYaml("arenas.yml");
         scoreboard = reloadYaml("scoreboardconfig.yml");
-        gui = reloadYaml("gui.yml");
+        tablist = reloadYaml("tablist.yml");
         worldReset = reloadYaml("worldreset.yml");
         permissions = reloadYaml("permissions.yml");
+        if (languageManager == null) {
+            languageManager = new LanguageManager(plugin);
+        }
+        languageManager.load();
     }
 
     private @NotNull FileConfiguration loadYaml(@NotNull String name) {
@@ -71,13 +77,7 @@ public final class ConfigManager {
     }
 
     private @NotNull FileConfiguration reloadYaml(@NotNull String name) {
-        File file = new File(plugin.getDataFolder(), name);
-        if (!file.exists()) {
-            plugin.saveResource(name, false);
-        }
-        FileConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-        mergeDefaults(yaml, name);
-        return yaml;
+        return loadYaml(name);
     }
 
     private void mergeDefaults(@NotNull FileConfiguration yaml, @NotNull String name) {
@@ -106,36 +106,36 @@ public final class ConfigManager {
         }
     }
 
+    public @NotNull LanguageManager lang() {
+        return languageManager;
+    }
+
     public @NotNull String rawMessage(@NotNull String path) {
-        return messages.getString(path, "<red>Missing message: " + path + "</red>");
+        return languageManager.raw(path);
     }
 
     public @NotNull Component message(@NotNull String path) {
-        return ColorUtil.parse(prefix() + rawMessage(path));
+        return languageManager.component(path);
     }
 
     public @NotNull Component message(@NotNull String path, @NotNull Map<String, String> placeholders) {
-        String text = prefix() + rawMessage(path);
-        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
-            text = text.replace("%" + entry.getKey() + "%", entry.getValue());
-        }
-        return ColorUtil.parse(text);
+        return languageManager.component(path, placeholders);
     }
 
     public void send(@NotNull CommandSender sender, @NotNull String path) {
-        sender.sendMessage(message(path));
+        languageManager.send(sender, path);
     }
 
     public void send(@NotNull CommandSender sender, @NotNull String path, @NotNull Map<String, String> placeholders) {
-        sender.sendMessage(message(path, placeholders));
+        languageManager.send(sender, path, placeholders);
     }
 
     public @NotNull List<String> helpLines() {
-        return messages.getStringList("help");
+        return languageManager.list("help");
     }
 
     public @NotNull String prefix() {
-        return messages.getString("prefix", config.getString("settings.prefix", ""));
+        return languageManager.prefix();
     }
 
     public @NotNull FileConfiguration config() {
@@ -143,7 +143,7 @@ public final class ConfigManager {
     }
 
     public @NotNull FileConfiguration messages() {
-        return messages;
+        return languageManager.yaml();
     }
 
     public @NotNull FileConfiguration events() {
@@ -158,8 +158,12 @@ public final class ConfigManager {
         return scoreboard;
     }
 
+    public @NotNull FileConfiguration tablist() {
+        return tablist;
+    }
+
     public @NotNull FileConfiguration gui() {
-        return gui;
+        return scoreboard; // GUI removed; keep method for compatibility
     }
 
     public @NotNull FileConfiguration worldReset() {

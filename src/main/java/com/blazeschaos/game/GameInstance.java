@@ -51,8 +51,12 @@ public final class GameInstance {
     public GameInstance(@NotNull BlazesChaosPlugin plugin, @NotNull Arena arena) {
         this.plugin = plugin;
         this.arena = arena;
-        this.countdown = plugin.configs().config().getInt("settings.countdown-seconds", 30);
+        this.countdown = arena.getCountdownSeconds();
         resetChaosTimer();
+    }
+
+    public int getCountdownSecondsLeft() {
+        return Math.max(0, countdown);
     }
 
     public @NotNull Arena getArena() {
@@ -176,7 +180,7 @@ public final class GameInstance {
 
     public void broadcastRaw(@NotNull String mini) {
         for (Player player : getPlayers()) {
-            player.sendMessage(ColorUtil.parse(plugin.configs().prefix() + mini));
+            player.sendMessage(ColorUtil.parse(plugin.lang().prefix() + mini));
         }
     }
 
@@ -197,7 +201,7 @@ public final class GameInstance {
         }
         plugin.lobbyManager().giveLeaveItem(player);
         plugin.scoreboardManager().apply(player, this);
-        plugin.configs().send(player, "game.joined", Map.of("arena", arena.getName()));
+        plugin.lang().send(player, "game.joined", Map.of("arena", arena.getName()));
         if (players.size() >= arena.getMinPlayers() && state == GameState.WAITING) {
             beginCountdown();
         } else if (state == GameState.LOBBY) {
@@ -232,7 +236,7 @@ public final class GameInstance {
             player.teleport(lobby);
         }
         if (voluntary) {
-            plugin.configs().send(player, "game.left");
+            plugin.lang().send(player, "game.left");
         }
         if (state.isActive() && wasAlive) {
             checkWinCondition();
@@ -253,7 +257,7 @@ public final class GameInstance {
             plugin.eventManager().endEvent(this);
         }
         for (Player player : getPlayers()) {
-            plugin.configs().send(player, reasonKey);
+            plugin.lang().send(player, reasonKey);
         }
         endGame(null);
     }
@@ -273,15 +277,15 @@ public final class GameInstance {
 
     private void beginCountdown() {
         state = GameState.STARTING;
-        countdown = plugin.configs().config().getInt("settings.countdown-seconds", 30);
+        countdown = arena.getCountdownSeconds();
         ensureTask();
     }
 
     private void cancelCountdown() {
         state = GameState.WAITING;
-        countdown = plugin.configs().config().getInt("settings.countdown-seconds", 30);
+        countdown = arena.getCountdownSeconds();
         for (Player player : getPlayers()) {
-            plugin.configs().send(player, "game.countdown-cancelled");
+            plugin.lang().send(player, "game.countdown-cancelled");
         }
     }
 
@@ -317,9 +321,9 @@ public final class GameInstance {
             return;
         }
         if (gameTicks % 20 == 0) {
-            if (countdown <= 5 || countdown % 10 == 0 || countdown == plugin.configs().config().getInt("settings.countdown-seconds", 30)) {
+            if (countdown <= 5 || countdown % 10 == 0 || countdown == arena.getCountdownSeconds()) {
                 for (Player player : getPlayers()) {
-                    plugin.configs().send(player, "game.starting", Map.of("time", String.valueOf(countdown)));
+                    plugin.lang().send(player, "game.starting", Map.of("time", String.valueOf(countdown)));
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
                 }
             }
@@ -344,7 +348,7 @@ public final class GameInstance {
             if (spawn != null) {
                 player.teleport(scatter(spawn, players.size()));
             }
-            plugin.configs().send(player, "game.started");
+            plugin.lang().send(player, "game.started");
             player.showTitle(Title.title(
                     ColorUtil.parse("<gradient:#FF4500:#FFD700><bold>CHAOS BEGINS!</bold></gradient>"),
                     ColorUtil.parse("<gray>Survive the chaos</gray>"),
@@ -363,12 +367,12 @@ public final class GameInstance {
 
     private void setupBorder() {
         World world = arena.getWorld();
-        Location spawn = arena.getSpawn();
-        if (world == null || spawn == null) {
+        Location center = arena.getCenter();
+        if (world == null || center == null) {
             return;
         }
         WorldBorder border = world.getWorldBorder();
-        border.setCenter(spawn);
+        border.setCenter(center);
         border.setSize(arena.getBorderSize());
         border.setDamageAmount(arena.getBorderDamage());
         border.setWarningDistance(10);
@@ -396,7 +400,7 @@ public final class GameInstance {
             }
         }
 
-        int deathmatchAfter = plugin.configs().config().getInt("settings.deathmatch-after-seconds", 600);
+        int deathmatchAfter = arena.getDeathmatchAfterSeconds();
         if (state != GameState.DEATHMATCH && getGameSeconds() >= deathmatchAfter) {
             beginDeathmatch();
         }
@@ -413,7 +417,7 @@ public final class GameInstance {
             world.getWorldBorder().setSize(target, seconds);
         }
         for (Player player : getPlayers()) {
-            plugin.configs().send(player, "game.deathmatch");
+            plugin.lang().send(player, "game.deathmatch");
             player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.8f, 1.0f);
         }
     }
@@ -444,7 +448,7 @@ public final class GameInstance {
             }
         }
         for (Player viewer : getPlayers()) {
-            plugin.configs().send(viewer, "game.eliminated", Map.of(
+            plugin.lang().send(viewer, "game.eliminated", Map.of(
                     "player", player.getName(),
                     "alive", String.valueOf(alive.size())
             ));
@@ -489,12 +493,12 @@ public final class GameInstance {
                 plugin.vaultHook().deposit(winnerPlayer, plugin.configs().config().getDouble("rewards.win-money", 100.0));
             }
             for (Player player : getPlayers()) {
-                plugin.configs().send(player, "game.winner", Map.of("player", name));
+                plugin.lang().send(player, "game.winner", Map.of("player", name));
                 plugin.vaultHook().deposit(player, plugin.configs().config().getDouble("rewards.participation-money", 10.0));
             }
         } else {
             for (Player player : getPlayers()) {
-                plugin.configs().send(player, "game.no-winner");
+                plugin.lang().send(player, "game.no-winner");
             }
         }
         ensureTask();
@@ -518,8 +522,7 @@ public final class GameInstance {
         if (world != null) {
             world.getWorldBorder().reset();
         }
-        int delay = plugin.configs().worldReset().getInt("reset-delay-ticks", 40);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> plugin.worldResetManager().resetArenaWorld(arena, () -> {
+        Runnable finish = () -> {
             state = GameState.WAITING;
             gameTicks = 0;
             resetChaosTimer();
@@ -528,7 +531,23 @@ public final class GameInstance {
                 task = null;
             }
             plugin.gameManager().onGameReset(this);
-        }), delay);
+        };
+        int delay = plugin.configs().worldReset().getInt("reset-delay-ticks", 40);
+        if (arena.isAutoReset()) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    if (plugin.gameManager().getByPlayer(p) == null) {
+                        plugin.lang().send(p, "world.resetting");
+                    }
+                }
+                plugin.worldResetManager().resetArenaWorld(arena, () -> {
+                    plugin.getLogger().info("Arena world reset complete: " + arena.getName());
+                    finish.run();
+                });
+            }, delay);
+        } else {
+            Bukkit.getScheduler().runTaskLater(plugin, finish, delay);
+        }
     }
 
     private void restoreInventory(@NotNull Player player) {

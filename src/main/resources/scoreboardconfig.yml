@@ -9,18 +9,47 @@ animations:
     - "<gradient:#FF6347:#FFA500><bold>BLAZE'S CHAOS</bold></gradient>"
   frame-interval: 10
 
-lobby:
+# Hide vanilla sidebar score numbers (15..1)
+hide-scores: true
+
+# Shown when the player is on the SERVER (not in a game / waiting room)
+server-lobby:
   title: "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
   lines:
     - ""
-    - "<gray>Players: <yellow>%blazechaos_players%</yellow>"
+    - "<gray>play.example.ro</gray>"
+    - ""
+    - "<white>Online:</white> <aqua>%server_online%</aqua>"
+    - "<white>Coins:</white> <gold>%vault_eco_balance%</gold>"
+    - "<white>Wins:</white> <green>%blazechaos_wins%</green>"
+    - "<white>Kills:</white> <red>%blazechaos_kills%</red>"
+    - ""
+    - "<gray>Discord:</gray>"
+    - "<aqua>discord.gg/example</aqua>"
+    - ""
+
+# Waiting room (joined arena, not started)
+waiting:
+  title: "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
+  lines:
+    - ""
     - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
+    - "<gray>Players: <yellow>%blazechaos_players%</yellow>"
     - "<gray>State: <green>%blazechaos_state%</green>"
     - ""
     - "<gold>Waiting for players...</gold>"
     - ""
 
-game:
+starting:
+  title: "<gradient:#FF4500:#FFD700><bold>STARTING</bold></gradient>"
+  lines:
+    - ""
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
+    - "<gray>Players: <yellow>%blazechaos_players%</yellow>"
+    - "<gray>Starts in: <gold>%blazechaos_time%s</gold>"
+    - ""
+
+playing:
   title: "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
   lines:
     - ""
@@ -42,5 +71,10 @@ spectator:
     - "<dark_gray>You died!</dark_gray>"
     - ""
 
-# Hide default sidebar score numbers (15..1)
-hide-scores: true
+ending:
+  title: "<gradient:#FFD700:#FF4500><bold>GAME OVER</bold></gradient>"
+  lines:
+    - ""
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
+    - "<gray>Winner soon...</gray>"
+    - ""

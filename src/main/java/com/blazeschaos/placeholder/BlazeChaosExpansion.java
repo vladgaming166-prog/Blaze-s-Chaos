@@ -52,7 +52,7 @@ public final class BlazeChaosExpansion extends PlaceholderExpansion {
             }
             case "next_event" -> game == null ? "-" : String.valueOf(game.getNextEventSeconds());
             case "time" -> game == null ? "0" : String.valueOf(game.getGameSeconds());
-            case "map" -> game == null ? "-" : game.getArena().getName();
+            case "map" -> game == null ? "-" : game.getArena().getDisplayName();
             case "state" -> game == null ? "Lobby" : game.getState().display();
             case "wins" -> {
                 if (player == null) {
@@ -67,6 +67,13 @@ public final class BlazeChaosExpansion extends PlaceholderExpansion {
                 }
                 PlayerStats stats = plugin.database().getStats(player.getUniqueId(), player.getName());
                 yield String.valueOf(stats.games());
+            }
+            case "kills" -> {
+                if (player == null) {
+                    yield "0";
+                }
+                PlayerStats stats = plugin.database().getStats(player.getUniqueId(), player.getName());
+                yield String.valueOf(stats.kills());
             }
             default -> null;
         };

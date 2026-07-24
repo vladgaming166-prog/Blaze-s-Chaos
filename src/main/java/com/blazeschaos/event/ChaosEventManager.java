@@ -140,7 +140,7 @@ public final class ChaosEventManager {
 
         Map<String, String> placeholders = Map.of("event", ColorUtil.strip(display));
         for (Player player : game.getPlayers()) {
-            plugin.configs().send(player, "event.starting", placeholders);
+            plugin.lang().send(player, "event.starting", placeholders);
             if (eventsConfig.getBoolean("announce-title", true)) {
                 player.showTitle(Title.title(
                         ColorUtil.parse("<gradient:#FF4500:#FFD700><bold>CHAOS!</bold></gradient>"),
@@ -166,7 +166,7 @@ public final class ChaosEventManager {
         active.markEnded();
         String display = plugin.configs().events().getString("display-names." + active.getId(), active.getDefaultDisplayName());
         for (Player player : game.getPlayers()) {
-            plugin.configs().send(player, "event.ending", Map.of("event", ColorUtil.strip(display)));
+            plugin.lang().send(player, "event.ending", Map.of("event", ColorUtil.strip(display)));
         }
         game.setActiveEvent(null);
         game.setEventTicksRemaining(0);

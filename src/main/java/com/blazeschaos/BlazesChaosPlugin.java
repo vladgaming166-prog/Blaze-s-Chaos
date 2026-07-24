@@ -6,11 +6,13 @@ import com.blazeschaos.config.ConfigManager;
 import com.blazeschaos.database.DatabaseManager;
 import com.blazeschaos.event.ChaosEventManager;
 import com.blazeschaos.game.GameManager;
-import com.blazeschaos.gui.ArenaSetupGui;
+import com.blazeschaos.lang.LanguageManager;
 import com.blazeschaos.listener.GameListener;
 import com.blazeschaos.lobby.LobbyManager;
 import com.blazeschaos.placeholder.BlazeChaosExpansion;
 import com.blazeschaos.scoreboard.ScoreboardManager;
+import com.blazeschaos.setup.SetupModeManager;
+import com.blazeschaos.tablist.TablistManager;
 import com.blazeschaos.vault.VaultHook;
 import com.blazeschaos.world.WorldResetManager;
 import org.bukkit.Bukkit;
@@ -28,7 +30,8 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private WorldResetManager worldResetManager;
     private LobbyManager lobbyManager;
     private ScoreboardManager scoreboardManager;
-    private ArenaSetupGui setupGui;
+    private TablistManager tablistManager;
+    private SetupModeManager setupModeManager;
     private VaultHook vaultHook;
 
     @Override
@@ -47,8 +50,9 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         this.worldResetManager = new WorldResetManager(this);
         this.lobbyManager = new LobbyManager(this);
         this.scoreboardManager = new ScoreboardManager(this);
+        this.tablistManager = new TablistManager(this);
         this.gameManager = new GameManager(this);
-        this.setupGui = new ArenaSetupGui(this);
+        this.setupModeManager = new SetupModeManager(this);
 
         BlazeChaosCommand command = new BlazeChaosCommand(this);
         PluginCommand pluginCommand = getCommand("bc");
@@ -60,14 +64,17 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         }
 
         Bukkit.getPluginManager().registerEvents(new GameListener(this), this);
+        Bukkit.getPluginManager().registerEvents(setupModeManager, this);
         scoreboardManager.start();
+        tablistManager.start();
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new BlazeChaosExpansion(this).register();
             getLogger().info("PlaceholderAPI hooked.");
         }
 
-        getLogger().info("Blaze's Chaos v" + getPluginMeta().getVersion() + " enabled.");
+        getLogger().info("Blaze's Chaos v" + getPluginMeta().getVersion()
+                + " enabled (lang=" + lang().languageCode() + ").");
     }
 
     @Override
@@ -77,6 +84,9 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         }
         if (scoreboardManager != null) {
             scoreboardManager.stop();
+        }
+        if (tablistManager != null) {
+            tablistManager.stop();
         }
         if (databaseManager != null) {
             databaseManager.disconnect();
@@ -90,10 +100,16 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         worldResetManager.reloadSkip();
         lobbyManager.load();
         arenaManager.load();
+        scoreboardManager.start();
+        tablistManager.start();
     }
 
     public @NotNull ConfigManager configs() {
         return configManager;
+    }
+
+    public @NotNull LanguageManager lang() {
+        return configManager.lang();
     }
 
     public @NotNull DatabaseManager database() {
@@ -124,8 +140,12 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         return scoreboardManager;
     }
 
-    public @NotNull ArenaSetupGui setupGui() {
-        return setupGui;
+    public @NotNull TablistManager tablistManager() {
+        return tablistManager;
+    }
+
+    public @NotNull SetupModeManager setupMode() {
+        return setupModeManager;
     }
 
     public @NotNull VaultHook vaultHook() {

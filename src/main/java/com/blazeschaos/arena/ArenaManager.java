@@ -6,7 +6,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,15 +43,25 @@ public final class ArenaManager {
         FileConfiguration config = plugin.configs().arenas();
         config.set("arenas", null);
         for (Arena arena : arenas.values()) {
-            config.createSection("arenas." + arena.getName(), arena.serialize());
+            for (Map.Entry<String, Object> entry : arena.serialize().entrySet()) {
+                config.set("arenas." + arena.getName() + "." + entry.getKey(), entry.getValue());
+            }
         }
         plugin.configs().saveArenas();
     }
 
+    public void saveArena(@NotNull Arena arena) {
+        arenas.put(arena.getName(), arena);
+        save();
+    }
+
     public @NotNull Arena create(@NotNull String name) {
         Arena arena = new Arena(name);
+        arena.setDisplayName(name);
         arena.setMinPlayers(plugin.configs().config().getInt("settings.min-players", 2));
         arena.setMaxPlayers(plugin.configs().config().getInt("settings.max-players", 24));
+        arena.setCountdownSeconds(plugin.configs().config().getInt("settings.countdown-seconds", 30));
+        arena.setDeathmatchAfterSeconds(plugin.configs().config().getInt("settings.deathmatch-after-seconds", 600));
         arenas.put(arena.getName(), arena);
         save();
         return arena;
@@ -76,9 +88,19 @@ public final class ArenaManager {
         return arenas.values();
     }
 
+    public @NotNull List<Arena> readyArenas() {
+        List<Arena> ready = new ArrayList<>();
+        for (Arena arena : arenas.values()) {
+            if (arena.isReady()) {
+                ready.add(arena);
+            }
+        }
+        return ready;
+    }
+
     public @Nullable Arena findJoinable() {
         for (Arena arena : arenas.values()) {
-            if (arena.isReady() && arena.isEnabled()) {
+            if (arena.isReady()) {
                 return arena;
             }
         }

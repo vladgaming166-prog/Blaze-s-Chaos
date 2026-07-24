@@ -133,22 +133,10 @@ public final class WorldResetManager {
     }
 
     private void refreshLocations(@NotNull Arena arena, @NotNull World world) {
-        if (arena.getLobby() != null) {
-            Location loc = arena.getLobby().clone();
-            loc.setWorld(world);
-            arena.setLobby(loc);
-        }
-        if (arena.getSpawn() != null) {
-            Location loc = arena.getSpawn().clone();
-            loc.setWorld(world);
-            arena.setSpawn(loc);
-        }
-        if (arena.getSpectator() != null) {
-            Location loc = arena.getSpectator().clone();
-            loc.setWorld(world);
-            arena.setSpectator(loc);
-        }
-        plugin.arenaManager().save();
+        // Keep coordinates; rebind world name so StoredLocations resolve after unload/reload.
+        arena.rebindLocationsToWorld(world.getName());
+        arena.setWorldName(world.getName());
+        plugin.arenaManager().saveArena(arena);
     }
 
     private void copyDirectory(@NotNull Path source, @NotNull Path target) throws IOException {
