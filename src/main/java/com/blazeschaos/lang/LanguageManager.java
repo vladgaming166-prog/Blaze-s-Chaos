@@ -83,6 +83,23 @@ public final class LanguageManager {
         return languageCode;
     }
 
+    public boolean setLanguage(@NotNull String code) {
+        String normalized = code.toLowerCase(Locale.ROOT);
+        if (normalized.equals("english")) {
+            normalized = "en";
+        } else if (normalized.equals("romanian")) {
+            normalized = "ro";
+        }
+        if (!normalized.equals("en") && !normalized.equals("ro")
+                && !normalized.equals("english") && !normalized.equals("romanian")) {
+            return false;
+        }
+        plugin.getConfig().set("language", normalized.equals("ro") || normalized.equals("romanian") ? "ro" : "en");
+        plugin.saveConfig();
+        load();
+        return true;
+    }
+
     public @NotNull String raw(@NotNull String path) {
         String value = lang.getString(path);
         if (value == null) {

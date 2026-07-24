@@ -28,6 +28,8 @@ public final class ConfigManager {
     private FileConfiguration tablist;
     private FileConfiguration worldReset;
     private FileConfiguration permissions;
+    private FileConfiguration shop;
+    private FileConfiguration loot;
     private LanguageManager languageManager;
 
     public ConfigManager(@NotNull BlazesChaosPlugin plugin) {
@@ -44,6 +46,8 @@ public final class ConfigManager {
         tablist = loadYaml("tablist.yml");
         worldReset = loadYaml("worldreset.yml");
         permissions = loadYaml("permissions.yml");
+        shop = loadYaml("shop.yml");
+        loot = loadYaml("loot.yml");
         // Keep messages.yml for backwards compatibility but language files are authoritative
         loadYaml("messages.yml");
 
@@ -60,6 +64,8 @@ public final class ConfigManager {
         tablist = reloadYaml("tablist.yml");
         worldReset = reloadYaml("worldreset.yml");
         permissions = reloadYaml("permissions.yml");
+        shop = reloadYaml("shop.yml");
+        loot = reloadYaml("loot.yml");
         if (languageManager == null) {
             languageManager = new LanguageManager(plugin);
         }
@@ -160,6 +166,14 @@ public final class ConfigManager {
 
     public @NotNull FileConfiguration tablist() {
         return tablist;
+    }
+
+    public @NotNull FileConfiguration shop() {
+        return shop;
+    }
+
+    public @NotNull FileConfiguration loot() {
+        return loot;
     }
 
     public @NotNull FileConfiguration gui() {

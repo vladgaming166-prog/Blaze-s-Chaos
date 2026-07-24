@@ -33,9 +33,11 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class ChaosEventManager {
@@ -92,31 +94,50 @@ public final class ChaosEventManager {
     }
 
     public int intervalSeconds() {
-        return plugin.configs().events().getInt("interval-seconds", 60);
+        return Math.max(5, plugin.configs().events().getInt("interval-seconds", 60));
     }
 
     public @Nullable ChaosEvent pickRandom(@Nullable ChaosEvent exclude) {
+        List<ChaosEvent> list = exclude == null ? List.of() : List.of(exclude);
+        return pickRandom(list);
+    }
+
+    public @Nullable ChaosEvent pickRandom(@Nullable Collection<ChaosEvent> exclude) {
+        Set<String> excluded = new HashSet<>();
+        if (exclude != null) {
+            for (ChaosEvent event : exclude) {
+                excluded.add(event.getId());
+            }
+        }
         List<ChaosEvent> pool = new ArrayList<>();
         int totalWeight = 0;
         for (ChaosEvent event : events.values()) {
             if (!event.isEnabled() || event.getChance() <= 0 || event.isOnCooldown()) {
                 continue;
             }
-            if (exclude != null && exclude.getId().equals(event.getId())) {
+            if (excluded.contains(event.getId())) {
                 continue;
             }
             pool.add(event);
             totalWeight += event.getChance();
         }
         if (pool.isEmpty() || totalWeight <= 0) {
+            pool.clear();
+            totalWeight = 0;
             for (ChaosEvent event : events.values()) {
-                if (event.isEnabled() && event.getChance() > 0) {
+                if (event.isEnabled() && event.getChance() > 0 && !excluded.contains(event.getId())) {
                     pool.add(event);
                     totalWeight += event.getChance();
                 }
             }
         }
         if (pool.isEmpty() || totalWeight <= 0) {
+            // Last resort: any enabled event
+            for (ChaosEvent event : events.values()) {
+                if (event.isEnabled()) {
+                    return event;
+                }
+            }
             return null;
         }
         int roll = ThreadLocalRandom.current().nextInt(totalWeight);
@@ -127,17 +148,16 @@ public final class ChaosEventManager {
                 return event;
             }
         }
-        return pool.get(pool.size() - 1);
+        return pool.getLast();
     }
 
     public void startEvent(@NotNull GameInstance game, @NotNull ChaosEvent event) {
+        game.startChaosEvent(event);
+    }
+
+    public void announce(@NotNull GameInstance game, @NotNull ChaosEvent event) {
         FileConfiguration eventsConfig = plugin.configs().events();
         String display = eventsConfig.getString("display-names." + event.getId(), event.getDefaultDisplayName());
-        game.setActiveEvent(event);
-        game.setState(com.blazeschaos.game.GameState.CHAOS_EVENT);
-        game.setEventTicksRemaining(event.getDurationSeconds() * 20);
-        event.start(game);
-
         Map<String, String> placeholders = Map.of("event", ColorUtil.strip(display));
         for (Player player : game.getPlayers()) {
             plugin.lang().send(player, "event.starting", placeholders);
@@ -158,20 +178,11 @@ public final class ChaosEventManager {
     }
 
     public void endEvent(@NotNull GameInstance game) {
+        // Compatibility: force-end current primary event by starting a clean wave timer
         ChaosEvent active = game.getActiveEvent();
-        if (active == null) {
-            return;
-        }
-        active.end(game);
-        active.markEnded();
-        String display = plugin.configs().events().getString("display-names." + active.getId(), active.getDefaultDisplayName());
-        for (Player player : game.getPlayers()) {
-            plugin.lang().send(player, "event.ending", Map.of("event", ColorUtil.strip(display)));
-        }
-        game.setActiveEvent(null);
-        game.setEventTicksRemaining(0);
-        if (game.getState() == com.blazeschaos.game.GameState.CHAOS_EVENT) {
-            game.setState(com.blazeschaos.game.GameState.PLAYING);
+        if (active != null) {
+            active.end(game);
+            active.markEnded();
         }
         game.resetChaosTimer();
     }

@@ -50,12 +50,62 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             case "next" -> handleNext(sender);
             case "debug" -> handleDebug(sender);
             case "info" -> handleInfo(sender);
+            case "coins", "balance" -> handleCoins(sender);
+            case "shop" -> handleShop(sender);
+            case "language", "lang" -> handleLanguage(sender, args);
+            case "enablerandomchestloot" -> handleLootToggle(sender);
             case "version" -> plugin.lang().send(sender, "general.version",
                     Map.of("version", plugin.getPluginMeta().getVersion()));
             case "createarena" -> plugin.lang().send(sender, "general.unknown-command");
             default -> plugin.lang().send(sender, "general.unknown-command");
         }
         return true;
+    }
+
+    private void handleCoins(@NotNull CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            plugin.lang().send(sender, "general.player-only");
+            return;
+        }
+        plugin.lang().send(player, "coins.balance", Map.of(
+                "balance", String.valueOf(plugin.coinsManager().balance(player))
+        ));
+    }
+
+    private void handleShop(@NotNull CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            plugin.lang().send(sender, "general.player-only");
+            return;
+        }
+        plugin.shopManager().open(player);
+    }
+
+    private void handleLanguage(@NotNull CommandSender sender, @NotNull String[] args) {
+        if (!sender.hasPermission("blazechaos.language")
+                && !sender.hasPermission("blazechaos.admin")
+                && !sender.hasPermission("blazechaos.reload")) {
+            plugin.lang().send(sender, "general.no-permission");
+            return;
+        }
+        if (args.length < 2) {
+            plugin.lang().send(sender, "language.invalid");
+            return;
+        }
+        if (!plugin.lang().setLanguage(args[1])) {
+            plugin.lang().send(sender, "language.invalid");
+            return;
+        }
+        plugin.lang().send(sender, "language.changed", Map.of("language", args[1].toLowerCase(Locale.ROOT)));
+    }
+
+    private void handleLootToggle(@NotNull CommandSender sender) {
+        if (!sender.hasPermission("blazechaos.admin") && !sender.hasPermission("blazechaos.setup")) {
+            plugin.lang().send(sender, "general.no-permission");
+            return;
+        }
+        boolean next = !plugin.lootManager().isEnabled();
+        plugin.lootManager().setEnabled(next);
+        plugin.lang().send(sender, next ? "loot.enabled" : "loot.disabled");
     }
 
     private void sendHelp(@NotNull CommandSender sender) {
@@ -271,13 +321,17 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             return filter(args[0], Arrays.asList(
                     "help", "join", "leave", "lobby", "setlobby", "list", "deletearena",
-                    "setup", "reload", "forcestart", "stop", "next", "debug", "info", "version"
+                    "setup", "reload", "forcestart", "stop", "next", "debug", "info", "version",
+                    "coins", "balance", "shop", "language", "enablerandomchestloot"
             ));
         }
         if (args.length == 2) {
             String sub = args[0].toLowerCase(Locale.ROOT);
             if (sub.equals("join") || sub.equals("setup") || sub.equals("deletearena")) {
                 return filter(args[1], plugin.arenaManager().all().stream().map(Arena::getName).collect(Collectors.toList()));
+            }
+            if (sub.equals("language") || sub.equals("lang")) {
+                return filter(args[1], Arrays.asList("english", "romanian", "en", "ro"));
             }
         }
         return List.of();

@@ -1,0 +1,82 @@
+enabled: false
+
+items-per-chest:
+  min: 4
+  max: 8
+
+pool:
+  stone_sword:
+    material: STONE_SWORD
+    weight: 8
+    amount-min: 1
+    amount-max: 1
+  iron_sword:
+    material: IRON_SWORD
+    weight: 4
+    amount-min: 1
+    amount-max: 1
+  bow:
+    material: BOW
+    weight: 6
+    amount-min: 1
+    amount-max: 1
+  arrows:
+    material: ARROW
+    weight: 10
+    amount-min: 8
+    amount-max: 16
+  bread:
+    material: BREAD
+    weight: 12
+    amount-min: 4
+    amount-max: 12
+  cooked_beef:
+    material: COOKED_BEEF
+    weight: 8
+    amount-min: 2
+    amount-max: 6
+  golden_apple:
+    material: GOLDEN_APPLE
+    weight: 2
+    amount-min: 1
+    amount-max: 1
+  water_bucket:
+    material: WATER_BUCKET
+    weight: 5
+    amount-min: 1
+    amount-max: 1
+  cobblestone:
+    material: COBBLESTONE
+    weight: 10
+    amount-min: 16
+    amount-max: 48
+  oak_planks:
+    material: OAK_PLANKS
+    weight: 10
+    amount-min: 16
+    amount-max: 48
+  iron_pickaxe:
+    material: IRON_PICKAXE
+    weight: 5
+    amount-min: 1
+    amount-max: 1
+  shield:
+    material: SHIELD
+    weight: 4
+    amount-min: 1
+    amount-max: 1
+  torches:
+    material: TORCH
+    weight: 10
+    amount-min: 8
+    amount-max: 24
+  leather_chestplate:
+    material: LEATHER_CHESTPLATE
+    weight: 5
+    amount-min: 1
+    amount-max: 1
+  fishing_rod:
+    material: FISHING_ROD
+    weight: 3
+    amount-min: 1
+    amount-max: 1

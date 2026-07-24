@@ -20,7 +20,7 @@ server-lobby:
     - "<gray>play.example.ro</gray>"
     - ""
     - "<white>Online:</white> <aqua>%server_online%</aqua>"
-    - "<white>Coins:</white> <gold>%vault_eco_balance%</gold>"
+    - "<white>Coins:</white> <gold>%blazechaos_coins%</gold>"
     - "<white>Wins:</white> <green>%blazechaos_wins%</green>"
     - "<white>Kills:</white> <red>%blazechaos_kills%</red>"
     - ""

@@ -1,0 +1,61 @@
+title: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos Shop</bold></gradient>"
+size: 27
+balance-slot: 22
+
+items:
+  trail_flame:
+    slot: 10
+    material: BLAZE_POWDER
+    name: "<gold>Flame Trail</gold>"
+    category: trail
+    cost: 150
+    lore:
+      - "<gray>Cosmetic particle trail</gray>"
+  trail_hearts:
+    slot: 11
+    material: RED_DYE
+    name: "<red>Heart Trail</red>"
+    category: trail
+    cost: 150
+    lore:
+      - "<gray>Leave hearts behind you</gray>"
+  death_lightning:
+    slot: 12
+    material: LIGHTNING_ROD
+    name: "<yellow>Lightning Death</yellow>"
+    category: death
+    cost: 200
+    lore:
+      - "<gray>Lightning strikes on death</gray>"
+  death_explode:
+    slot: 13
+    material: TNT
+    name: "<red>Explosion Death</red>"
+    category: death
+    cost: 250
+    lore:
+      - "<gray>Cosmetic blast on death</gray>"
+  victory_fireworks:
+    slot: 14
+    material: FIREWORK_ROCKET
+    name: "<light_purple>Victory Fireworks</light_purple>"
+    category: victory
+    cost: 300
+    lore:
+      - "<gray>Fireworks when you win</gray>"
+  title_chaos:
+    slot: 15
+    material: NAME_TAG
+    name: "<gradient:#FF4500:#FFD700>Title: Chaos King</gradient>"
+    category: title
+    cost: 400
+    lore:
+      - "<gray>Unlock a special title</gray>"
+  prefix_blaze:
+    slot: 16
+    material: PAPER
+    name: "<gold>Prefix: [Blaze]</gold>"
+    category: prefix
+    cost: 350
+    lore:
+      - "<gray>Chat prefix cosmetic</gray>"

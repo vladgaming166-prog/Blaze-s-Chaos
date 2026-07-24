@@ -1,6 +1,9 @@
 # Chaos Event Configuration
 
 interval-seconds: 60
+first-event-delay-seconds: 20
+max-concurrent-events: 2
+events-per-wave: 1
 announce-sound: ENTITY_ENDER_DRAGON_GROWL
 announce-title: true
 

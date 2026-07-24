@@ -1,6 +1,7 @@
 package com.blazeschaos;
 
 import com.blazeschaos.arena.ArenaManager;
+import com.blazeschaos.coins.CoinsManager;
 import com.blazeschaos.command.BlazeChaosCommand;
 import com.blazeschaos.config.ConfigManager;
 import com.blazeschaos.database.DatabaseManager;
@@ -9,9 +10,11 @@ import com.blazeschaos.game.GameManager;
 import com.blazeschaos.lang.LanguageManager;
 import com.blazeschaos.listener.GameListener;
 import com.blazeschaos.lobby.LobbyManager;
+import com.blazeschaos.loot.LootManager;
 import com.blazeschaos.placeholder.BlazeChaosExpansion;
 import com.blazeschaos.scoreboard.ScoreboardManager;
 import com.blazeschaos.setup.SetupModeManager;
+import com.blazeschaos.shop.ShopManager;
 import com.blazeschaos.tablist.TablistManager;
 import com.blazeschaos.vault.VaultHook;
 import com.blazeschaos.world.WorldResetManager;
@@ -33,6 +36,9 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private TablistManager tablistManager;
     private SetupModeManager setupModeManager;
     private VaultHook vaultHook;
+    private CoinsManager coinsManager;
+    private ShopManager shopManager;
+    private LootManager lootManager;
 
     @Override
     public void onEnable() {
@@ -44,6 +50,10 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
         this.vaultHook = new VaultHook(this);
         vaultHook.hook();
+
+        this.coinsManager = new CoinsManager(this);
+        this.lootManager = new LootManager(this);
+        this.shopManager = new ShopManager(this);
 
         this.arenaManager = new ArenaManager(this);
         this.eventManager = new ChaosEventManager(this);
@@ -65,6 +75,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
         Bukkit.getPluginManager().registerEvents(new GameListener(this), this);
         Bukkit.getPluginManager().registerEvents(setupModeManager, this);
+        Bukkit.getPluginManager().registerEvents(shopManager, this);
         scoreboardManager.start();
         tablistManager.start();
 
@@ -100,6 +111,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         worldResetManager.reloadSkip();
         lobbyManager.load();
         arenaManager.load();
+        lootManager.reload();
         scoreboardManager.start();
         tablistManager.start();
     }
@@ -150,5 +162,17 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
     public @NotNull VaultHook vaultHook() {
         return vaultHook;
+    }
+
+    public @NotNull CoinsManager coinsManager() {
+        return coinsManager;
+    }
+
+    public @NotNull ShopManager shopManager() {
+        return shopManager;
+    }
+
+    public @NotNull LootManager lootManager() {
+        return lootManager;
     }
 }

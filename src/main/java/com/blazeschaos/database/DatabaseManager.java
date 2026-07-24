@@ -10,10 +10,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public final class DatabaseManager {
 
@@ -40,12 +44,30 @@ public final class DatabaseManager {
                             wins INTEGER NOT NULL DEFAULT 0,
                             games INTEGER NOT NULL DEFAULT 0,
                             kills INTEGER NOT NULL DEFAULT 0,
-                            deaths INTEGER NOT NULL DEFAULT 0
+                            deaths INTEGER NOT NULL DEFAULT 0,
+                            coins INTEGER NOT NULL DEFAULT 0,
+                            owned TEXT NOT NULL DEFAULT '',
+                            selected TEXT NOT NULL DEFAULT ''
                         )
                         """);
+                migrate(statement);
             }
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to connect to SQLite", exception);
+        }
+    }
+
+    private void migrate(@NotNull Statement statement) {
+        addColumnIfMissing(statement, "coins", "INTEGER NOT NULL DEFAULT 0");
+        addColumnIfMissing(statement, "owned", "TEXT NOT NULL DEFAULT ''");
+        addColumnIfMissing(statement, "selected", "TEXT NOT NULL DEFAULT ''");
+    }
+
+    private void addColumnIfMissing(@NotNull Statement statement, @NotNull String column, @NotNull String definition) {
+        try {
+            statement.executeUpdate("ALTER TABLE player_stats ADD COLUMN " + column + " " + definition);
+        } catch (SQLException ignored) {
+            // column already exists
         }
     }
 
@@ -70,7 +92,7 @@ public final class DatabaseManager {
             return new PlayerStats(uuid, name, 0, 0, 0, 0);
         }
         try (PreparedStatement select = connection.prepareStatement(
-                "SELECT wins, games, kills, deaths FROM player_stats WHERE uuid = ?")) {
+                "SELECT wins, games, kills, deaths, coins, owned, selected FROM player_stats WHERE uuid = ?")) {
             select.setString(1, uuid.toString());
             try (ResultSet rs = select.executeQuery()) {
                 if (rs.next()) {
@@ -78,11 +100,14 @@ public final class DatabaseManager {
                             rs.getInt("wins"),
                             rs.getInt("games"),
                             rs.getInt("kills"),
-                            rs.getInt("deaths"));
+                            rs.getInt("deaths"),
+                            rs.getInt("coins"),
+                            parseSet(rs.getString("owned")),
+                            parseSet(rs.getString("selected")));
                 }
             }
             try (PreparedStatement insert = connection.prepareStatement(
-                    "INSERT INTO player_stats(uuid, name, wins, games, kills, deaths) VALUES (?, ?, 0, 0, 0, 0)")) {
+                    "INSERT INTO player_stats(uuid, name) VALUES (?, ?)")) {
                 insert.setString(1, uuid.toString());
                 insert.setString(2, name);
                 insert.executeUpdate();
@@ -99,14 +124,17 @@ public final class DatabaseManager {
             return;
         }
         try (PreparedStatement upsert = connection.prepareStatement("""
-                INSERT INTO player_stats(uuid, name, wins, games, kills, deaths)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO player_stats(uuid, name, wins, games, kills, deaths, coins, owned, selected)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
                     name = excluded.name,
                     wins = excluded.wins,
                     games = excluded.games,
                     kills = excluded.kills,
-                    deaths = excluded.deaths
+                    deaths = excluded.deaths,
+                    coins = excluded.coins,
+                    owned = excluded.owned,
+                    selected = excluded.selected
                 """)) {
             upsert.setString(1, stats.uuid().toString());
             upsert.setString(2, stats.name());
@@ -114,6 +142,9 @@ public final class DatabaseManager {
             upsert.setInt(4, stats.games());
             upsert.setInt(5, stats.kills());
             upsert.setInt(6, stats.deaths());
+            upsert.setInt(7, stats.coins());
+            upsert.setString(8, joinSet(stats.ownedCosmetics()));
+            upsert.setString(9, joinSet(stats.selectedCosmetics()));
             upsert.executeUpdate();
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.WARNING, "Failed to save stats for " + stats.uuid(), exception);
@@ -122,8 +153,7 @@ public final class DatabaseManager {
 
     public void addWin(@NotNull UUID uuid, @NotNull String name) {
         PlayerStats stats = getStats(uuid, name);
-        stats = stats.withWins(stats.wins() + 1).withGames(stats.games() + 1);
-        saveStats(stats);
+        saveStats(stats.withWins(stats.wins() + 1));
     }
 
     public void addGame(@NotNull UUID uuid, @NotNull String name) {
@@ -139,5 +169,59 @@ public final class DatabaseManager {
     public void addDeath(@NotNull UUID uuid, @NotNull String name) {
         PlayerStats stats = getStats(uuid, name);
         saveStats(stats.withDeaths(stats.deaths() + 1));
+    }
+
+    public int getCoins(@NotNull UUID uuid, @NotNull String name) {
+        return getStats(uuid, name).coins();
+    }
+
+    public void addCoins(@NotNull UUID uuid, @NotNull String name, int amount) {
+        if (amount == 0) {
+            return;
+        }
+        PlayerStats stats = getStats(uuid, name);
+        saveStats(stats.withCoins(stats.coins() + amount));
+    }
+
+    public boolean removeCoins(@NotNull UUID uuid, @NotNull String name, int amount) {
+        PlayerStats stats = getStats(uuid, name);
+        if (stats.coins() < amount) {
+            return false;
+        }
+        saveStats(stats.withCoins(stats.coins() - amount));
+        return true;
+    }
+
+    public boolean ownsCosmetic(@NotNull UUID uuid, @NotNull String name, @NotNull String id) {
+        return getStats(uuid, name).ownedCosmetics().contains(id.toLowerCase());
+    }
+
+    public void unlockCosmetic(@NotNull UUID uuid, @NotNull String name, @NotNull String id) {
+        PlayerStats stats = getStats(uuid, name);
+        Set<String> owned = new HashSet<>(stats.ownedCosmetics());
+        owned.add(id.toLowerCase());
+        saveStats(stats.withOwned(owned));
+    }
+
+    public void selectCosmetic(@NotNull UUID uuid, @NotNull String name, @NotNull String category, @NotNull String id) {
+        PlayerStats stats = getStats(uuid, name);
+        Set<String> selected = new HashSet<>(stats.selectedCosmetics());
+        selected.removeIf(entry -> entry.startsWith(category.toLowerCase() + ":"));
+        selected.add(category.toLowerCase() + ":" + id.toLowerCase());
+        saveStats(stats.withSelected(selected));
+    }
+
+    private static @NotNull Set<String> parseSet(@NotNull String raw) {
+        if (raw == null || raw.isBlank()) {
+            return new HashSet<>();
+        }
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    private static @NotNull String joinSet(@NotNull Set<String> set) {
+        return String.join(",", set);
     }
 }

@@ -12,6 +12,8 @@ settings:
   deathmatch-after-seconds: 600
   deathmatch-border-size: 50
   ending-seconds: 10
+  spawn-grace-seconds: 5
+  death-lobby-delay-seconds: 5
   allow-rejoin: false
   spectator-on-death: true
   clear-inventory-on-join: true
@@ -31,6 +33,12 @@ settings:
     lore:
       - "<gray>Right-click to leave</gray>"
 
+coins:
+  win: 50
+  kill: 5
+  participation: 10
+  survival-per-minute: 2
+
 rewards:
   win-money: 100.0
   kill-money: 5.0
@@ -41,3 +49,37 @@ debug: false
 lobby:
   location: {}
   npc: {}
+  protect-default-world: false
+
+lobby-items:
+  enabled: true
+  browser:
+    slot: 0
+    material: COMPASS
+    name: "<aqua>Game Browser</aqua>"
+    lore:
+      - "<gray>View active and waiting games</gray>"
+  quick-join:
+    slot: 1
+    material: NETHER_STAR
+    name: "<gradient:#FF4500:#FFD700>Quick Join</gradient>"
+    lore:
+      - "<gray>Join the best available game</gray>"
+  info:
+    slot: 4
+    material: BOOK
+    name: "<yellow>Information</yellow>"
+    lore:
+      - "<gray>Rules, commands and updates</gray>"
+  shop:
+    slot: 7
+    material: EMERALD
+    name: "<green>Shop</green>"
+    lore:
+      - "<gray>Spend coins on cosmetics</gray>"
+  leave:
+    slot: 8
+    material: RED_BED
+    name: "<red>Leave / Lobby</red>"
+    lore:
+      - "<gray>Return to lobby</gray>"

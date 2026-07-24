@@ -77,6 +77,8 @@ game:
   force-started: "<green>Game force-started.</green>"
   stopped: "<red>Game stopped by an admin.</red>"
   deathmatch: "<dark_red><bold>DEATHMATCH!</bold></dark_red> <red>The border is collapsing!</red>"
+  death-lobby-soon: "<gray>Returning to lobby in <yellow>%time%</yellow>s...</gray>"
+  sent-to-lobby: "<green>You were sent to the lobby.</green>"
   countdown-cancelled: "<yellow>Countdown cancelled — not enough players.</yellow>"
   no-arenas: "<red>No playable arenas found. Ask an admin to finish setup.</red>"
 
@@ -168,3 +170,58 @@ help:
   - "<yellow>/bc next</yellow> <gray>- Force next event</gray>"
   - "<yellow>/bc reload</yellow> <gray>- Reload configs</gray>"
   - "<yellow>/bc debug</yellow> <gray>- Toggle debug</gray>"
+
+coins:
+  balance: "<gold>Coins:</gold> <yellow>%balance%</yellow>"
+  win: "<green>+%amount% coins</green> <gray>(win)</gray> <dark_gray>[%balance%]</dark_gray>"
+  kill: "<green>+%amount% coins</green> <gray>(kill)</gray> <dark_gray>[%balance%]</dark_gray>"
+  participation: "<green>+%amount% coins</green> <gray>(participation)</gray> <dark_gray>[%balance%]</dark_gray>"
+  survival: "<green>+%amount% coins</green> <gray>(survival)</gray> <dark_gray>[%balance%]</dark_gray>"
+
+shop:
+  purchased: "<green>Purchased <yellow>%item%</yellow> for <gold>%cost%</gold> coins!</green>"
+  selected: "<aqua>Selected <yellow>%item%</yellow>.</aqua>"
+  not-enough: "<red>Not enough coins!</red> <gray>(need %cost%, have %balance%)</gray>"
+
+browser:
+  header: "<gold>==== Game Browser ====</gold>"
+  entry: "<yellow>%arena%</yellow> <gray>|</gray> <aqua>%state%</aqua> <gray>|</gray> <white>%players%/%max%</white>"
+  empty: "<red>No arenas found.</red>"
+  footer: "<gray>Use Quick Join or /bc join <arena></gray>"
+
+info:
+  lines:
+    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
+    - "<gray>Survive random chaos events. Last player wins.</gray>"
+    - "<yellow>/bc join</yellow> <gray>- join a game</gray>"
+    - "<yellow>/bc shop</yellow> <gray>- open the shop</gray>"
+    - "<yellow>/bc coins</yellow> <gray>- check balance</gray>"
+    - "<gold>Your coins:</gold> <yellow>%coins%</yellow>"
+
+bossbar:
+  waiting: "<yellow>Waiting for players...</yellow>"
+  starting: "<green>Starting in %time%s</green>"
+  playing: "<red>Survive the chaos!</red>"
+  event: "<gold>%event%</gold> <gray>| next %next%s</gray>"
+  next-event: "<aqua>Next chaos in %next%s</aqua>"
+  deathmatch: "<dark_red>DEATHMATCH</dark_red>"
+  spectator: "<gray>Spectating...</gray>"
+  ending: "<gold>Winner: %winner%</gold>"
+  ending-none: "<gray>Game over</gray>"
+
+actionbar:
+  starting: "<gold>Starting in %time%s</gold>"
+
+language:
+  changed: "<green>Language set to <yellow>%language%</yellow>.</green>"
+  invalid: "<red>Use: /bc language english|romanian</red>"
+
+loot:
+  enabled: "<green>Random chest loot enabled.</green>"
+  disabled: "<yellow>Random chest loot disabled.</yellow>"
+
+lobby-items:
+  leave-game:
+    name: "<red>Leave Game</red>"
+    lore:
+      - "<gray>Right-click to leave</gray>"

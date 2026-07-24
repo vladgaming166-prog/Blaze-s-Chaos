@@ -77,6 +77,8 @@ game:
   force-started: "<green>Jocul a fost forțat să înceapă.</green>"
   stopped: "<red>Jocul a fost oprit de un admin.</red>"
   deathmatch: "<dark_red><bold>DEATHMATCH!</bold></dark_red> <red>Borderul se micșorează!</red>"
+  death-lobby-soon: "<gray>Te întorci în lobby în <yellow>%time%</yellow>s...</gray>"
+  sent-to-lobby: "<green>Ai fost trimis în lobby.</green>"
   countdown-cancelled: "<yellow>Countdown anulat — nu sunt destui jucători.</yellow>"
   no-arenas: "<red>Nu există arene jucabile. Cere unui admin să termine setup-ul.</red>"
 
@@ -168,3 +170,58 @@ help:
   - "<yellow>/bc next</yellow> <gray>- Forțează următorul eveniment</gray>"
   - "<yellow>/bc reload</yellow> <gray>- Reîncarcă configurile</gray>"
   - "<yellow>/bc debug</yellow> <gray>- Comută debug</gray>"
+
+coins:
+  balance: "<gold>Coins:</gold> <yellow>%balance%</yellow>"
+  win: "<green>+%amount% coins</green> <gray>(victorie)</gray> <dark_gray>[%balance%]</dark_gray>"
+  kill: "<green>+%amount% coins</green> <gray>(kill)</gray> <dark_gray>[%balance%]</dark_gray>"
+  participation: "<green>+%amount% coins</green> <gray>(participare)</gray> <dark_gray>[%balance%]</dark_gray>"
+  survival: "<green>+%amount% coins</green> <gray>(supraviețuire)</gray> <dark_gray>[%balance%]</dark_gray>"
+
+shop:
+  purchased: "<green>Ai cumpărat <yellow>%item%</yellow> pentru <gold>%cost%</gold> coins!</green>"
+  selected: "<aqua>Ai selectat <yellow>%item%</yellow>.</aqua>"
+  not-enough: "<red>Nu ai destule coins!</red> <gray>(îți trebuie %cost%, ai %balance%)</gray>"
+
+browser:
+  header: "<gold>==== Browser Jocuri ====</gold>"
+  entry: "<yellow>%arena%</yellow> <gray>|</gray> <aqua>%state%</aqua> <gray>|</gray> <white>%players%/%max%</white>"
+  empty: "<red>Nu există arene.</red>"
+  footer: "<gray>Folosește Quick Join sau /bc join <arena></gray>"
+
+info:
+  lines:
+    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
+    - "<gray>Supraviețuiește evenimentelor haotice. Ultimul jucător câștigă.</gray>"
+    - "<yellow>/bc join</yellow> <gray>- intră într-un joc</gray>"
+    - "<yellow>/bc shop</yellow> <gray>- deschide shop-ul</gray>"
+    - "<yellow>/bc coins</yellow> <gray>- verifică balanța</gray>"
+    - "<gold>Coins:</gold> <yellow>%coins%</yellow>"
+
+bossbar:
+  waiting: "<yellow>Se așteaptă jucători...</yellow>"
+  starting: "<green>Începe în %time%s</green>"
+  playing: "<red>Supraviețuiește haosului!</red>"
+  event: "<gold>%event%</gold> <gray>| următorul %next%s</gray>"
+  next-event: "<aqua>Următorul haos în %next%s</aqua>"
+  deathmatch: "<dark_red>DEATHMATCH</dark_red>"
+  spectator: "<gray>Spectare...</gray>"
+  ending: "<gold>Câștigător: %winner%</gold>"
+  ending-none: "<gray>Joc terminat</gray>"
+
+actionbar:
+  starting: "<gold>Începe în %time%s</gold>"
+
+language:
+  changed: "<green>Limba setată pe <yellow>%language%</yellow>.</green>"
+  invalid: "<red>Folosește: /bc language english|romanian</red>"
+
+loot:
+  enabled: "<green>Loot random pentru cufere activat.</green>"
+  disabled: "<yellow>Loot random pentru cufere dezactivat.</yellow>"
+
+lobby-items:
+  leave-game:
+    name: "<red>Părăsește Jocul</red>"
+    lore:
+      - "<gray>Click dreapta pentru a ieși</gray>"

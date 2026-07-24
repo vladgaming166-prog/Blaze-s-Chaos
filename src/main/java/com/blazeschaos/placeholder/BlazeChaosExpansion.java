@@ -75,6 +75,12 @@ public final class BlazeChaosExpansion extends PlaceholderExpansion {
                 PlayerStats stats = plugin.database().getStats(player.getUniqueId(), player.getName());
                 yield String.valueOf(stats.kills());
             }
+            case "coins", "balance" -> {
+                if (player == null) {
+                    yield "0";
+                }
+                yield String.valueOf(plugin.database().getCoins(player.getUniqueId(), player.getName()));
+            }
             default -> null;
         };
     }

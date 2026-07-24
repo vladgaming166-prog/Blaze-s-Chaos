@@ -35,5 +35,14 @@ permissions:
     description: Stop a running game
     default: op
   blazechaos.debug:
-    description: Debug commands
+    description: Debug mode
+    default: op
+  blazechaos.build:
+    description: Bypass lobby world protection
+    default: op
+  blazechaos.language:
+    description: Change plugin language
+    default: true
+  blazechaos.next:
+    description: Force next chaos event
     default: op

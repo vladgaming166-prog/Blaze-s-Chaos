@@ -121,7 +121,8 @@ public final class TablistManager {
         text = text
                 .replace("%blazechaos_wins%", String.valueOf(stats.wins()))
                 .replace("%blazechaos_games%", String.valueOf(stats.games()))
-                .replace("%blazechaos_kills%", String.valueOf(stats.kills()));
+                .replace("%blazechaos_kills%", String.valueOf(stats.kills()))
+                .replace("%blazechaos_coins%", String.valueOf(stats.coins()));
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             text = PlaceholderAPI.setPlaceholders(player, text);

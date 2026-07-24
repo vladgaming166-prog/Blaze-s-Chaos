@@ -2,23 +2,38 @@ package com.blazeschaos.listener;
 
 import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.game.GameInstance;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
+import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public final class GameListener implements Listener {
 
@@ -34,7 +49,7 @@ public final class GameListener implements Listener {
         if (plugin.gameManager().getByPlayer(player) != null) {
             return;
         }
-        plugin.lobbyManager().giveJoinItem(player);
+        plugin.lobbyManager().giveLobbyItems(player);
         plugin.scoreboardManager().applyLobby(player);
         plugin.tablistManager().apply(player);
     }
@@ -47,8 +62,7 @@ public final class GameListener implements Listener {
             if (game.getState().isActive() && game.isAlive(player.getUniqueId())) {
                 game.eliminate(player, null);
             }
-            game.leave(player, false);
-            plugin.gameManager().untrack(player);
+            game.fullyRemovePlayer(player, false);
         }
         plugin.scoreboardManager().remove(player);
     }
@@ -60,9 +74,21 @@ public final class GameListener implements Listener {
         if (game == null || !game.getState().isActive()) {
             return;
         }
-        event.setKeepInventory(false);
+        event.setKeepInventory(true);
+        event.getDrops().clear();
+        event.setDroppedExp(0);
         Player killer = player.getKiller();
-        game.eliminate(player, killer);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                player.spigot().respawn();
+            }
+            if (game.isAlive(player.getUniqueId()) || game.isSpectator(player.getUniqueId())
+                    || game.contains(player.getUniqueId())) {
+                if (game.isAlive(player.getUniqueId())) {
+                    game.eliminate(player, killer);
+                }
+            }
+        });
     }
 
     @EventHandler
@@ -73,6 +99,7 @@ public final class GameListener implements Listener {
             if (plugin.lobbyManager().getLobbyLocation() != null) {
                 event.setRespawnLocation(plugin.lobbyManager().getLobbyLocation());
             }
+            Bukkit.getScheduler().runTask(plugin, () -> plugin.lobbyManager().giveLobbyItems(player));
             return;
         }
         if (game.getArena().getSpectator() != null) {
@@ -82,7 +109,7 @@ public final class GameListener implements Listener {
         }
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void onDamage(@NotNull EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
@@ -95,7 +122,7 @@ public final class GameListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (!game.isAlive(player.getUniqueId())) {
+        if (!game.isAlive(player.getUniqueId()) || game.isInGrace(player.getUniqueId())) {
             event.setCancelled(true);
             return;
         }
@@ -121,18 +148,23 @@ public final class GameListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        if (event.getItem() == null) {
+        ItemStack item = event.getItem();
+        if (item == null) {
             return;
         }
-        if (plugin.lobbyManager().isJoinItem(event.getItem())) {
+        if (plugin.setupMode().isInSetup(player)) {
+            return;
+        }
+        String lobbyId = plugin.lobbyManager().lobbyItemId(item);
+        if (lobbyId != null) {
             event.setCancelled(true);
-            if (plugin.setupMode().isInSetup(player)) {
+            if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
                 return;
             }
-            plugin.gameManager().join(player, null);
+            plugin.lobbyManager().handleLobbyItem(player, lobbyId);
             return;
         }
-        if (plugin.lobbyManager().isLeaveItem(event.getItem())) {
+        if (plugin.lobbyManager().isLeaveItem(item)) {
             event.setCancelled(true);
             plugin.gameManager().leave(player);
         }
@@ -140,31 +172,134 @@ public final class GameListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onBreak(@NotNull BlockBreakEvent event) {
-        GameInstance game = plugin.gameManager().getByPlayer(event.getPlayer());
-        if (game == null) {
+        Player player = event.getPlayer();
+        if (protectLobby(player)) {
+            event.setCancelled(true);
             return;
         }
-        if (!game.getState().isActive()) {
+        GameInstance game = plugin.gameManager().getByPlayer(player);
+        if (game != null && !game.getState().isActive()) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlace(@NotNull BlockPlaceEvent event) {
-        GameInstance game = plugin.gameManager().getByPlayer(event.getPlayer());
-        if (game == null) {
+        Player player = event.getPlayer();
+        if (protectLobby(player)) {
+            event.setCancelled(true);
             return;
         }
-        if (!game.getState().isActive()) {
+        GameInstance game = plugin.gameManager().getByPlayer(player);
+        if (game != null && !game.getState().isActive()) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBucketEmpty(@NotNull PlayerBucketEmptyEvent event) {
+        if (protectLobby(event.getPlayer())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBucketFill(@NotNull PlayerBucketFillEvent event) {
+        if (protectLobby(event.getPlayer())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onHangingBreak(@NotNull HangingBreakByEntityEvent event) {
+        if (event.getRemover() instanceof Player player && protectLobby(player)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onEntityDamageByEntity(@NotNull EntityDamageByEntityEvent event) {
+        Entity damager = event.getDamager();
+        Player player = null;
+        if (damager instanceof Player p) {
+            player = p;
+        } else if (damager instanceof Projectile projectile && projectile.getShooter() instanceof Player shooter) {
+            player = shooter;
+        }
+        if (player == null || !protectLobby(player)) {
+            return;
+        }
+        Entity victim = event.getEntity();
+        if (victim instanceof ItemFrame || victim instanceof ArmorStand || victim instanceof Player) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onDrop(@NotNull PlayerDropItemEvent event) {
+        if (plugin.lobbyManager().isLobbyItem(event.getItemDrop().getItemStack())) {
+            event.setCancelled(true);
+            return;
+        }
         GameInstance game = plugin.gameManager().getByPlayer(event.getPlayer());
         if (game != null && game.getState().isJoinable()) {
             event.setCancelled(true);
         }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onSwap(@NotNull PlayerSwapHandItemsEvent event) {
+        if (plugin.lobbyManager().isLobbyItem(event.getMainHandItem())
+                || plugin.lobbyManager().isLobbyItem(event.getOffHandItem())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onInventoryClick(@NotNull InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+        if (plugin.setupMode().isInSetup(player) || plugin.gameManager().getByPlayer(player) != null) {
+            return;
+        }
+        ItemStack current = event.getCurrentItem();
+        ItemStack cursor = event.getCursor();
+        if (plugin.lobbyManager().isLobbyItem(current) || plugin.lobbyManager().isLobbyItem(cursor)) {
+            event.setCancelled(true);
+        }
+        if (event.getHotbarButton() >= 0) {
+            ItemStack hotbar = player.getInventory().getItem(event.getHotbarButton());
+            if (plugin.lobbyManager().isLobbyItem(hotbar)) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onDrag(@NotNull InventoryDragEvent event) {
+        if (plugin.lobbyManager().isLobbyItem(event.getOldCursor()) || plugin.lobbyManager().isLobbyItem(event.getCursor())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onCraft(@NotNull CraftItemEvent event) {
+        for (ItemStack matrix : event.getInventory().getMatrix()) {
+            if (plugin.lobbyManager().isLobbyItem(matrix)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    private boolean protectLobby(@NotNull Player player) {
+        if (player.isOp() || player.hasPermission("blazechaos.build") || player.hasPermission("blazechaos.admin")) {
+            return false;
+        }
+        if (plugin.setupMode().isInSetup(player)) {
+            return false;
+        }
+        return plugin.lobbyManager().isLobbyWorld(player.getWorld());
     }
 }

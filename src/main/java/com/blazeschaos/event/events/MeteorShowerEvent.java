@@ -3,8 +3,7 @@ package com.blazeschaos.event.events;
 import com.blazeschaos.event.ChaosEvent;
 import com.blazeschaos.game.GameInstance;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -43,17 +42,20 @@ public final class MeteorShowerEvent extends ChaosEvent {
             Player target = alive.get(random.nextInt(alive.size()));
             Location loc = target.getLocation().clone().add(
                     random.nextInt(-10, 11),
-                    random.nextInt(12, 22),
+                    random.nextInt(14, 24),
                     random.nextInt(-10, 11));
-            FallingBlock meteor = loc.getWorld().spawnFallingBlock(loc, Material.MAGMA_BLOCK.createBlockData());
-            meteor.setDropItem(false);
-            meteor.setHurtEntities(true);
-            meteor.setVelocity(new Vector(
-                    random.nextDouble(-0.3, 0.3),
-                    -1.2,
-                    random.nextDouble(-0.3, 0.3)));
-            game.trackEntity(meteor);
-            game.scheduleMeteorExplosion(loc.clone().subtract(0, 15, 0), power);
+            if (loc.getWorld() == null) {
+                continue;
+            }
+            Fireball fireball = loc.getWorld().spawn(loc, Fireball.class);
+            fireball.setDirection(new Vector(
+                    random.nextDouble(-0.2, 0.2),
+                    -1.0,
+                    random.nextDouble(-0.2, 0.2)));
+            fireball.setYield(power);
+            fireball.setIsIncendiary(true);
+            fireball.setShooter(null);
+            game.trackEntity(fireball);
         }
     }
 
