@@ -5,7 +5,7 @@ language: en
 # language: ro
 
 settings:
-  prefix: "<gold><bold>Blaze's Chaos</bold></gold> <gray>»</gray> "
+  prefix: "%blazechaosanimation_prefix% <gray>»</gray> "
   min-players: 2
   max-players: 24
   countdown-seconds: 30
@@ -23,7 +23,7 @@ settings:
     enabled: true
     slot: 0
     material: BLAZE_POWDER
-    name: "<gold>Join Blaze's Chaos</gold>"
+    name: "<gradient:#FF4500:#FFD700>Join Blaze's Chaos</gradient>"
     lore:
       - "<gray>Right-click to join!</gray>"
   leave-item:
@@ -138,7 +138,7 @@ lobby-items:
   quick-join:
     slot: 1
     material: NETHER_STAR
-    name: "<gold>Quick Join</gold>"
+    name: "<gradient:#FF4500:#FFD700>Quick Join</gradient>"
     lore:
       - "<gray>Join the best available game</gray>"
   info:

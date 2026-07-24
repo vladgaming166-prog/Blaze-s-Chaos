@@ -110,27 +110,42 @@ public final class ConfigManager {
                     changed = true;
                 }
             }
-            // Restore classic premium colors (strip legacy hex brand gradients)
-            for (String key : config.getKeys(true)) {
-                if (config.isConfigurationSection(key) || config.isList(key)) {
-                    continue;
-                }
+            // Restore animated brand prefix / lobby item gradients (Update 3–4)
+            for (String key : List.of(
+                    "settings.prefix",
+                    "prefix",
+                    "lobby-items.join.name",
+                    "lobby-items.quick-join.name",
+                    "lobby.items.join.name",
+                    "lobby.items.quick-join.name"
+            )) {
                 String value = config.getString(key);
-                if (value == null || !value.contains("gradient:#")) {
+                if (value == null) {
                     continue;
                 }
-                String migrated = value
-                        .replaceAll("(?i)<gradient:#FF4500:#FFD700>(.*?)</gradient>", "<gold>$1</gold>")
-                        .replaceAll("(?i)<gradient:#FFD700:#FF4500>(.*?)</gradient>", "<gold>$1</gold>")
-                        .replaceAll("(?i)<gradient:#FF6347:#FFA500>(.*?)</gradient>", "<gold>$1</gold>");
-                if (!migrated.equals(value)) {
-                    config.set(key, migrated);
-                    changed = true;
+                if (value.contains("%blazechaosanimation_prefix%")) {
+                    continue;
+                }
+                if (key.endsWith("prefix") && (value.contains("<gold><bold>Blaze") || value.contains("gradient:#FF4500"))) {
+                    if (!value.contains("%blazechaosanimation_prefix%")) {
+                        config.set(key, "%blazechaosanimation_prefix% <gray>»</gray> ");
+                        changed = true;
+                    }
+                } else if (value.contains("<gold>") && (value.contains("Join Blaze") || value.contains("Quick Join"))) {
+                    String restored = value
+                            .replace("<gold><bold>", "<gradient:#FF4500:#FFD700><bold>")
+                            .replace("</bold></gold>", "</bold></gradient>")
+                            .replace("<gold>", "<gradient:#FF4500:#FFD700>")
+                            .replace("</gold>", "</gradient>");
+                    if (!restored.equals(value)) {
+                        config.set(key, restored);
+                        changed = true;
+                    }
                 }
             }
             if (changed) {
                 plugin.saveConfig();
-                plugin.getLogger().info("Migrated config.yml with classic premium colors (existing custom text preserved).");
+                plugin.getLogger().info("Migrated config.yml branding to Update 3-4 premium gradients.");
             }
         } catch (IOException exception) {
             plugin.getLogger().log(Level.WARNING, "Failed to migrate config.yml", exception);

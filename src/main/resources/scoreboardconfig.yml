@@ -1,10 +1,11 @@
-# Scoreboard configuration — classic Blaze's Chaos premium layout
-# Supports MiniMessage named colors, & legacy codes, PlaceholderAPI
-# Animations (optional): %blazechaosanimation_name% from scoreboardanimations.yml
-config-version: 5
+# Scoreboard — Update 3–4 premium layout
+# Brand title uses moving RGB gradient via %blazechaosanimation_title%
+# Body lines stay clean & readable (no rainbow)
+config-version: 6
 
 enabled: true
-update-interval: 20
+# Fast enough for smooth traveling gradients
+update-interval: 2
 
 animations:
   enabled: true
@@ -14,68 +15,67 @@ animations:
 
 hide-scores: true
 
-# Server lobby (not in a game)
 server-lobby:
   title: "%blazechaosanimation_title%"
   lines:
     - ""
-    - "&7play.example.ro"
+    - "<gray>play.example.ro</gray>"
     - ""
-    - "&fOnline: &a%server_online%"
-    - "&fCoins: &6%blazechaos_coins%"
-    - "&fWins: &a%blazechaos_wins%"
-    - "&fKills: &c%blazechaos_kills%"
+    - "<white>Online:</white> <aqua>%server_online%</aqua>"
+    - "<white>Coins:</white> <gold>%blazechaos_coins%</gold>"
+    - "<white>Wins:</white> <green>%blazechaos_wins%</green>"
+    - "<white>Kills:</white> <red>%blazechaos_kills%</red>"
     - ""
-    - "&7Discord:"
-    - "&bdiscord.gg/example"
+    - "<gray>Discord:</gray>"
+    - "<aqua>discord.gg/example</aqua>"
     - ""
 
 waiting:
   title: "%blazechaosanimation_title%"
   lines:
     - ""
-    - "&7Map: &b%blazechaos_map%"
-    - "&7Players: &e%blazechaos_players%"
-    - "&7State: &a%blazechaos_state%"
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
+    - "<gray>Players: <yellow>%blazechaos_players%</yellow>"
+    - "<gray>State: <green>%blazechaos_state%</green>"
     - ""
-    - "&6Waiting for players..."
+    - "<gold>Waiting for players...</gold>"
     - ""
 
 starting:
-  title: "&6&lSTARTING"
+  title: "<gradient:#FF4500:#FFD700><bold>STARTING</bold></gradient>"
   lines:
     - ""
-    - "&7Map: &b%blazechaos_map%"
-    - "&7Players: &e%blazechaos_players%"
-    - "&7Starts in: &6%blazechaos_time%s"
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
+    - "<gray>Players: <yellow>%blazechaos_players%</yellow>"
+    - "<gray>Starts in: <gold>%blazechaos_time%s</gold>"
     - ""
 
 playing:
   title: "%blazechaosanimation_title%"
   lines:
     - ""
-    - "&7Alive: &c%blazechaos_alive%"
-    - "&7Event: &e%blazechaos_event%"
-    - "&7Next: &b%blazechaos_next_event%s"
-    - "&7Time: &f%blazechaos_time%s"
-    - "&7Map: &b%blazechaos_map%"
+    - "<gray>Alive: <red>%blazechaos_alive%</red>"
+    - "<gray>Event: <yellow>%blazechaos_event%</yellow>"
+    - "<gray>Next: <aqua>%blazechaos_next_event%s</aqua>"
+    - "<gray>Time: <white>%blazechaos_time%s</white>"
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
     - ""
 
 spectator:
-  title: "&7&lSPECTATING"
+  title: "<gradient:#888888:#CCCCCC><bold>SPECTATING</bold></gradient>"
   lines:
     - ""
-    - "&7Alive: &c%blazechaos_alive%"
-    - "&7Event: &e%blazechaos_event%"
-    - "&7Map: &b%blazechaos_map%"
+    - "<gray>Alive: <red>%blazechaos_alive%</red>"
+    - "<gray>Event: <yellow>%blazechaos_event%</yellow>"
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
     - ""
-    - "&8You died!"
+    - "<dark_gray>You died!</dark_gray>"
     - ""
 
 ending:
-  title: "&6&lGAME OVER"
+  title: "<gradient:#FFD700:#FF4500><bold>GAME OVER</bold></gradient>"
   lines:
     - ""
-    - "&7Map: &b%blazechaos_map%"
-    - "&7Winner soon..."
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
+    - "<gray>Winner soon...</gray>"
     - ""

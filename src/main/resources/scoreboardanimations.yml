@@ -1,54 +1,67 @@
-# Scoreboard / tablist animations (TAB-style)
-# Use: %blazechaosanimation_name%  |  %animation:name%  |  %blazechaos_animation_name%
+# Animations — TAB-style (Update 3–4 brand palette)
 #
-# Default frames use clean legacy colors (&a &2 &6 &7 &e &f).
-# RGB / gradient generators are OPT-IN only (rgb: true / type: gradient).
-config-version: 5
+# Moving gradients travel across letters (not simple green/white/dark swaps).
+# Use: %blazechaosanimation_<name>%
+#
+# Brand colors: #FF4500 → #FFD700 (classic Blaze's Chaos)
+# RGB/rainbow only when type: rgb is set explicitly.
+config-version: 6
 
 title:
-  interval: 10
-  frames:
-    - "&6&lBLAZE'S CHAOS"
-    - "&e&lBLAZE'S CHAOS"
-    - "&a&lBLAZE'S CHAOS"
+  change-interval: 1
+  type: moving-gradient
+  text: "BLAZE'S CHAOS"
+  bold: true
+  speed: 0.16
+  spread: 0.38
+  colors:
+    - "#FF4500"
+    - "#FF6347"
+    - "#FFA500"
+    - "#FFD700"
+    - "#FFA500"
+    - "#FF6347"
+    - "#FF4500"
 
+prefix:
+  change-interval: 1
+  type: moving-gradient
+  text: "Blaze's Chaos"
+  bold: true
+  speed: 0.16
+  spread: 0.40
+  colors:
+    - "#FF4500"
+    - "#FF6347"
+    - "#FFA500"
+    - "#FFD700"
+    - "#FFA500"
+    - "#FF6347"
+    - "#FF4500"
+
+tab_footer:
+  change-interval: 1
+  type: moving-gradient
+  text: "Survive the chaos"
+  bold: false
+  speed: 0.12
+  spread: 0.35
+  colors:
+    - "#FF4500"
+    - "#FFD700"
+    - "#FFA500"
+    - "#FF4500"
+
+# Optional simple frame cycles (clean, not rainbow)
 server:
-  interval: 5
+  change-interval: 5
   frames:
     - "&aplay.example.ro"
     - "&fplay.example.ro"
     - "&eplay.example.ro"
 
-coins:
-  interval: 10
-  frames:
-    - "&6Coins"
-    - "&eCoins"
-    - "&fCoins"
-
-discord:
-  interval: 8
-  frames:
-    - "&9discord.gg/example"
-    - "&bdiscord.gg/example"
-    - "&fdiscord.gg/example"
-
-online:
-  interval: 15
-  frames:
-    - "&aOnline"
-    - "&2Online"
-    - "&fOnline"
-
-footer:
-  interval: 6
-  frames:
-    - "&7Survive the chaos"
-    - "&8Survive the chaos"
-    - "&fSurvive the chaos"
-
 play:
-  interval: 4
+  change-interval: 4
   frames:
     - "&eClick to Play"
     - "&6Click to Play"

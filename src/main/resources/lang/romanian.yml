@@ -1,4 +1,4 @@
-prefix: "<gold><bold>Blaze's Chaos</bold></gold> <gray>»</gray> "
+prefix: "%blazechaosanimation_prefix% <gray>»</gray> "
 
 general:
   no-permission: "<red>Nu ai permisiunea să faci asta.</red>"
@@ -75,7 +75,7 @@ game:
   already-in: "<red>Ești deja într-un joc.</red>"
   not-in: "<red>Nu ești într-un joc.</red>"
   starting: "<gold>Jocul începe în <yellow>%time%</yellow> secunde!</gold>"
-  started: "<gold><bold>HAOSUL ÎNCEPE!</bold></gold>"
+  started: "<gradient:#FF4500:#FFD700><bold>HAOSUL ÎNCEPE!</bold></gradient>"
   eliminated: "<red>%player%</red> <gray>a fost eliminat! Mai rămân <yellow>%alive%</yellow>.</gray>"
   winner: "<gold><bold>%player%</bold></gold> <yellow>câștigă Blaze's Chaos!</yellow>"
   no-winner: "<yellow>Niciun câștigător — haosul i-a consumat pe toți.</yellow>"
@@ -88,7 +88,7 @@ game:
   no-arenas: "<red>Nu există arene jucabile. Cere unui admin să termine setup-ul.</red>"
 
 event:
-  starting: "<gold><bold>EVENIMENT HAOS:</bold></gold> <yellow>%event%</yellow>"
+  starting: "<gradient:#FF4500:#FFD700><bold>EVENIMENT HAOS:</bold></gradient> <yellow>%event%</yellow>"
   ending: "<gray>Evenimentul <yellow>%event%</yellow> s-a terminat.</gray>"
   next: "<aqua>Următorul eveniment în <yellow>%time%</yellow>s</aqua>"
   forced: "<green>Următorul eveniment a fost forțat.</green>"
@@ -109,7 +109,7 @@ setup-items:
     lore:
       - "<gray>Click dreapta pentru a schimba arena</gray>"
   create-arena:
-    name: "<gold>Creează Arenă Nouă</gold>"
+    name: "<gradient:#FF4500:#FFD700>Creează Arenă Nouă</gradient>"
     lore:
       - "<gray>Click dreapta, apoi tastează numele în chat</gray>"
   save-arena:
@@ -159,7 +159,7 @@ setup-items:
       - "<gray>Click dreapta pentru a edita setările</gray>"
 
 help:
-  - "<gold><bold>Comenzi Blaze's Chaos</bold></gold>"
+  - "<gradient:#FF4500:#FFD700><bold>Comenzi Blaze's Chaos</bold></gradient>"
   - "<yellow>/bc join [arena]</yellow> <gray>- Intră într-un joc</gray>"
   - "<yellow>/bc leave</yellow> <gray>- Părăsește jocul</gray>"
   - "<yellow>/bc lobby</yellow> <gray>- Mergi în lobby</gray>"

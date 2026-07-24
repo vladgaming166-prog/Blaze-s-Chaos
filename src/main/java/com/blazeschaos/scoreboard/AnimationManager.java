@@ -18,15 +18,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Single efficient animation engine (TAB-style).
+ * Single efficient TAB-style animation engine.
  * <p>
- * Each placeholder resolves to EXACTLY one named animation:
+ * Each placeholder resolves to EXACTLY one named animation
+ * ({@code %blazechaosanimation_title%} → only "title").
+ * <p>
+ * Supports:
  * <ul>
- *   <li>{@code %blazechaosanimation_title%} → animation "title" only</li>
- *   <li>{@code %blazechaosanimation_server%} → animation "server" only</li>
- *   <li>{@code %animation:coins%} / {@code %blazechaos_animation_coins%}</li>
+ *   <li>Frame cycling ({@code frames} / {@code texts})</li>
+ *   <li>Moving RGB / gradient waves that travel across letters</li>
  * </ul>
- * Supports frame lists and Birdflop-style RGB / shifting gradient generators.
  */
 public final class AnimationManager {
 
@@ -37,7 +38,12 @@ public final class AnimationManager {
             Pattern.compile("\\{animation:([a-zA-Z0-9_-]+)}", Pattern.CASE_INSENSITIVE)
     };
 
-    private static final int[] DEFAULT_RGB = {
+    /** Classic Blaze's Chaos orange → gold brand palette (Update 3–4). */
+    private static final int[] BRAND_PALETTE = {
+            0xFF4500, 0xFF6347, 0xFFA500, 0xFFD700, 0xFFA500, 0xFF6347, 0xFF4500
+    };
+
+    private static final int[] RAINBOW_PALETTE = {
             0xFF0000, 0xFF4000, 0xFF8000, 0xFFBF00, 0xFFFF00, 0xBFFF00, 0x80FF00, 0x40FF00,
             0x00FF00, 0x00FF40, 0x00FF80, 0x00FFBF, 0x00FFFF, 0x00BFFF, 0x0080FF, 0x0040FF,
             0x0000FF, 0x4000FF, 0x8000FF, 0xBF00FF, 0xFF00FF, 0xFF00BF, 0xFF0080, 0xFF0040
@@ -86,13 +92,18 @@ public final class AnimationManager {
                     section.getInt("change-interval", 20)));
 
             String type = section.getString("type", "").toLowerCase(Locale.ROOT);
-            boolean rgb = section.getBoolean("rgb", false)
+            boolean moving = section.getBoolean("rgb", false)
+                    || section.getBoolean("gradient", false)
+                    || section.getBoolean("moving-gradient", false)
                     || type.equals("rgb")
                     || type.equals("rainbow")
-                    || type.equals("birdflop");
-            boolean gradient = section.getBoolean("gradient", false)
+                    || type.equals("birdflop")
                     || type.equals("gradient")
+                    || type.equals("moving-gradient")
                     || type.equals("shifting-gradient");
+            boolean rainbow = type.equals("rgb") || type.equals("rainbow") || type.equals("birdflop")
+                    || (section.getBoolean("rgb", false) && !section.getBoolean("gradient", false)
+                    && !type.equals("gradient") && !type.equals("moving-gradient"));
 
             List<Integer> palette = parsePalette(section.getStringList("colors"));
             if (palette.isEmpty()) {
@@ -105,17 +116,17 @@ public final class AnimationManager {
             }
 
             String text = section.getString("text", section.getString("input", ""));
-            if ((rgb || gradient) && (text == null || text.isBlank()) && !frames.isEmpty()) {
-                // Use first frame as the RGB/gradient source text (strip simple color codes for wave)
+            if ((text == null || text.isBlank()) && !frames.isEmpty() && moving) {
                 text = frames.get(0);
             }
+            boolean bold = section.getBoolean("bold", true);
+            double speed = section.getDouble("speed", 0.18);
+            double spread = section.getDouble("spread", 0.42);
 
             Animation animation;
-            // RGB / shifting gradient ONLY when explicitly configured — never auto-convert
-            if (rgb && text != null && !text.isBlank()) {
-                animation = Animation.rgb(interval, stripForRgb(text), palette);
-            } else if (gradient && text != null && !text.isBlank()) {
-                animation = Animation.gradient(interval, stripForRgb(text), palette);
+            if (moving && text != null && !text.isBlank()) {
+                int[] colors = toArray(palette, rainbow ? RAINBOW_PALETTE : BRAND_PALETTE);
+                animation = Animation.movingGradient(interval, stripForRgb(text), colors, bold, speed, spread);
             } else if (!frames.isEmpty()) {
                 animation = Animation.frames(interval, frames);
             } else {
@@ -127,12 +138,10 @@ public final class AnimationManager {
 
     private static @NotNull String stripForRgb(@NotNull String input) {
         String text = input;
-        // Remove MiniMessage tags for character wave source
         text = text.replaceAll("(?i)</?gradient[^>]*>", "");
         text = text.replaceAll("(?i)</?rainbow[^>]*>", "");
         text = text.replaceAll("(?i)</?#[0-9A-Fa-f]{6}>", "");
         text = text.replaceAll("(?i)</?(bold|italic|underlined|strikethrough|obfuscated|reset|b|i|u)>", "");
-        // Keep &l style as formatting hints? Strip color codes but keep bold
         text = text.replaceAll("(?i)&[0-9a-fk-or]", "");
         text = text.replaceAll("(?i)&#[0-9a-f]{6}", "");
         text = text.replaceAll("(?i)#([0-9a-f]{6})", "");
@@ -157,6 +166,17 @@ public final class AnimationManager {
         return out;
     }
 
+    private static int[] toArray(@NotNull List<Integer> palette, @NotNull int[] fallback) {
+        if (palette.isEmpty()) {
+            return fallback.clone();
+        }
+        int[] arr = new int[palette.size()];
+        for (int i = 0; i < palette.size(); i++) {
+            arr[i] = palette.get(i);
+        }
+        return arr;
+    }
+
     public void tick() {
         ticks++;
     }
@@ -165,10 +185,6 @@ public final class AnimationManager {
         return ticks;
     }
 
-    /**
-     * Replace each animation placeholder with ONLY that animation's current frame.
-     * Never mixes frames across different animation names.
-     */
     public @NotNull String resolve(@NotNull String input) {
         if (input.indexOf('%') < 0 && input.indexOf('{') < 0) {
             return input;
@@ -180,7 +196,6 @@ public final class AnimationManager {
         return text;
     }
 
-    /** Current frame for a single named animation (independent). */
     public @NotNull String frame(@NotNull String name) {
         Animation animation = animations.get(name.toLowerCase(Locale.ROOT));
         return animation == null ? "" : animation.current(ticks);
@@ -192,11 +207,10 @@ public final class AnimationManager {
             return input;
         }
         matcher.reset();
-        StringBuilder sb = new StringBuilder(input.length() + 32);
+        StringBuilder sb = new StringBuilder(input.length() + 64);
         while (matcher.find()) {
             String name = matcher.group(1).toLowerCase(Locale.ROOT);
             Animation animation = animations.get(name);
-            // Unknown name → leave placeholder intact (do not substitute another animation)
             String replacement = animation == null ? matcher.group(0) : animation.current(ticks);
             matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
         }
@@ -218,97 +232,116 @@ public final class AnimationManager {
         private final List<String> frames;
         private final String sourceText;
         private final int[] palette;
+        private final boolean bold;
+        private final double speed;
+        private final double spread;
 
-        private enum Kind {FRAMES, RGB, GRADIENT}
+        private enum Kind {FRAMES, MOVING_GRADIENT}
 
         private Animation(int intervalTicks, @NotNull Kind kind, @NotNull List<String> frames,
-                          @Nullable String sourceText, @NotNull int[] palette) {
+                          @Nullable String sourceText, @NotNull int[] palette,
+                          boolean bold, double speed, double spread) {
             this.intervalTicks = Math.max(1, intervalTicks);
             this.kind = kind;
             this.frames = List.copyOf(frames);
             this.sourceText = sourceText == null ? "" : sourceText;
-            this.palette = palette.length == 0 ? DEFAULT_RGB.clone() : palette.clone();
+            this.palette = palette.clone();
+            this.bold = bold;
+            this.speed = speed;
+            this.spread = spread;
         }
 
         public static @NotNull Animation frames(int interval, @NotNull List<String> frames) {
-            return new Animation(interval, Kind.FRAMES, frames, null, DEFAULT_RGB);
+            return new Animation(interval, Kind.FRAMES, frames, null, BRAND_PALETTE, false, 0.18, 0.42);
         }
 
-        public static @NotNull Animation rgb(int interval, @NotNull String text, @NotNull List<Integer> palette) {
-            int[] colors = toArray(palette);
-            return new Animation(interval, Kind.RGB, List.of(), text, colors);
-        }
-
-        public static @NotNull Animation gradient(int interval, @NotNull String text, @NotNull List<Integer> palette) {
-            int[] colors = toArray(palette);
-            return new Animation(interval, Kind.GRADIENT, List.of(), text, colors);
-        }
-
-        private static int[] toArray(@NotNull List<Integer> palette) {
-            if (palette.isEmpty()) {
-                return DEFAULT_RGB.clone();
-            }
-            int[] arr = new int[palette.size()];
-            for (int i = 0; i < palette.size(); i++) {
-                arr[i] = palette.get(i);
-            }
-            return arr;
+        public static @NotNull Animation movingGradient(int interval, @NotNull String text,
+                                                        @NotNull int[] palette, boolean bold,
+                                                        double speed, double spread) {
+            return new Animation(interval, Kind.MOVING_GRADIENT, List.of(), text, palette, bold, speed, spread);
         }
 
         public @NotNull String current(long globalTicks) {
-            int step = (int) ((globalTicks / (long) intervalTicks));
+            int step = (int) (globalTicks / (long) intervalTicks);
             return switch (kind) {
                 case FRAMES -> {
                     if (frames.isEmpty()) {
                         yield "";
                     }
-                    int index = Math.floorMod(step, frames.size());
-                    yield frames.get(index);
+                    yield frames.get(Math.floorMod(step, frames.size()));
                 }
-                case RGB -> renderRgb(step);
-                case GRADIENT -> renderGradient(step);
+                case MOVING_GRADIENT -> renderMovingGradient(step);
             };
         }
 
-        private @NotNull String renderRgb(int step) {
+        /**
+         * TAB-like traveling gradient: colors continuously move across letters.
+         * Each character samples a smoothly interpolated point on the palette wave.
+         */
+        private @NotNull String renderMovingGradient(int step) {
             if (sourceText.isEmpty()) {
                 return "";
             }
-            StringBuilder out = new StringBuilder(sourceText.length() * 10);
-            int len = sourceText.length();
-            for (int i = 0; i < len; i++) {
+            StringBuilder out = new StringBuilder(sourceText.length() * 18);
+            int visible = 0;
+            for (int i = 0; i < sourceText.length(); i++) {
+                if (sourceText.charAt(i) != ' ') {
+                    visible++;
+                }
+            }
+            int painted = 0;
+            double phase = step * speed;
+            for (int i = 0; i < sourceText.length(); i++) {
                 char ch = sourceText.charAt(i);
                 if (ch == ' ') {
                     out.append(' ');
                     continue;
                 }
-                int color = palette[Math.floorMod(step + i, palette.length)];
-                out.append(toAmpHex(color)).append(ch);
+                // Wave travels left→right across visible characters
+                double t = painted * spread + phase;
+                int color = samplePalette(palette, t);
+                out.append("<#").append(String.format("%06X", color & 0xFFFFFF)).append('>');
+                if (bold) {
+                    out.append("<bold>").append(ch).append("</bold>");
+                } else {
+                    out.append(ch);
+                }
+                painted++;
             }
             return out.toString();
         }
 
-        private @NotNull String renderGradient(int step) {
-            if (sourceText.isEmpty()) {
-                return "";
+        /** Smooth multi-stop palette sample. {@code t} is continuous and wraps. */
+        private static int samplePalette(@NotNull int[] palette, double t) {
+            if (palette.length == 1) {
+                return palette[0];
             }
-            int c1 = palette[Math.floorMod(step, palette.length)];
-            int c2 = palette[Math.floorMod(step + Math.max(1, palette.length / 3), palette.length)];
-            int c3 = palette[Math.floorMod(step + Math.max(2, palette.length / 2), palette.length)];
-            // Moving 3-stop MiniMessage gradient
-            return "<gradient:" + toHash(c1) + ":" + toHash(c2) + ":" + toHash(c3) + ">"
-                    + sourceText + "</gradient>";
+            int segments = palette.length - 1;
+            double wrapped = t - Math.floor(t);
+            if (wrapped < 0) {
+                wrapped += 1.0;
+            }
+            double scaled = wrapped * segments;
+            int index = (int) Math.floor(scaled);
+            if (index >= segments) {
+                index = segments - 1;
+            }
+            double local = scaled - index;
+            return lerpColor(palette[index], palette[index + 1], local);
         }
 
-        private static @NotNull String toAmpHex(int rgb) {
-            String hex = String.format("%06X", rgb & 0xFFFFFF);
-            StringBuilder out = new StringBuilder("&#");
-            out.append(hex);
-            return out.toString();
-        }
-
-        private static @NotNull String toHash(int rgb) {
-            return String.format("#%06X", rgb & 0xFFFFFF);
+        private static int lerpColor(int a, int b, double t) {
+            t = Math.max(0.0, Math.min(1.0, t));
+            int ar = (a >> 16) & 0xFF;
+            int ag = (a >> 8) & 0xFF;
+            int ab = a & 0xFF;
+            int br = (b >> 16) & 0xFF;
+            int bg = (b >> 8) & 0xFF;
+            int bb = b & 0xFF;
+            int r = (int) Math.round(ar + (br - ar) * t);
+            int g = (int) Math.round(ag + (bg - ag) * t);
+            int bl = (int) Math.round(ab + (bb - ab) * t);
+            return (r << 16) | (g << 8) | bl;
         }
 
         public int changeInterval() {

@@ -440,7 +440,7 @@ public final class GameInstance {
             }
             plugin.lang().send(player, "game.started");
             player.showTitle(Title.title(
-                    ColorUtil.parse("<gold><bold>CHAOS BEGINS!</bold></gold>"),
+                    ColorUtil.parse("<gradient:#FF4500:#FFD700><bold>CHAOS BEGINS!</bold></gradient>"),
                     ColorUtil.parse("<gray>Survive the chaos</gray>"),
                     Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(400))
             ));

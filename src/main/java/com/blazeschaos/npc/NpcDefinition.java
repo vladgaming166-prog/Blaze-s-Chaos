@@ -209,7 +209,7 @@ public final class NpcDefinition {
 
     public static @NotNull List<String> defaultHologram(@NotNull NpcMode mode) {
         return List.of(
-                "<gold><bold>Blaze's Chaos</bold></gold>",
+                "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>",
                 mode.colorName(),
                 "<gray>Players: <aqua>%blazechaos_queue_" + mode.name().toLowerCase(Locale.ROOT) + "%</aqua></gray>",
                 "<yellow>Click to Play</yellow>"
