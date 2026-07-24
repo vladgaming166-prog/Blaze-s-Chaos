@@ -1,4 +1,4 @@
-prefix: "%blazechaosanimation_prefix% <gray>»</gray> "
+prefix: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> "
 
 general:
   no-permission: "<red>You don't have permission to do that.</red>"

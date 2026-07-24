@@ -51,6 +51,8 @@ public final class ScoreboardManager {
         }
         int interval = Math.max(1, plugin.configs().scoreboard().getInt("update-interval", 20));
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            // Advance animations once per scoreboard update (identical to pre-redesign timing)
+            plugin.animationManager().tick();
             for (Player player : Bukkit.getOnlinePlayers()) {
                 try {
                     refresh(player);
@@ -225,9 +227,9 @@ public final class ScoreboardManager {
             return configured;
         }
         if (plugin.animationManager().get("title") != null) {
-            return "%blazechaosanimation_title%";
+            return "%animation:title%";
         }
-        return "<gold>Blaze's Chaos</gold>";
+        return "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>";
     }
 
     private @NotNull String applyAll(@NotNull Player player, @Nullable GameInstance game, @NotNull String input) {

@@ -5,7 +5,7 @@ language: en
 # language: ro
 
 settings:
-  prefix: "%blazechaosanimation_prefix% <gray>»</gray> "
+  prefix: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> "
   min-players: 2
   max-players: 24
   countdown-seconds: 30

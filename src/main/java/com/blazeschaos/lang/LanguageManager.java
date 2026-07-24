@@ -43,15 +43,33 @@ public final class LanguageManager {
         if (!fileName.equals("english.yml")) {
             mergeDefaults(lang, "lang/english.yml");
         }
-        // Ensure animated prefix placeholder is present (Update 3–4 branding)
+        // Restore exact static brand prefix from pre-redesign (f6744fc)
+        final String exactPrefix =
+                "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> ";
         String prefix = lang.getString("prefix", "");
-        if (prefix != null && (prefix.contains("gradient:#FF4500") || prefix.contains("<gold><bold>Blaze"))
-                && !prefix.contains("%blazechaosanimation_prefix%")) {
-            lang.set("prefix", "%blazechaosanimation_prefix% <gray>»</gray> ");
+        if (prefix != null && (prefix.contains("%blazechaosanimation_prefix%")
+                || prefix.contains("<gold><bold>Blaze"))
+                && !prefix.equals(exactPrefix)) {
+            lang.set("prefix", exactPrefix);
             try {
                 lang.save(file);
             } catch (IOException ex) {
-                plugin.getLogger().log(Level.WARNING, "Failed to update language prefix", ex);
+                plugin.getLogger().log(Level.WARNING, "Failed to restore language prefix", ex);
+            }
+        }
+        // Romanian info branding was flattened to gold in a later redesign — restore gradient
+        if (fileName.equals("romanian.yml")) {
+            List<String> info = lang.getStringList("info.lines");
+            if (!info.isEmpty() && info.get(0) != null
+                    && info.get(0).contains("<gold><bold>Blaze")
+                    && !info.get(0).contains("gradient:#FF4500")) {
+                info.set(0, "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>");
+                lang.set("info.lines", info);
+                try {
+                    lang.save(file);
+                } catch (IOException ex) {
+                    plugin.getLogger().log(Level.WARNING, "Failed to restore romanian info branding", ex);
+                }
             }
         }
     }

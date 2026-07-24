@@ -59,9 +59,24 @@ public final class AnimationManager {
         reload();
     }
 
+    /**
+     * Optional fine-grained ticker for moving-gradient animations only.
+     * Frame-based animations (default / pre-redesign style) advance from
+     * {@link ScoreboardManager} so {@code change-interval} matches the original
+     * scoreboard-update-tick semantics.
+     */
     public void start() {
         stop();
-        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+        boolean needsFastTick = false;
+        for (Animation animation : animations.values()) {
+            if (animation.isMovingGradient()) {
+                needsFastTick = true;
+                break;
+            }
+        }
+        if (needsFastTick) {
+            task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+        }
     }
 
     public void stop() {
@@ -342,6 +357,10 @@ public final class AnimationManager {
             int g = (int) Math.round(ag + (bg - ag) * t);
             int bl = (int) Math.round(ab + (bb - ab) * t);
             return (r << 16) | (g << 8) | bl;
+        }
+
+        public boolean isMovingGradient() {
+            return kind == Kind.MOVING_GRADIENT;
         }
 
         public int changeInterval() {

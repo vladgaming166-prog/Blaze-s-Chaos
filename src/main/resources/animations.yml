@@ -1,47 +1,41 @@
-# Global animations (shared names merge over scoreboardanimations.yml)
-config-version: 6
+# Global animated placeholders
+# Use as %blazechaos_animation_<name>% or %animation:<name>%
+# interval is in animation engine ticks (advanced each scoreboard update)
+config-version: 7
 
 title:
-  change-interval: 1
-  type: moving-gradient
-  text: "BLAZE'S CHAOS"
-  bold: true
-  speed: 0.16
-  spread: 0.38
-  colors:
-    - "#FF4500"
-    - "#FF6347"
-    - "#FFA500"
-    - "#FFD700"
-    - "#FFA500"
-    - "#FF6347"
-    - "#FF4500"
+  interval: 2
+  frames:
+    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
+    - "<gradient:#FFD700:#FF4500><bold>Blaze's Chaos</bold></gradient>"
+    - "&6&lBlaze's Chaos"
+    - "&e&lBlaze's Chaos"
+    - "&f&lBlaze's Chaos"
 
-prefix:
-  change-interval: 1
-  type: moving-gradient
-  text: "Blaze's Chaos"
-  bold: true
-  speed: 0.16
-  spread: 0.40
-  colors:
-    - "#FF4500"
-    - "#FF6347"
-    - "#FFA500"
-    - "#FFD700"
-    - "#FFA500"
-    - "#FF6347"
-    - "#FF4500"
+server:
+  interval: 3
+  frames:
+    - "&aplay.example.ro"
+    - "&fplay.example.ro"
+    - "&eplay.example.ro"
 
-tab_footer:
-  change-interval: 1
-  type: moving-gradient
-  text: "Survive the chaos"
-  bold: false
-  speed: 0.12
-  spread: 0.35
-  colors:
-    - "#FF4500"
-    - "#FFD700"
-    - "#FFA500"
-    - "#FF4500"
+ip:
+  interval: 4
+  frames:
+    - "&bplay.example.ro"
+    - "&3play.example.ro"
+    - "&fplay.example.ro"
+
+queue:
+  interval: 5
+  frames:
+    - "&aQueue Open"
+    - "&2Queue Open"
+    - "&fQueue Open"
+
+play:
+  interval: 4
+  frames:
+    - "&eClick to Play"
+    - "&6Click to Play"
+    - "&fClick to Play"

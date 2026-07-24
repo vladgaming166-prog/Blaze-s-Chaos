@@ -1,68 +1,50 @@
-# Animations — TAB-style (Update 3–4 brand palette)
+# Scoreboard / tablist animations (TAB-style)
+# Reference in any line with: %animation:name%  or  {animation:name}
 #
-# Moving gradients travel across letters (not simple green/white/dark swaps).
-# Use: %blazechaosanimation_<name>%
-#
-# Brand colors: #FF4500 → #FFD700 (classic Blaze's Chaos)
-# RGB/rainbow only when type: rgb is set explicitly.
-config-version: 6
+# change-interval is in SCOREBOARD UPDATE TICKS (same as scoreboard update-interval steps).
+# Example: update-interval 20 (1 second) + change-interval 2 = frame every 2 seconds.
+config-version: 7
 
 title:
-  change-interval: 1
-  type: moving-gradient
-  text: "BLAZE'S CHAOS"
-  bold: true
-  speed: 0.16
-  spread: 0.38
-  colors:
-    - "#FF4500"
-    - "#FF6347"
-    - "#FFA500"
-    - "#FFD700"
-    - "#FFA500"
-    - "#FF6347"
-    - "#FF4500"
+  change-interval: 2
+  texts:
+    - "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
+    - "<gradient:#FFD700:#FF4500><bold>BLAZE'S CHAOS</bold></gradient>"
+    - "<gradient:#FF6347:#FFA500><bold>BLAZE'S CHAOS</bold></gradient>"
+    - "&6&lBLAZE'S CHAOS"
+    - "&e&lBLAZE'S CHAOS"
 
-prefix:
-  change-interval: 1
-  type: moving-gradient
-  text: "Blaze's Chaos"
-  bold: true
-  speed: 0.16
-  spread: 0.40
-  colors:
-    - "#FF4500"
-    - "#FF6347"
-    - "#FFA500"
-    - "#FFD700"
-    - "#FFA500"
-    - "#FF6347"
-    - "#FF4500"
-
-tab_footer:
-  change-interval: 1
-  type: moving-gradient
-  text: "Survive the chaos"
-  bold: false
-  speed: 0.12
-  spread: 0.35
-  colors:
-    - "#FF4500"
-    - "#FFD700"
-    - "#FFA500"
-    - "#FF4500"
-
-# Optional simple frame cycles (clean, not rainbow)
 server:
   change-interval: 5
-  frames:
+  texts:
     - "&aplay.example.ro"
     - "&fplay.example.ro"
     - "&eplay.example.ro"
 
-play:
-  change-interval: 4
-  frames:
-    - "&eClick to Play"
-    - "&6Click to Play"
-    - "&fClick to Play"
+coins:
+  change-interval: 10
+  texts:
+    - "&6Coins"
+    - "&eCoins"
+    - "&fCoins"
+
+discord:
+  change-interval: 8
+  texts:
+    - "&9discord.gg/example"
+    - "&bdiscord.gg/example"
+    - "&fdiscord.gg/example"
+
+online:
+  change-interval: 15
+  texts:
+    - "&aOnline"
+    - "&2Online"
+    - "&fOnline"
+
+footer:
+  change-interval: 6
+  texts:
+    - "&7Survive the chaos"
+    - "&8Survive the chaos"
+    - "&fSurvive the chaos"

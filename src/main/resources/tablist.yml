@@ -1,32 +1,32 @@
-# Tablist — Update 3–4 premium style
-# Header/footer branding uses moving RGB gradients
-config-version: 4
+# Tablist configuration
+config-version: 7
 
 enabled: true
-update-interval: 2
+update-interval: 40
 
 animations:
   enabled: true
-  frame-interval: 1
+  frame-interval: 20
   header-frames:
-    - "%blazechaosanimation_title%"
+    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
+    - "<gradient:#FFD700:#FF4500><bold>Blaze's Chaos</bold></gradient>"
   footer-frames:
-    - "%blazechaosanimation_tab_footer%"
+    - "<gray>Survive the chaos</gray>"
+    - "<yellow>Last player standing</yellow>"
 
 server-lobby:
   header:
-    - "%blazechaosanimation_title%"
+    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
     - "<gray>play.example.ro</gray>"
   footer:
     - ""
-    - "%blazechaosanimation_tab_footer%"
     - "<white>Online:</white> <aqua>%server_online%</aqua>"
     - "<white>Wins:</white> <green>%blazechaos_wins%</green>"
     - "<gray>discord.gg/example</gray>"
 
 waiting:
   header:
-    - "%blazechaosanimation_title%"
+    - "<gradient:#FF4500:#FFD700><bold>Waiting</bold></gradient>"
     - "<aqua>%blazechaos_map%</aqua>"
   footer:
     - "<gray>Players:</gray> <yellow>%blazechaos_players%</yellow>"
@@ -39,7 +39,7 @@ starting:
 
 playing:
   header:
-    - "%blazechaosanimation_title%"
+    - "<gradient:#FF4500:#FFD700><bold>IN GAME</bold></gradient>"
     - "<yellow>%blazechaos_event%</yellow>"
   footer:
     - "<red>Alive: %blazechaos_alive%</red> <gray>|</gray> <aqua>Next: %blazechaos_next_event%s</aqua>"

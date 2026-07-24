@@ -110,7 +110,9 @@ public final class ConfigManager {
                     changed = true;
                 }
             }
-            // Restore animated brand prefix / lobby item gradients (Update 3–4)
+            // Restore exact pre-redesign branding from f6744fc (static orange→gold gradient)
+            final String exactPrefix =
+                    "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> ";
             for (String key : List.of(
                     "settings.prefix",
                     "prefix",
@@ -123,14 +125,12 @@ public final class ConfigManager {
                 if (value == null) {
                     continue;
                 }
-                if (value.contains("%blazechaosanimation_prefix%")) {
-                    continue;
-                }
-                if (key.endsWith("prefix") && (value.contains("<gold><bold>Blaze") || value.contains("gradient:#FF4500"))) {
-                    if (!value.contains("%blazechaosanimation_prefix%")) {
-                        config.set(key, "%blazechaosanimation_prefix% <gray>»</gray> ");
-                        changed = true;
-                    }
+                if (key.endsWith("prefix")
+                        && (value.contains("%blazechaosanimation_prefix%")
+                        || value.contains("<gold><bold>Blaze"))
+                        && !value.equals(exactPrefix)) {
+                    config.set(key, exactPrefix);
+                    changed = true;
                 } else if (value.contains("<gold>") && (value.contains("Join Blaze") || value.contains("Quick Join"))) {
                     String restored = value
                             .replace("<gold><bold>", "<gradient:#FF4500:#FFD700><bold>")
@@ -145,7 +145,7 @@ public final class ConfigManager {
             }
             if (changed) {
                 plugin.saveConfig();
-                plugin.getLogger().info("Migrated config.yml branding to Update 3-4 premium gradients.");
+                plugin.getLogger().info("Restored config.yml branding to pre-redesign gradients (f6744fc).");
             }
         } catch (IOException exception) {
             plugin.getLogger().log(Level.WARNING, "Failed to migrate config.yml", exception);
