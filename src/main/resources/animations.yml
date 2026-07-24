@@ -1,11 +1,14 @@
 # Global animated placeholders (TAB-style)
 # Each %blazechaosanimation_<name>% resolves ONLY that named animation.
-config-version: 3
+# RGB is opt-in (rgb: true) — defaults stay clean frame cycles.
+config-version: 4
 
 title:
-  interval: 1
-  rgb: true
-  text: "Blaze's Chaos"
+  interval: 2
+  frames:
+    - "&aBlaze's Chaos"
+    - "&2Blaze's Chaos"
+    - "&fBlaze's Chaos"
 
 server:
   interval: 3

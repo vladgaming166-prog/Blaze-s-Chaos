@@ -41,6 +41,15 @@ public final class NpcManager {
         this.plugin = plugin;
         this.skins = new SkinService(plugin);
         this.nms = new NmsBridge(plugin);
+        if (CitizensNpcBody.available()) {
+            plugin.getLogger().info("Citizens detected — using Citizens for player NPCs.");
+        } else if (nms.available()) {
+            plugin.getLogger().info("Citizens not found — using internal packet player NPCs.");
+        } else {
+            plugin.getLogger().warning("Citizens not found and packet NPC bridge failed ("
+                    + nms.failureReason() + "). NPC holograms will work but player models may not appear. "
+                    + "Install Citizens for reliable NPCs.");
+        }
         load();
         start();
     }
@@ -97,7 +106,9 @@ public final class NpcManager {
         }
         loadFavorites();
         plugin.getLogger().info("Loaded " + definitions.size() + " NPCs"
-                + (nms.available() ? " (packet player models)." : " (packet bridge unavailable)."));
+                + (CitizensNpcBody.available()
+                ? " (Citizens)."
+                : (nms.available() ? " (packet player models)." : " (packet bridge unavailable).")));
     }
 
     public void save() {
@@ -122,10 +133,12 @@ public final class NpcManager {
                 }
                 continue;
             }
-            boolean nearby = instance.hasNearbyPlayers();
-            if (nearby && !instance.isSpawned()) {
+            // Citizens: keep spawned while visible (chunk tracking handles visibility).
+            // Packet: spawn/despawn by player proximity.
+            boolean shouldBeSpawned = instance.usesCitizens() || instance.hasNearbyPlayers();
+            if (shouldBeSpawned && !instance.isSpawned()) {
                 spawnReady(instance);
-            } else if (!nearby && instance.isSpawned()) {
+            } else if (!shouldBeSpawned && instance.isSpawned()) {
                 instance.despawn();
             } else if (instance.isSpawned()) {
                 instance.tick(tickCounter);
@@ -188,6 +201,27 @@ public final class NpcManager {
     public void hideFrom(@NotNull Player player) {
         for (NpcInstance instance : instances.values()) {
             instance.hideFrom(player);
+        }
+    }
+
+    public void onChunkLoad(@NotNull org.bukkit.Chunk chunk) {
+        for (NpcInstance instance : instances.values()) {
+            NpcDefinition def = instance.definition();
+            Location loc = def.getLocation();
+            if (loc == null || loc.getWorld() == null || !loc.getWorld().equals(chunk.getWorld())) {
+                continue;
+            }
+            if ((loc.getBlockX() >> 4) != chunk.getX() || (loc.getBlockZ() >> 4) != chunk.getZ()) {
+                continue;
+            }
+            if (!def.isVisible()) {
+                continue;
+            }
+            if (!instance.isSpawned()) {
+                spawnReady(instance);
+            } else {
+                instance.showForNearbyInChunk();
+            }
         }
     }
 

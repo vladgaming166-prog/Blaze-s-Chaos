@@ -111,29 +111,18 @@ public final class AnimationManager {
             }
 
             Animation animation;
+            // RGB / shifting gradient ONLY when explicitly configured — never auto-convert
             if (rgb && text != null && !text.isBlank()) {
                 animation = Animation.rgb(interval, stripForRgb(text), palette);
             } else if (gradient && text != null && !text.isBlank()) {
                 animation = Animation.gradient(interval, stripForRgb(text), palette);
             } else if (!frames.isEmpty()) {
-                // Auto-detect: single static MiniMessage/legacy gradient line → animate it
-                if (frames.size() == 1 && looksLikeStaticGradient(frames.get(0))) {
-                    animation = Animation.gradient(interval, stripForRgb(frames.get(0)), palette);
-                } else if (frames.size() == 1 && section.getBoolean("animate-rgb", false)) {
-                    animation = Animation.rgb(interval, stripForRgb(frames.get(0)), palette);
-                } else {
-                    animation = Animation.frames(interval, frames);
-                }
+                animation = Animation.frames(interval, frames);
             } else {
                 continue;
             }
             animations.put(id, animation);
         }
-    }
-
-    private static boolean looksLikeStaticGradient(@NotNull String text) {
-        String lower = text.toLowerCase(Locale.ROOT);
-        return lower.contains("<gradient:") || lower.contains("<rainbow");
     }
 
     private static @NotNull String stripForRgb(@NotNull String input) {

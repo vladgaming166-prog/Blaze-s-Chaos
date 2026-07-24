@@ -12,6 +12,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
 
@@ -95,5 +96,12 @@ public final class NpcListener implements Listener {
                 plugin.npcManager().showNearbyFor(player);
             }
         }, 10L);
+    }
+
+    @EventHandler
+    public void onChunkLoad(@NotNull ChunkLoadEvent event) {
+        // Respawn packet/Citizens NPCs whose chunks just loaded
+        plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                plugin.npcManager().onChunkLoad(event.getChunk()), 2L);
     }
 }

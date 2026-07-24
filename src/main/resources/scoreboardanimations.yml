@@ -3,21 +3,21 @@
 # Each placeholder maps to EXACTLY one animation by name:
 #   %blazechaosanimation_title%  → only "title"
 #   %blazechaosanimation_server% → only "server"
-#   %blazechaosanimation_coins%  → only "coins"
-# Also: %blazechaos_animation_<name>%  |  %animation:<name>%  |  {animation:<name>}
 #
-# interval = server ticks between frame advances (engine ticks every 1 tick)
+# RGB / gradient generators are OPT-IN only:
+#   rgb: true
+#   type: gradient
+# Do not enable those unless you want Birdflop-style effects.
 #
-# Types:
-#   frames (default) — cycle frames list
-#   rgb: true        — Birdflop-style per-character RGB wave (moves over time)
-#   type: gradient   — shifting MiniMessage gradient
-config-version: 3
+# interval = server ticks between frame advances
+config-version: 4
 
 title:
-  interval: 1
-  rgb: true
-  text: "Blaze's Chaos"
+  interval: 2
+  frames:
+    - "&aBlaze's Chaos"
+    - "&2Blaze's Chaos"
+    - "&fBlaze's Chaos"
 
 server:
   interval: 5
@@ -48,15 +48,11 @@ online:
     - "&fOnline"
 
 footer:
-  interval: 1
-  type: gradient
-  text: "Survive the chaos"
-  colors:
-    - "#FF4500"
-    - "#FFD700"
-    - "#FF6347"
-    - "#FFA500"
-    - "#FF4500"
+  interval: 6
+  frames:
+    - "&7Survive the chaos"
+    - "&8Survive the chaos"
+    - "&fSurvive the chaos"
 
 play:
   interval: 4

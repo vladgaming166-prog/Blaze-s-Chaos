@@ -19,13 +19,14 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Runtime NPC: real packet player model + Interaction clickbox + TextDisplay holograms.
+ * Runtime NPC: Citizens or packet player body + Interaction clickbox + TextDisplay holograms.
  */
 public final class NpcInstance {
 
     private final BlazesChaosPlugin plugin;
     private final NpcDefinition definition;
-    private final PacketPlayerNpc packetNpc;
+    private final NpcBody body;
+    private final boolean citizensBackend;
     private @Nullable Interaction clickbox;
     private final List<TextDisplay> holograms = new ArrayList<>();
     private boolean spawned;
@@ -35,7 +36,13 @@ public final class NpcInstance {
                        @NotNull NpcDefinition definition) {
         this.plugin = plugin;
         this.definition = definition;
-        this.packetNpc = new PacketPlayerNpc(plugin, nms, definition);
+        if (CitizensNpcBody.available()) {
+            this.body = new CitizensNpcBody(plugin, definition);
+            this.citizensBackend = true;
+        } else {
+            this.body = new PacketPlayerNpc(plugin, nms, definition);
+            this.citizensBackend = false;
+        }
     }
 
     public @NotNull NpcDefinition definition() {
@@ -46,12 +53,20 @@ public final class NpcInstance {
         return spawned;
     }
 
+    public boolean usesCitizens() {
+        return citizensBackend;
+    }
+
     public @Nullable UUID clickId() {
         return clickbox == null ? null : clickbox.getUniqueId();
     }
 
     public boolean isEntity(@NotNull Entity entity) {
         if (clickbox != null && clickbox.getUniqueId().equals(entity.getUniqueId())) {
+            return true;
+        }
+        Entity bodyEntity = body.bukkitEntity();
+        if (bodyEntity != null && bodyEntity.getUniqueId().equals(entity.getUniqueId())) {
             return true;
         }
         for (TextDisplay hologram : holograms) {
@@ -70,7 +85,14 @@ public final class NpcInstance {
         }
         World world = loc.getWorld();
 
-        // Invisible interaction hitbox for reliable clicking (packet players aren't Bukkit entities)
+        // Load chunk before body spawn
+        int cx = loc.getBlockX() >> 4;
+        int cz = loc.getBlockZ() >> 4;
+        if (!world.isChunkLoaded(cx, cz)) {
+            world.loadChunk(cx, cz);
+        }
+
+        // Invisible interaction hitbox for reliable clicking
         clickbox = world.spawn(loc.clone().add(0, 1.0, 0), Interaction.class, interaction -> {
             interaction.setInteractionWidth(0.8f);
             interaction.setInteractionHeight(2.0f);
@@ -81,25 +103,37 @@ public final class NpcInstance {
         });
 
         spawnHolograms(loc);
-        packetNpc.spawnForNearby();
+        body.spawnForNearby();
         spawned = true;
         animTick = 0;
+
+        if (!body.isBodySpawned() && !citizensBackend) {
+            plugin.getLogger().warning("NPC " + definition.getId()
+                    + " holograms spawned but player model is unavailable. "
+                    + "Install Citizens for reliable player NPCs, or check console for packet bridge errors.");
+        }
     }
 
-    /** Re-show packet player for a joining / nearby player. */
     public void showFor(@NotNull Player player) {
         if (!spawned) {
             return;
         }
-        packetNpc.showFor(player);
+        body.showFor(player);
+    }
+
+    public void showForNearbyInChunk() {
+        if (!spawned) {
+            return;
+        }
+        body.spawnForNearby();
     }
 
     public void hideFrom(@NotNull Player player) {
-        packetNpc.hide(player);
+        body.hide(player);
     }
 
     public void refreshSkin() {
-        packetNpc.refreshSkin();
+        body.refreshSkin();
     }
 
     public void refreshHolograms(@Nullable Player viewer) {
@@ -160,16 +194,14 @@ public final class NpcInstance {
             return;
         }
 
-        // Maintain viewer set + packet player visibility
-        packetNpc.spawnForNearby();
+        body.spawnForNearby();
 
         Player nearest = nearestPlayer(base, definition.getViewDistance());
-        packetNpc.tickLook(nearest);
-        packetNpc.applyIdleMotion(animTick, definition.getAnimation());
+        body.tickLook(nearest);
+        body.applyIdleMotion(animTick, definition.getAnimation());
 
         if (clickbox != null && clickbox.isValid()) {
-            Location clickLoc = base.clone().add(0, 1.0, 0);
-            clickbox.teleport(clickLoc);
+            clickbox.teleport(base.clone().add(0, 1.0, 0));
         }
 
         if (globalTick % 10 == 0) {
@@ -178,7 +210,7 @@ public final class NpcInstance {
     }
 
     public void playClickAnimation() {
-        packetNpc.playSwing();
+        body.playSwing();
     }
 
     private @Nullable Player nearestPlayer(@NotNull Location location, double radius) {
@@ -205,6 +237,8 @@ public final class NpcInstance {
         if (loc == null || loc.getWorld() == null) {
             return false;
         }
+        // Citizens NPCs should stay spawned even without nearby players if configured;
+        // still use despawn distance for consistency / performance.
         double radiusSq = definition.getDespawnDistance() * definition.getDespawnDistance();
         for (Player player : loc.getWorld().getPlayers()) {
             if (player.getLocation().distanceSquared(loc) <= radiusSq) {
@@ -216,7 +250,7 @@ public final class NpcInstance {
 
     public void despawn() {
         spawned = false;
-        packetNpc.despawnAll();
+        body.despawnAll();
         if (clickbox != null) {
             clickbox.remove();
             clickbox = null;

@@ -4,6 +4,7 @@ import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.npc.nms.NmsBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +20,7 @@ import java.util.logging.Level;
  * Real packet-based player NPC visible to nearby players.
  * Spawn sequence (Paper 1.21): PlayerInfo → short delay → AddEntity + metadata.
  */
-public final class PacketPlayerNpc {
+public final class PacketPlayerNpc implements NpcBody {
 
     private final BlazesChaosPlugin plugin;
     private final NmsBridge nms;
@@ -61,6 +62,16 @@ public final class PacketPlayerNpc {
 
     public boolean isSpawned() {
         return spawned && nmsPlayer != null;
+    }
+
+    @Override
+    public boolean isBodySpawned() {
+        return isSpawned();
+    }
+
+    @Override
+    public @Nullable Entity bukkitEntity() {
+        return null;
     }
 
     public int entityId() {
