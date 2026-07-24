@@ -69,7 +69,18 @@ public final class BlazeChaosExpansion extends PlaceholderExpansion {
                         game.getActiveEvent().getDefaultDisplayName()));
             }
             case "next_event" -> game == null ? "-" : String.valueOf(game.getNextEventSeconds());
-            case "time" -> game == null ? "0" : String.valueOf(game.getGameSeconds());
+            case "time" -> {
+                if (game == null) {
+                    yield "0";
+                }
+                if (game.getState() == com.blazeschaos.game.GameState.STARTING) {
+                    yield String.valueOf(game.getCountdownSecondsLeft());
+                }
+                yield String.valueOf(game.getGameSeconds());
+            }
+            case "countdown" -> game == null || game.getState() != com.blazeschaos.game.GameState.STARTING
+                    ? "0"
+                    : String.valueOf(game.getCountdownSecondsLeft());
             case "map" -> game == null ? "-" : game.getArena().getDisplayName();
             case "mode" -> game == null ? "Lobby" : "Solo";
             case "state" -> game == null ? "Lobby" : game.getState().display();

@@ -34,9 +34,11 @@ public final class ShopManager implements Listener {
     }
 
     public void open(@NotNull Player player) {
-        Inventory inventory = Bukkit.createInventory(new ShopHolder(),
+        ShopHolder holder = new ShopHolder();
+        Inventory inventory = Bukkit.createInventory(holder,
                 plugin.configs().shop().getInt("size", 27),
                 ColorUtil.parse(plugin.configs().shop().getString("title", "<gold>Shop</gold>")));
+        holder.bind(inventory);
         ConfigurationSection items = plugin.configs().shop().getConfigurationSection("items");
         if (items != null) {
             for (String id : items.getKeys(false)) {
@@ -123,10 +125,19 @@ public final class ShopManager implements Listener {
         ));
     }
 
-    public record ShopHolder() implements InventoryHolder {
+    public static final class ShopHolder implements InventoryHolder {
+        private Inventory inventory;
+
+        public void bind(@NotNull Inventory inventory) {
+            this.inventory = inventory;
+        }
+
         @Override
         public @NotNull Inventory getInventory() {
-            return Bukkit.createInventory(this, 9);
+            if (inventory != null) {
+                return inventory;
+            }
+            return Bukkit.createInventory(this, 27);
         }
     }
 }

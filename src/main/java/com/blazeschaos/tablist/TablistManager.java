@@ -51,6 +51,12 @@ public final class TablistManager {
             task.cancel();
             task = null;
         }
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            try {
+                player.sendPlayerListHeaderAndFooter(Component.empty(), Component.empty());
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
     public void apply(@NotNull Player player) {

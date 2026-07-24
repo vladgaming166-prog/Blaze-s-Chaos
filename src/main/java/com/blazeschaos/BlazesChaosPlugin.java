@@ -18,6 +18,7 @@ import com.blazeschaos.loot.LootRarityManager;
 import com.blazeschaos.npc.NpcListener;
 import com.blazeschaos.npc.NpcManager;
 import com.blazeschaos.npc.gui.NpcGui;
+import com.blazeschaos.placeholder.BlazeChaosAnimationExpansion;
 import com.blazeschaos.placeholder.BlazeChaosExpansion;
 import com.blazeschaos.scoreboard.AnimationManager;
 import com.blazeschaos.scoreboard.ScoreboardManager;
@@ -56,6 +57,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private PassiveAnimalManager passiveAnimalManager;
     private SpawnConfirmListener spawnConfirmListener;
     private BlazeChaosExpansion placeholderExpansion;
+    private BlazeChaosAnimationExpansion animationExpansion;
     private NpcManager npcManager;
     private NpcGui npcGui;
     private com.blazeschaos.npc.NpcCommandHandler npcCommands;
@@ -110,6 +112,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new NpcListener(this), this);
         Bukkit.getPluginManager().registerEvents(npcGui, this);
 
+        animationManager.start();
         scoreboardManager.start();
         tablistManager.start();
         passiveAnimalManager.start();
@@ -128,6 +131,9 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         if (gameManager != null) {
             gameManager.shutdown();
         }
+        if (animationManager != null) {
+            animationManager.stop();
+        }
         if (scoreboardManager != null) {
             scoreboardManager.stop();
         }
@@ -137,12 +143,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         if (passiveAnimalManager != null) {
             passiveAnimalManager.stop();
         }
-        if (placeholderExpansion != null) {
-            try {
-                placeholderExpansion.unregister();
-            } catch (Throwable ignored) {
-            }
-        }
+        unregisterPlaceholders();
         if (databaseManager != null) {
             databaseManager.disconnect();
         }
@@ -159,6 +160,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         difficultyManager.reload();
         lootRarityManager.reload();
         animationManager.reload();
+        animationManager.start();
         npcManager.reload();
         scoreboardManager.start();
         tablistManager.start();
@@ -170,15 +172,29 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         if (!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             return;
         }
+        unregisterPlaceholders();
+        placeholderExpansion = new BlazeChaosExpansion(this);
+        placeholderExpansion.register();
+        animationExpansion = new BlazeChaosAnimationExpansion(this);
+        animationExpansion.register();
+        getLogger().info("PlaceholderAPI hooked (blazechaos + blazechaosanimation).");
+    }
+
+    private void unregisterPlaceholders() {
         if (placeholderExpansion != null) {
             try {
                 placeholderExpansion.unregister();
             } catch (Throwable ignored) {
             }
+            placeholderExpansion = null;
         }
-        placeholderExpansion = new BlazeChaosExpansion(this);
-        placeholderExpansion.register();
-        getLogger().info("PlaceholderAPI hooked.");
+        if (animationExpansion != null) {
+            try {
+                animationExpansion.unregister();
+            } catch (Throwable ignored) {
+            }
+            animationExpansion = null;
+        }
     }
 
     public @NotNull ConfigManager configs() {

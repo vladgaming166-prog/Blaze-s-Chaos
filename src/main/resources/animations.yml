@@ -1,16 +1,18 @@
-# Global animated placeholders
-# Use as %blazechaos_animation_<name>% or %animation:<name>%
-# interval is in animation engine ticks (advanced each scoreboard update)
-config-version: 1
+# Global animated placeholders (TAB-style)
+# Use as:
+#   %blazechaosanimation_<name>%
+#   %blazechaos_animation_<name>%
+#   %animation:<name>%
+# Works in scoreboards, tablist, bossbars, actionbars, titles, NPC holograms, messages.
+# interval = server ticks between frame changes
+config-version: 2
 
 title:
   interval: 2
   frames:
-    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
-    - "<gradient:#FFD700:#FF4500><bold>Blaze's Chaos</bold></gradient>"
-    - "&6&lBlaze's Chaos"
-    - "&e&lBlaze's Chaos"
-    - "&f&lBlaze's Chaos"
+    - "&aBlaze's Chaos"
+    - "&2Blaze's Chaos"
+    - "&fBlaze's Chaos"
 
 server:
   interval: 3

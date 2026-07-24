@@ -1,50 +1,51 @@
-# Scoreboard / tablist animations (TAB-style)
-# Reference in any line with: %animation:name%  or  {animation:name}
+# Scoreboard / tablist / hologram / message animations (TAB-style)
+# Use in any text with:
+#   %blazechaosanimation_title%
+#   %blazechaos_animation_title%
+#   %animation:title%
+#   {animation:title}
 #
-# change-interval is in SCOREBOARD UPDATE TICKS (same as scoreboard update-interval steps).
-# Example: update-interval 20 (1 second) + change-interval 2 = frame every 2 seconds.
-config-version: 1
+# interval = ticks between frame changes (animation engine advances every server tick)
+config-version: 2
 
 title:
-  change-interval: 2
-  texts:
-    - "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
-    - "<gradient:#FFD700:#FF4500><bold>BLAZE'S CHAOS</bold></gradient>"
-    - "<gradient:#FF6347:#FFA500><bold>BLAZE'S CHAOS</bold></gradient>"
-    - "&6&lBLAZE'S CHAOS"
-    - "&e&lBLAZE'S CHAOS"
+  interval: 2
+  frames:
+    - "&aBlaze's Chaos"
+    - "&2Blaze's Chaos"
+    - "&fBlaze's Chaos"
 
 server:
-  change-interval: 5
-  texts:
+  interval: 5
+  frames:
     - "&aplay.example.ro"
     - "&fplay.example.ro"
     - "&eplay.example.ro"
 
 coins:
-  change-interval: 10
-  texts:
+  interval: 10
+  frames:
     - "&6Coins"
     - "&eCoins"
     - "&fCoins"
 
 discord:
-  change-interval: 8
-  texts:
+  interval: 8
+  frames:
     - "&9discord.gg/example"
     - "&bdiscord.gg/example"
     - "&fdiscord.gg/example"
 
 online:
-  change-interval: 15
-  texts:
+  interval: 15
+  frames:
     - "&aOnline"
     - "&2Online"
     - "&fOnline"
 
 footer:
-  change-interval: 6
-  texts:
+  interval: 6
+  frames:
     - "&7Survive the chaos"
     - "&8Survive the chaos"
     - "&fSurvive the chaos"

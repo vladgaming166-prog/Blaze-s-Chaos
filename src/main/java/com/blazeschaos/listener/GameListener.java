@@ -83,11 +83,14 @@ public final class GameListener implements Listener {
         Player player = event.getPlayer();
         GameInstance game = plugin.gameManager().getByPlayer(player);
         if (game != null) {
+            // Do not call eliminate() — that schedules spectator lobby delay and fights fullyRemovePlayer.
             if (game.getState().isActive() && game.isAlive(player.getUniqueId())) {
-                game.eliminate(player, null);
+                plugin.database().addDeath(player.getUniqueId(), player.getName());
             }
             game.fullyRemovePlayer(player, false);
         }
+        plugin.npcManager().clearPlayer(player);
+        plugin.npcGui().clearPlayer(player);
         plugin.scoreboardManager().remove(player);
     }
 

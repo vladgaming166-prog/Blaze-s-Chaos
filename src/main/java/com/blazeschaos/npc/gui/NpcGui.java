@@ -47,8 +47,10 @@ public final class NpcGui implements Listener {
     }
 
     public void showMain(@NotNull Player player, @NotNull NpcMode preferred) {
-        Inventory inventory = Bukkit.createInventory(new MainHolder(preferred), 54,
+        MainHolder holder = new MainHolder(preferred);
+        Inventory inventory = Bukkit.createInventory(holder, 54,
                 ColorUtil.parse("<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"));
+        holder.bind(inventory);
 
         fillBorder(inventory);
 
@@ -85,8 +87,10 @@ public final class NpcGui implements Listener {
     }
 
     public void showMaps(@NotNull Player player) {
-        Inventory inventory = Bukkit.createInventory(new MapsHolder(), 54,
+        MapsHolder holder = new MapsHolder();
+        Inventory inventory = Bukkit.createInventory(holder, 54,
                 ColorUtil.parse("<aqua><bold>Map Selector</bold></aqua>"));
+        holder.bind(inventory);
         fillBorder(inventory);
 
         int slot = 10;
@@ -262,8 +266,15 @@ public final class NpcGui implements Listener {
         }
     }
 
+    public void clearPlayer(@NotNull Player player) {
+        UUID id = player.getUniqueId();
+        lastClick.remove(id);
+        lastArena.remove(id);
+    }
+
     public static final class MainHolder implements InventoryHolder {
         private final NpcMode mode;
+        private @Nullable Inventory inventory;
 
         public MainHolder(@NotNull NpcMode mode) {
             this.mode = mode;
@@ -273,15 +284,31 @@ public final class NpcGui implements Listener {
             return mode;
         }
 
+        public void bind(@NotNull Inventory inventory) {
+            this.inventory = inventory;
+        }
+
         @Override
         public @NotNull Inventory getInventory() {
+            if (inventory != null) {
+                return inventory;
+            }
             return Bukkit.createInventory(this, 54);
         }
     }
 
     public static final class MapsHolder implements InventoryHolder {
+        private @Nullable Inventory inventory;
+
+        public void bind(@NotNull Inventory inventory) {
+            this.inventory = inventory;
+        }
+
         @Override
         public @NotNull Inventory getInventory() {
+            if (inventory != null) {
+                return inventory;
+            }
             return Bukkit.createInventory(this, 54);
         }
     }

@@ -5,6 +5,7 @@ import com.blazeschaos.arena.Arena;
 import com.blazeschaos.game.GameInstance;
 import com.blazeschaos.game.GameState;
 import com.blazeschaos.npc.gui.NpcGui;
+import com.blazeschaos.npc.nms.NmsBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -27,22 +28,29 @@ public final class NpcManager {
 
     private final BlazesChaosPlugin plugin;
     private final SkinService skins;
+    private final NmsBridge nms;
     private final Map<String, NpcDefinition> definitions = new ConcurrentHashMap<>();
     private final Map<String, NpcInstance> instances = new ConcurrentHashMap<>();
     private final Map<UUID, String> selected = new ConcurrentHashMap<>();
     private final Map<UUID, java.util.Set<String>> favorites = new ConcurrentHashMap<>();
+    private final java.util.Set<String> resolvingSkins = ConcurrentHashMap.newKeySet();
     private @Nullable BukkitTask task;
     private int tickCounter;
 
     public NpcManager(@NotNull BlazesChaosPlugin plugin) {
         this.plugin = plugin;
         this.skins = new SkinService(plugin);
+        this.nms = new NmsBridge(plugin);
         load();
         start();
     }
 
     public @NotNull SkinService skins() {
         return skins;
+    }
+
+    public @NotNull NmsBridge nms() {
+        return nms;
     }
 
     public void start() {
@@ -72,6 +80,7 @@ public final class NpcManager {
         }
         instances.clear();
         definitions.clear();
+        resolvingSkins.clear();
 
         FileConfiguration config = plugin.configs().npcs();
         ConfigurationSection section = config.getConfigurationSection("npcs");
@@ -83,11 +92,12 @@ public final class NpcManager {
                 }
                 NpcDefinition def = NpcDefinition.deserialize(id, npcSection);
                 definitions.put(def.getId(), def);
-                instances.put(def.getId(), new NpcInstance(plugin, def));
+                instances.put(def.getId(), new NpcInstance(plugin, nms, def));
             }
         }
         loadFavorites();
-        plugin.getLogger().info("Loaded " + definitions.size() + " NPCs.");
+        plugin.getLogger().info("Loaded " + definitions.size() + " NPCs"
+                + (nms.available() ? " (packet player models)." : " (packet bridge unavailable)."));
     }
 
     public void save() {
@@ -126,14 +136,33 @@ public final class NpcManager {
     private void spawnReady(@NotNull NpcInstance instance) {
         NpcDefinition def = instance.definition();
         if (def.getSkin().type() != SkinData.Type.NONE && !def.getSkin().hasTextures()) {
+            if (!resolvingSkins.add(def.getId())) {
+                return;
+            }
+            String id = def.getId();
             skins.resolveAsync(def.getSkin(), () -> {
-                instance.spawn();
-                instance.refreshSkin();
+                resolvingSkins.remove(id);
+                if (!plugin.isEnabled()) {
+                    return;
+                }
+                NpcInstance current = instances.get(id);
+                if (current == null || current != instance) {
+                    return;
+                }
+                if (!current.isSpawned()) {
+                    current.spawn();
+                } else {
+                    current.refreshSkin();
+                }
                 save();
             });
         } else {
             instance.spawn();
         }
+    }
+
+    public void clearPlayer(@NotNull Player player) {
+        selected.remove(player.getUniqueId());
     }
 
     public @NotNull NpcDefinition create(@NotNull Player player, @NotNull NpcMode mode) {
@@ -144,7 +173,7 @@ public final class NpcManager {
         def.setHologramLines(NpcDefinition.defaultHologram(mode));
         def.setAnimation(NpcAnimationType.LOOK_AROUND);
         definitions.put(id, def);
-        NpcInstance instance = new NpcInstance(plugin, def);
+        NpcInstance instance = new NpcInstance(plugin, nms, def);
         instances.put(id, instance);
         selected.put(player.getUniqueId(), id);
         save();

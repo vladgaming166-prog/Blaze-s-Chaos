@@ -2,7 +2,6 @@ package com.blazeschaos.scoreboard;
 
 import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.game.GameInstance;
-import com.blazeschaos.game.GameState;
 import com.blazeschaos.util.ColorUtil;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import net.kyori.adventure.text.Component;
@@ -20,19 +19,25 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Flicker-free sidebar scoreboard.
+ * Reuses one scoreboard/objective/teams per player and only writes when content changes.
+ */
 public final class ScoreboardManager {
 
+    private static final String OBJECTIVE_NAME = "blazechaos";
     private static final String[] ENTRY_KEYS = {
             "§0§r", "§1§r", "§2§r", "§3§r", "§4§r", "§5§r", "§6§r", "§7§r",
             "§8§r", "§9§r", "§a§r", "§b§r", "§c§r", "§d§r", "§e§r"
     };
 
     private final BlazesChaosPlugin plugin;
-    private final java.util.Map<UUID, Scoreboard> boards = new ConcurrentHashMap<>();
-    private int titleFrame;
+    private final ConcurrentHashMap<UUID, Scoreboard> boards = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, CachedBoard> cache = new ConcurrentHashMap<>();
     private @Nullable BukkitTask task;
 
     public ScoreboardManager(@NotNull BlazesChaosPlugin plugin) {
@@ -46,15 +51,14 @@ public final class ScoreboardManager {
         }
         int interval = Math.max(1, plugin.configs().scoreboard().getInt("update-interval", 20));
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            titleFrame++;
-            plugin.animationManager().tick();
             for (Player player : Bukkit.getOnlinePlayers()) {
                 try {
                     refresh(player);
                 } catch (Throwable ex) {
+                    plugin.getLogger().warning("Scoreboard refresh failed for "
+                            + player.getName() + ": " + ex.getMessage());
                     if (plugin.configs().debug()) {
-                        plugin.getLogger().warning("Scoreboard refresh failed for "
-                                + player.getName() + ": " + ex.getMessage());
+                        ex.printStackTrace();
                     }
                 }
             }
@@ -67,9 +71,13 @@ public final class ScoreboardManager {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 remove(player);
+            } else {
+                boards.remove(uuid);
+                cache.remove(uuid);
             }
         }
         boards.clear();
+        cache.clear();
     }
 
     private void stopTask() {
@@ -87,15 +95,16 @@ public final class ScoreboardManager {
             return;
         }
         GameInstance game = plugin.gameManager().getByPlayer(player);
-        String section = resolveSection(player, game);
-        render(player, section, game);
+        render(player, resolveSection(player, game), game);
     }
 
     public void applyLobby(@NotNull Player player) {
+        cache.remove(player.getUniqueId());
         render(player, "server-lobby", null);
     }
 
     public void apply(@NotNull Player player, @NotNull GameInstance game) {
+        cache.remove(player.getUniqueId());
         render(player, resolveSection(player, game), game);
     }
 
@@ -124,30 +133,54 @@ public final class ScoreboardManager {
         FileConfiguration config = plugin.configs().scoreboard();
         Scoreboard board = boards.computeIfAbsent(player.getUniqueId(),
                 id -> Bukkit.getScoreboardManager().getNewScoreboard());
+
         if (player.getScoreboard() != board) {
             player.setScoreboard(board);
         }
-        Objective objective = board.getObjective("blazechaos");
+
+        Objective objective = board.getObjective(OBJECTIVE_NAME);
         if (objective == null) {
-            objective = board.registerNewObjective("blazechaos", Criteria.DUMMY, Component.empty());
+            // Clean up any stale objectives with same display slot
+            Objective existing = board.getObjective(DisplaySlot.SIDEBAR);
+            if (existing != null && !OBJECTIVE_NAME.equals(existing.getName())) {
+                existing.unregister();
+            }
+            objective = board.registerNewObjective(OBJECTIVE_NAME, Criteria.DUMMY, Component.empty());
+            objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        } else if (objective.getDisplaySlot() != DisplaySlot.SIDEBAR) {
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         }
+
         if (config.getBoolean("hide-scores", true)) {
             objective.numberFormat(NumberFormat.blank());
         }
 
-        objective.displayName(ColorUtil.parse(applyAll(player, game, resolveTitle(config, section))));
-
+        String titleRaw = applyAll(player, game, resolveTitle(config, section));
         List<String> lines = config.getStringList(section + ".lines");
         if (lines.isEmpty() && section.equals("server-lobby")) {
             lines = config.getStringList("lobby.lines");
         }
-        List<String> rendered = new ArrayList<>();
+
+        List<String> rendered = new ArrayList<>(Math.min(15, lines.size()));
         for (String line : lines) {
+            if (rendered.size() >= 15) {
+                break;
+            }
             rendered.add(applyAll(player, game, line));
         }
-        while (rendered.size() > 15) {
-            rendered.removeLast();
+
+        CachedBoard previous = cache.get(player.getUniqueId());
+        if (previous != null
+                && Objects.equals(previous.title, titleRaw)
+                && previous.lines.equals(rendered)
+                && previous.section.equals(section)) {
+            // Content unchanged — skip writes to avoid flicker
+            return;
+        }
+
+        Component titleComponent = ColorUtil.parse(titleRaw);
+        if (previous == null || !Objects.equals(previous.title, titleRaw)) {
+            objective.displayName(titleComponent);
         }
 
         for (int i = 0; i < ENTRY_KEYS.length; i++) {
@@ -155,50 +188,77 @@ public final class ScoreboardManager {
             Team team = board.getTeam("bc" + i);
             if (i >= rendered.size()) {
                 board.resetScores(entry);
+                // Keep team registered empty to avoid recreate churn; clear prefix
                 if (team != null) {
-                    team.unregister();
+                    team.prefix(Component.empty());
+                    team.suffix(Component.empty());
                 }
                 continue;
             }
             if (team == null) {
                 team = board.registerNewTeam("bc" + i);
-                team.addEntry(entry);
-            } else if (!team.hasEntry(entry)) {
+            }
+            if (!team.hasEntry(entry)) {
+                // Ensure only this entry
+                for (String existing : new ArrayList<>(team.getEntries())) {
+                    team.removeEntry(existing);
+                }
                 team.addEntry(entry);
             }
             String text = rendered.get(i);
-            team.prefix(ColorUtil.parse(text));
-            team.suffix(Component.empty());
+            boolean lineChanged = previous == null
+                    || previous.lines.size() <= i
+                    || !Objects.equals(previous.lines.get(i), text);
+            if (lineChanged) {
+                team.prefix(ColorUtil.parse(text));
+                team.suffix(Component.empty());
+            }
             objective.getScore(entry).setScore(15 - i);
         }
+
+        cache.put(player.getUniqueId(), new CachedBoard(section, titleRaw, List.copyOf(rendered)));
     }
 
     private @NotNull String resolveTitle(@NotNull FileConfiguration config, @NotNull String section) {
         String configured = config.getString(section + ".title", "");
-        if (configured != null && configured.contains("%animation:")) {
+        if (configured != null && !configured.isBlank()) {
             return configured;
         }
-        if (config.getBoolean("animations.enabled", true)) {
-            // Prefer dedicated animation named "title"
-            if (plugin.animationManager().get("title") != null) {
-                return "%animation:title%";
-            }
-            List<String> frames = config.getStringList("animations.title-frames");
-            if (!frames.isEmpty()) {
-                int frameInterval = Math.max(1, config.getInt("animations.frame-interval", 1));
-                return frames.get(Math.floorMod(titleFrame / frameInterval, frames.size()));
-            }
+        if (plugin.animationManager().get("title") != null) {
+            return "%blazechaosanimation_title%";
         }
-        return config.getString(section + ".title", "<gold>Blaze's Chaos</gold>");
+        return "<gold>Blaze's Chaos</gold>";
     }
 
     private @NotNull String applyAll(@NotNull Player player, @Nullable GameInstance game, @NotNull String input) {
+        // Placeholders service also resolves animations; resolve once here for clarity
         String text = plugin.animationManager().resolve(input);
         return plugin.placeholders().apply(player, game, text);
     }
 
     public void remove(@NotNull Player player) {
-        boards.remove(player.getUniqueId());
-        player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+        UUID id = player.getUniqueId();
+        Scoreboard board = boards.remove(id);
+        cache.remove(id);
+        if (board != null) {
+            try {
+                Objective objective = board.getObjective(OBJECTIVE_NAME);
+                if (objective != null) {
+                    objective.unregister();
+                }
+                for (Team team : new ArrayList<>(board.getTeams())) {
+                    if (team.getName().startsWith("bc")) {
+                        team.unregister();
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        if (player.isOnline()) {
+            player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+        }
+    }
+
+    private record CachedBoard(@NotNull String section, @NotNull String title, @NotNull List<String> lines) {
     }
 }
