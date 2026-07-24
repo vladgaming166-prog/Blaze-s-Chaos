@@ -11,17 +11,23 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Parses MiniMessage, legacy (& codes), § codes, and hex colors (#RRGGBB / &#RRGGBB / &x&R&R...).
+ * Parses text for Adventure display.
+ * <p>
+ * Restores the pre-break behaviour: any string containing MiniMessage {@code <tags>}
+ * is parsed with MiniMessage. Legacy {@code &} codes are used only when no {@code <}
+ * tags are present. Hex helpers apply only on the legacy path so gradients like
+ * {@code <gradient:#FFFFFF:#45A000>} are never mangled into raw visible tags.
  */
 public final class ColorUtil {
 
     private static final MiniMessage MINI = MiniMessage.miniMessage();
-    private static final LegacyComponentSerializer LEGACY_AMP =
-            LegacyComponentSerializer.legacyAmpersand().toBuilder().hexColors().useUnusualXRepeatedCharacterHexFormat().build();
-    private static final LegacyComponentSerializer LEGACY_SECTION =
-            LegacyComponentSerializer.legacySection().toBuilder().hexColors().build();
-    private static final Pattern HEX_HASH = Pattern.compile("(?i)#([0-9A-F]{6})");
-    private static final Pattern HEX_AMP = Pattern.compile("(?i)&?#([0-9A-F]{6})");
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand()
+            .toBuilder()
+            .hexColors()
+            .useUnusualXRepeatedCharacterHexFormat()
+            .build();
+    private static final Pattern HEX_BARE = Pattern.compile("(?i)(?<![&<])#([0-9A-F]{6})");
+    private static final Pattern HEX_AMP = Pattern.compile("(?i)&#([0-9A-F]{6})");
 
     private ColorUtil() {
     }
@@ -30,26 +36,25 @@ public final class ColorUtil {
         if (input == null || input.isEmpty()) {
             return Component.empty();
         }
-        String text = normalize(input);
-        // Prefer MiniMessage when angle-bracket tags are present (gradients, etc.)
-        if (text.indexOf('<') >= 0 && looksLikeMiniMessage(text)) {
-            try {
-                return MINI.deserialize(text).decoration(TextDecoration.ITALIC, false);
-            } catch (Exception ignored) {
-                // fall through to legacy
-            }
+        String text = input;
+
+        // MiniMessage whenever angle-bracket tags exist (same rule as the working version).
+        // Never rewrite # colors inside these strings.
+        if (text.indexOf('<') >= 0) {
+            return MINI.deserialize(text).decoration(TextDecoration.ITALIC, false);
         }
-        if (text.indexOf('§') >= 0 && text.indexOf('&') < 0) {
-            return LEGACY_SECTION.deserialize(text).decoration(TextDecoration.ITALIC, false);
+
+        // Legacy-only: & codes, optional # / &# hex
+        if (text.indexOf('&') >= 0 || text.indexOf('#') >= 0 || text.indexOf('§') >= 0) {
+            text = normalizeLegacyHex(text);
+            return LEGACY.deserialize(text).decoration(TextDecoration.ITALIC, false);
         }
-        return LEGACY_AMP.deserialize(text).decoration(TextDecoration.ITALIC, false);
+
+        // Plain text — MiniMessage handles it safely (previous default path)
+        return MINI.deserialize(text).decoration(TextDecoration.ITALIC, false);
     }
 
-    /**
-     * Convert common hex formats into legacy {@code &x&R&R&G&G&B&B} so both MiniMessage-free
-     * and legacy parsers handle them.
-     */
-    public static @NotNull String normalize(@NotNull String input) {
+    private static @NotNull String normalizeLegacyHex(@NotNull String input) {
         String text = input;
         Matcher amp = HEX_AMP.matcher(text);
         StringBuilder sb = new StringBuilder();
@@ -59,18 +64,12 @@ public final class ColorUtil {
         amp.appendTail(sb);
         text = sb.toString();
 
-        // Bare #RRGGBB only when not already part of MiniMessage <#...>
-        Matcher hash = HEX_HASH.matcher(text);
+        Matcher bare = HEX_BARE.matcher(text);
         sb = new StringBuilder();
-        while (hash.find()) {
-            int start = hash.start();
-            if (start > 0 && text.charAt(start - 1) == '<') {
-                hash.appendReplacement(sb, Matcher.quoteReplacement(hash.group(0)));
-                continue;
-            }
-            hash.appendReplacement(sb, Matcher.quoteReplacement(toLegacyHex(hash.group(1))));
+        while (bare.find()) {
+            bare.appendReplacement(sb, Matcher.quoteReplacement(toLegacyHex(bare.group(1))));
         }
-        hash.appendTail(sb);
+        bare.appendTail(sb);
         return sb.toString();
     }
 
@@ -82,23 +81,13 @@ public final class ColorUtil {
         return out.toString();
     }
 
-    private static boolean looksLikeMiniMessage(@NotNull String text) {
-        return text.contains("</") || text.contains("<gradient") || text.contains("<bold")
-                || text.contains("<red") || text.contains("<green") || text.contains("<aqua")
-                || text.contains("<yellow") || text.contains("<gold") || text.contains("<gray")
-                || text.contains("<white") || text.contains("<black") || text.contains("<dark_")
-                || text.contains("<#") || text.contains("<rainbow") || text.contains("<italic")
-                || text.contains("<underlined") || text.contains("<strikethrough") || text.contains("<obfuscated")
-                || text.contains("<reset") || text.contains("<color");
-    }
-
     public static @NotNull String strip(@NotNull String input) {
-        String normalized = normalize(input);
+        String text = input;
         try {
-            normalized = MINI.stripTags(normalized);
+            text = MINI.stripTags(text);
         } catch (Exception ignored) {
         }
-        return ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', normalized));
+        return ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', text));
     }
 
     public static @NotNull MiniMessage mini() {
