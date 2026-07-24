@@ -28,6 +28,7 @@ public final class ConfigManager {
     private FileConfiguration arenas;
     private FileConfiguration scoreboard;
     private FileConfiguration tablist;
+    private FileConfiguration animations;
     private FileConfiguration worldReset;
     private FileConfiguration permissions;
     private FileConfiguration shop;
@@ -41,11 +42,13 @@ public final class ConfigManager {
     public void loadAll() {
         ensureMainConfig();
         config = plugin.getConfig();
+        migrateMainConfig();
 
         events = loadYaml("events.yml");
         arenas = loadYaml("arenas.yml");
         scoreboard = loadYaml("scoreboardconfig.yml");
         tablist = loadYaml("tablist.yml");
+        animations = loadYaml("scoreboardanimations.yml");
         worldReset = loadYaml("worldreset.yml");
         permissions = loadYaml("permissions.yml");
         shop = loadYaml("shop.yml");
@@ -55,16 +58,25 @@ public final class ConfigManager {
         languageManager = new LanguageManager(plugin);
         languageManager.load();
         validateCore();
+        softSaveMerged("events.yml", events);
+        softSaveMerged("scoreboardconfig.yml", scoreboard);
+        softSaveMerged("tablist.yml", tablist);
+        softSaveMerged("scoreboardanimations.yml", animations);
+        softSaveMerged("loot.yml", loot);
+        softSaveMerged("shop.yml", shop);
+        softSaveMerged("worldreset.yml", worldReset);
     }
 
     public void reloadAll() {
         ensureMainConfig();
         plugin.reloadConfig();
         config = plugin.getConfig();
+        migrateMainConfig();
         events = reloadYaml("events.yml");
         arenas = reloadYaml("arenas.yml");
         scoreboard = reloadYaml("scoreboardconfig.yml");
         tablist = reloadYaml("tablist.yml");
+        animations = reloadYaml("scoreboardanimations.yml");
         worldReset = reloadYaml("worldreset.yml");
         permissions = reloadYaml("permissions.yml");
         shop = reloadYaml("shop.yml");
@@ -74,6 +86,53 @@ public final class ConfigManager {
         }
         languageManager.load();
         validateCore();
+    }
+
+    private void migrateMainConfig() {
+        try (InputStream stream = plugin.getResource("config.yml")) {
+            if (stream == null) {
+                return;
+            }
+            YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8));
+            boolean changed = false;
+            for (String key : defaults.getKeys(true)) {
+                if (!defaults.isConfigurationSection(key) && !config.contains(key)) {
+                    config.set(key, defaults.get(key));
+                    changed = true;
+                }
+            }
+            if (changed) {
+                plugin.saveConfig();
+                plugin.getLogger().info("Migrated config.yml with new default keys (existing values preserved).");
+            }
+        } catch (IOException exception) {
+            plugin.getLogger().log(Level.WARNING, "Failed to migrate config.yml", exception);
+        }
+    }
+
+    private void softSaveMerged(@NotNull String name, @NotNull FileConfiguration yaml) {
+        File file = new File(plugin.getDataFolder(), name);
+        if (!file.exists()) {
+            save(yaml, name);
+            return;
+        }
+        int jarVersion = 1;
+        try (InputStream stream = plugin.getResource(name)) {
+            if (stream != null) {
+                YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+                        new InputStreamReader(stream, StandardCharsets.UTF_8));
+                jarVersion = defaults.getInt("config-version", 1);
+            }
+        } catch (IOException ignored) {
+        }
+        int diskVersion = yaml.getInt("config-version", 0);
+        if (diskVersion < jarVersion) {
+            yaml.set("config-version", jarVersion);
+            save(yaml, name);
+            plugin.getLogger().info("Updated " + name + " to config-version " + jarVersion
+                    + " (user values preserved via defaults merge).");
+        }
     }
 
     private void ensureMainConfig() {
@@ -91,12 +150,11 @@ public final class ConfigManager {
 
     private void validateCore() {
         if (config.getConfigurationSection("settings") == null) {
-            plugin.getLogger().warning("config.yml missing settings section — regenerating defaults merge.");
+            plugin.getLogger().warning("config.yml missing settings section — defaults will be migrated.");
         }
         if (events.getConfigurationSection("enabled-events") == null) {
             plugin.getLogger().warning("events.yml looks incomplete — defaults will be merged from jar.");
         }
-        // Clamp unsafe values
         if (config.getInt("settings.min-players", 2) < 1) {
             config.set("settings.min-players", 1);
         }
@@ -156,6 +214,21 @@ public final class ConfigManager {
     }
 
     public void saveArenas() {
+        // Automatic backup before overwrite
+        File arenasFile = new File(plugin.getDataFolder(), "arenas.yml");
+        if (arenasFile.exists()) {
+            File backupDir = new File(plugin.getDataFolder(), "backups");
+            if (!backupDir.exists() && !backupDir.mkdirs()) {
+                plugin.getLogger().warning("Could not create backups folder.");
+            } else {
+                File backup = new File(backupDir, "arenas-" + System.currentTimeMillis() + ".yml");
+                try {
+                    Files.copy(arenasFile.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException exception) {
+                    plugin.getLogger().log(Level.WARNING, "Failed to backup arenas.yml", exception);
+                }
+            }
+        }
         save(arenas, "arenas.yml");
     }
 
@@ -221,6 +294,10 @@ public final class ConfigManager {
 
     public @NotNull FileConfiguration tablist() {
         return tablist;
+    }
+
+    public @NotNull FileConfiguration animations() {
+        return animations;
     }
 
     public @NotNull FileConfiguration shop() {

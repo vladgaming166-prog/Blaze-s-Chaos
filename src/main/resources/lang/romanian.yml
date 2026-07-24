@@ -14,6 +14,11 @@ lobby:
   teleported: "<green>Te-ai teleportat în lobby.</green>"
   set: "<green>Locația lobby-ului global a fost setată.</green>"
   not-set: "<red>Locația lobby-ului nu este setată.</red>"
+  spawn-prompt: "<gold>Vrei ca această locație să fie spawn-ul serverului?</gold>"
+  spawn-prompt-hint: "<gray>Scrie</gray> <green>true</green> <gray>sau</gray> <red>false</red> <gray>în chat.</gray>"
+  spawn-prompt-timeout: "<yellow>Prompt-ul pentru spawn a expirat. Lobby-ul a rămas salvat.</yellow>"
+  spawn-enabled: "<green>Spawn-ul serverului a fost activat.</green> <gray>Jucătorii vor spawna aici la join și respawn.</gray>"
+  spawn-disabled: "<yellow>Spawn-ul serverului nu a fost schimbat.</yellow> <gray>Locația de lobby rămâne setată.</gray>"
 
 arena:
   created: "<green>Arena <yellow>%arena%</yellow> a fost creată. Ești acum în Setup Mode.</green>"

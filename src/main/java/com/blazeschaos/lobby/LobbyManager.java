@@ -32,6 +32,7 @@ public final class LobbyManager {
     private final NamespacedKey itemKey;
     private @Nullable Location lobbyLocation;
     private @Nullable Location npcLocation;
+    private boolean useAsServerSpawn;
 
     public LobbyManager(@NotNull BlazesChaosPlugin plugin) {
         this.plugin = plugin;
@@ -43,12 +44,105 @@ public final class LobbyManager {
         FileConfiguration config = plugin.getConfig();
         lobbyLocation = LocationUtil.deserialize(config.getConfigurationSection("lobby.location"));
         npcLocation = LocationUtil.deserialize(config.getConfigurationSection("lobby.npc"));
+        useAsServerSpawn = config.getBoolean("lobby.use-as-server-spawn", false);
+        if (useAsServerSpawn && lobbyLocation != null && lobbyLocation.getWorld() != null) {
+            applyWorldSpawn(lobbyLocation);
+        }
     }
 
     public void setLobby(@NotNull Location location) {
         this.lobbyLocation = location.clone();
         plugin.getConfig().createSection("lobby.location", LocationUtil.serialize(location));
         plugin.saveConfig();
+    }
+
+    public void setUseAsServerSpawn(boolean enabled, @NotNull Location location) {
+        this.useAsServerSpawn = enabled;
+        plugin.getConfig().set("lobby.use-as-server-spawn", enabled);
+        if (enabled) {
+            this.lobbyLocation = location.clone();
+            plugin.getConfig().createSection("lobby.location", LocationUtil.serialize(location));
+            plugin.getConfig().createSection("lobby.server-spawn", LocationUtil.serialize(location));
+            applyWorldSpawn(location);
+        } else {
+            plugin.getConfig().set("lobby.server-spawn", null);
+        }
+        plugin.saveConfig();
+    }
+
+    public boolean usesAsServerSpawn() {
+        return useAsServerSpawn && lobbyLocation != null;
+    }
+
+    public @Nullable Location getEffectiveSpawn() {
+        return getLobbyLocation();
+    }
+
+    public void applyWorldSpawn(@NotNull Location location) {
+        World world = location.getWorld();
+        if (world != null) {
+            world.setSpawnLocation(location);
+        }
+    }
+
+    /**
+     * Teleport joining/reconnecting players to the configured server spawn when enabled.
+     */
+    public void handleServerJoinSpawn(@NotNull Player player) {
+        if (!usesAsServerSpawn() || lobbyLocation == null) {
+            return;
+        }
+        if (plugin.gameManager().getByPlayer(player) != null) {
+            return;
+        }
+        boolean firstJoin = !player.hasPlayedBefore();
+        boolean always = plugin.getConfig().getBoolean("lobby.teleport-on-reconnect", true);
+        boolean onFirst = plugin.getConfig().getBoolean("lobby.teleport-on-first-join", true);
+        if (firstJoin && onFirst) {
+            player.teleport(lobbyLocation);
+            return;
+        }
+        if (!firstJoin && always) {
+            // Delayed 1 tick so other plugins can teleport first if they run at NORMAL;
+            // we run join at MONITOR and re-check next tick only if still not in a game.
+            org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!player.isOnline() || plugin.gameManager().getByPlayer(player) != null) {
+                    return;
+                }
+                if (!usesAsServerSpawn() || lobbyLocation == null) {
+                    return;
+                }
+                // If another plugin already moved them far from spawn world, respect it when configured
+                if (plugin.getConfig().getBoolean("lobby.respect-other-teleports", false)
+                        && player.getWorld() != null
+                        && lobbyLocation.getWorld() != null
+                        && !player.getWorld().equals(lobbyLocation.getWorld())) {
+                    return;
+                }
+                player.teleport(lobbyLocation);
+            });
+        }
+    }
+
+    public boolean shouldProtect(@NotNull Player player) {
+        if (!plugin.getConfig().getBoolean("lobby-protection.enabled", true)) {
+            return false;
+        }
+        if (player.isOp() || player.hasPermission("blazechaos.admin")) {
+            return false;
+        }
+        // Optional: also allow build permission to bypass
+        if (player.hasPermission("blazechaos.build")
+                && plugin.getConfig().getBoolean("lobby-protection.build-bypass", true)) {
+            return false;
+        }
+        if (plugin.setupMode().isInSetup(player)) {
+            return false;
+        }
+        if (plugin.gameManager().getByPlayer(player) != null) {
+            return false;
+        }
+        return isLobbyWorld(player.getWorld());
     }
 
     public void setNpc(@NotNull Location location) {

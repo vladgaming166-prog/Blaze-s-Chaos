@@ -273,6 +273,19 @@ public final class GameInstance {
         graceProtected.remove(uuid);
         joinTicks.remove(uuid);
         hideBossBar(player);
+        plugin.gameManager().untrack(player);
+
+        if (!player.isOnline()) {
+            inventoryBackup.remove(uuid);
+            bossBars.remove(uuid);
+            if (state.isActive() && wasAlive) {
+                checkWinCondition();
+            } else if (state == GameState.STARTING && players.size() < arena.getMinPlayers()) {
+                cancelCountdown();
+            }
+            return;
+        }
+
         player.setGameMode(GameMode.SURVIVAL);
         player.setFallDistance(0f);
         player.setFireTicks(0);
@@ -283,7 +296,6 @@ public final class GameInstance {
         player.getInventory().clear();
         restoreInventory(player);
         plugin.scoreboardManager().remove(player);
-        plugin.gameManager().untrack(player);
 
         Location lobby = plugin.lobbyManager().getLobbyLocation();
         if (lobby == null && player.getWorld() != null) {
@@ -358,10 +370,11 @@ public final class GameInstance {
     }
 
     private void tick() {
-        plugin.scoreboardManager().updateGame(this);
-        for (Player player : getPlayers()) {
-            plugin.tablistManager().apply(player);
-            updateBossBar(player);
+        // Scoreboard/tablist use their own timers — only refresh bossbars here
+        if (gameTicks % 5 == 0) {
+            for (Player player : getPlayers()) {
+                updateBossBar(player);
+            }
         }
         switch (state) {
             case WAITING, LOBBY -> {
@@ -388,8 +401,8 @@ public final class GameInstance {
                 for (Player player : getPlayers()) {
                     plugin.lang().send(player, "game.starting", Map.of("time", String.valueOf(countdown)));
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
-                    player.sendActionBar(ColorUtil.parse(plugin.lang().raw("actionbar.starting",
-                            Map.of("time", String.valueOf(countdown)))));
+                    player.sendActionBar(ColorUtil.parse(plugin.placeholders().apply(player, this,
+                            plugin.lang().raw("actionbar.starting", Map.of("time", String.valueOf(countdown))))));
                 }
             }
             countdown--;
@@ -415,6 +428,7 @@ public final class GameInstance {
         if (plugin.lootManager().isEnabled()) {
             plugin.lootManager().fillArenaChests(arena);
         }
+        plugin.passiveAnimals().ensureAnimals(arena);
         Location spawn = arena.getSpawn();
         for (Player player : getPlayers()) {
             player.getInventory().clear();
@@ -828,7 +842,8 @@ public final class GameInstance {
 
     private void showBossBar(@NotNull Player player, @NotNull String mini, @NotNull BossBar.Color color) {
         hideBossBar(player);
-        BossBar bar = BossBar.bossBar(ColorUtil.parse(mini), 1.0f, color, BossBar.Overlay.PROGRESS);
+        String resolved = plugin.placeholders().apply(player, this, mini);
+        BossBar bar = BossBar.bossBar(ColorUtil.parse(resolved), 1.0f, color, BossBar.Overlay.PROGRESS);
         bossBars.put(player.getUniqueId(), bar);
         player.showBossBar(bar);
     }
@@ -859,7 +874,7 @@ public final class GameInstance {
         } else {
             return;
         }
-        bar.name(ColorUtil.parse(text));
+        bar.name(ColorUtil.parse(plugin.placeholders().apply(player, this, text)));
         bar.progress(Math.min(1.0f, progress));
     }
 

@@ -2,9 +2,7 @@ package com.blazeschaos.tablist;
 
 import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.game.GameInstance;
-import com.blazeschaos.game.GameState;
 import com.blazeschaos.util.ColorUtil;
-import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import org.bukkit.Bukkit;
@@ -36,7 +34,14 @@ public final class TablistManager {
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             frame++;
             for (Player player : Bukkit.getOnlinePlayers()) {
-                apply(player);
+                try {
+                    apply(player);
+                } catch (Throwable ex) {
+                    if (plugin.configs().debug()) {
+                        plugin.getLogger().warning("Tablist apply failed for "
+                                + player.getName() + ": " + ex.getMessage());
+                    }
+                }
             }
         }, interval, interval);
     }
@@ -88,7 +93,8 @@ public final class TablistManager {
         if (config.getBoolean("animations.enabled", true)) {
             List<String> frames = config.getStringList("animations." + type + "-frames");
             if (!frames.isEmpty() && section.equals("server-lobby")) {
-                return List.of(frames.get(Math.floorMod(frame, frames.size())));
+                int frameInterval = Math.max(1, config.getInt("animations.frame-interval", 1));
+                return List.of(frames.get(Math.floorMod(frame / frameInterval, frames.size())));
             }
         }
         return config.getStringList(section + "." + type);
@@ -97,45 +103,13 @@ public final class TablistManager {
     private @NotNull Component joinLines(@NotNull Player player, @Nullable GameInstance game, @NotNull List<String> lines) {
         List<Component> components = new ArrayList<>();
         for (String line : lines) {
-            components.add(ColorUtil.parse(applyPlaceholders(player, game, line)));
+            String text = plugin.animationManager().resolve(line);
+            text = plugin.placeholders().apply(player, game, text);
+            components.add(ColorUtil.parse(text));
         }
         if (components.isEmpty()) {
             return Component.empty();
         }
         return Component.join(JoinConfiguration.newlines(), components);
-    }
-
-    private @NotNull String applyPlaceholders(@NotNull Player player, @Nullable GameInstance game, @NotNull String input) {
-        String text = input
-                .replace("%blazechaos_players%", game == null ? "0" : String.valueOf(game.playerCount()))
-                .replace("%blazechaos_alive%", game == null ? "0" : String.valueOf(game.aliveCount()))
-                .replace("%blazechaos_event%", eventName(game))
-                .replace("%blazechaos_next_event%", game == null ? "-" : String.valueOf(game.getNextEventSeconds()))
-                .replace("%blazechaos_time%", game == null ? "0" : String.valueOf(game.getGameSeconds()))
-                .replace("%blazechaos_map%", game == null ? "-" : game.getArena().getDisplayName())
-                .replace("%blazechaos_state%", game == null ? "Lobby" : game.getState().display())
-                .replace("%server_online%", String.valueOf(Bukkit.getOnlinePlayers().size()))
-                .replace("%player%", player.getName());
-
-        var stats = plugin.database().getStats(player.getUniqueId(), player.getName());
-        text = text
-                .replace("%blazechaos_wins%", String.valueOf(stats.wins()))
-                .replace("%blazechaos_games%", String.valueOf(stats.games()))
-                .replace("%blazechaos_kills%", String.valueOf(stats.kills()))
-                .replace("%blazechaos_coins%", String.valueOf(stats.coins()));
-
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            text = PlaceholderAPI.setPlaceholders(player, text);
-        }
-        return text;
-    }
-
-    private @NotNull String eventName(@Nullable GameInstance game) {
-        if (game == null || game.getActiveEvent() == null) {
-            return "None";
-        }
-        return ColorUtil.strip(plugin.configs().events().getString(
-                "display-names." + game.getActiveEvent().getId(),
-                game.getActiveEvent().getDefaultDisplayName()));
     }
 }

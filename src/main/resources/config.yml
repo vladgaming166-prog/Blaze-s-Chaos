@@ -1,4 +1,5 @@
 # Blaze's Chaos - Main Configuration
+# Existing values are never overwritten on update — new keys are migrated automatically.
 
 language: en
 # language: ro
@@ -46,10 +47,85 @@ rewards:
 
 debug: false
 
+# ==================================================
+# GLOBAL LOBBY
+# ==================================================
+# Set with /bc setlobby — you will be asked:
+# "Make this location the server spawn?" → true / false
 lobby:
   location: {}
   npc: {}
+  # When true (answered via setlobby prompt), this is the server spawn
+  use-as-server-spawn: false
+  server-spawn: {}
+  teleport-on-first-join: true
+  teleport-on-reconnect: true
+  # If true, do not force-teleport players who already changed world via another plugin
+  respect-other-teleports: false
   protect-default-world: false
+
+# ==================================================
+# MAIN LOBBY PROTECTION
+# ==================================================
+# Applies inside the configured lobby world.
+# Bypassed by: OP, blazechaos.admin, and (optionally) blazechaos.build
+lobby-protection:
+  enabled: true
+  build-bypass: true
+  block-break: true
+  block-place: true
+  item-drop: true
+  item-pickup: true
+  move-lobby-items: true
+  swap-items: true
+  inventory-interact: false
+  crafting: true
+  crafting-table: true
+  ignite-tnt: true
+  flint-and-steel: true
+  empty-buckets: true
+  fill-buckets: true
+  lava-buckets: true
+  water-buckets: true
+  item-frames: true
+  armor-stands: true
+  trample-farmland: true
+  redstone-interact: true
+  spawn-eggs: true
+  mob-spawning: true
+  damage-entities: true
+  pvp: true
+  hunger: true
+  hunger-damage: true
+  fall-damage: true
+  fire-damage: true
+  cactus-damage: true
+  berry-damage: true
+  suffocation-damage: true
+  drown-damage: true
+  void-damage: true
+  all-damage: true
+  explosions: true
+  allow-natural-fire: false
+
+# ==================================================
+# CHAOS / ARENA WORLDS
+# ==================================================
+# Arena worlds behave like survival for food: passive animals are kept available.
+chaos-world:
+  force-animal-spawn-flags: true
+  passive-animals:
+    enabled: true
+    # How often to check and top-up animals (ticks)
+    check-interval-ticks: 200
+    target-count: 12
+    max-spawn-per-check: 4
+    types:
+      - COW
+      - PIG
+      - SHEEP
+      - CHICKEN
+      - RABBIT
 
 lobby-items:
   enabled: true
@@ -84,8 +160,8 @@ lobby-items:
     lore:
       - "<gray>Return to lobby</gray>"
 
-
 # Chaos event difficulty: easy, normal, hard, hardcore, extreme, impossible
+# Change with /bc eventsdifficulty <mode>
 events-difficulty: normal
 
 # Per-difficulty multipliers (frequency higher = events more often)

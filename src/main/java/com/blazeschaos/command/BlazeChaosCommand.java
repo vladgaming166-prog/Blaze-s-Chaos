@@ -210,6 +210,7 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
         }
         plugin.lobbyManager().setLobby(player.getLocation());
         plugin.lang().send(player, "lobby.set");
+        plugin.spawnConfirm().beginConfirm(player);
     }
 
     private void handleList(@NotNull CommandSender sender) {

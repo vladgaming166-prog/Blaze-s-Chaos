@@ -14,6 +14,11 @@ lobby:
   teleported: "<green>Teleported to the lobby.</green>"
   set: "<green>Global lobby location set.</green>"
   not-set: "<red>Lobby location is not set.</red>"
+  spawn-prompt: "<gold>Make this location the server spawn?</gold>"
+  spawn-prompt-hint: "<gray>Type</gray> <green>true</green> <gray>or</gray> <red>false</red> <gray>in chat.</gray>"
+  spawn-prompt-timeout: "<yellow>Server spawn prompt timed out. Lobby was still saved.</yellow>"
+  spawn-enabled: "<green>Server spawn enabled.</green> <gray>Players will spawn here on join and respawn.</gray>"
+  spawn-disabled: "<yellow>Server spawn left unchanged.</yellow> <gray>Lobby location is still set.</gray>"
 
 arena:
   created: "<green>Arena <yellow>%arena%</yellow> created. You are now in Setup Mode.</green>"

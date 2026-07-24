@@ -1,36 +1,42 @@
+# Scoreboard configuration
+# Supports: MiniMessage, & legacy codes, hex (#RRGGBB / &#RRGGBB), PlaceholderAPI
+# Animations: use %animation:name% from scoreboardanimations.yml
+config-version: 2
+
 enabled: true
 update-interval: 20
 
 animations:
   enabled: true
+  # Legacy inline frames (still supported). Prefer scoreboardanimations.yml + %animation:title%
   title-frames:
-    - "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
-    - "<gradient:#FFD700:#FF4500><bold>BLAZE'S CHAOS</bold></gradient>"
-    - "<gradient:#FF6347:#FFA500><bold>BLAZE'S CHAOS</bold></gradient>"
-  frame-interval: 10
+    - "%animation:title%"
+  # How many update ticks between title frame advances when using title-frames list
+  frame-interval: 1
 
 # Hide vanilla sidebar score numbers (15..1)
 hide-scores: true
 
 # Shown when the player is on the SERVER (not in a game / waiting room)
 server-lobby:
-  title: "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
+  title: "%animation:title%"
   lines:
     - ""
-    - "<gray>play.example.ro</gray>"
+    - "%animation:server%"
     - ""
-    - "<white>Online:</white> <aqua>%server_online%</aqua>"
-    - "<white>Coins:</white> <gold>%blazechaos_coins%</gold>"
+    - "<white>%animation:online%:</white> <aqua>%server_online%</aqua>"
+    - "<white>%animation:coins%:</white> <gold>%blazechaos_coins%</gold>"
     - "<white>Wins:</white> <green>%blazechaos_wins%</green>"
     - "<white>Kills:</white> <red>%blazechaos_kills%</red>"
     - ""
     - "<gray>Discord:</gray>"
-    - "<aqua>discord.gg/example</aqua>"
+    - "%animation:discord%"
     - ""
+    - "%animation:footer%"
 
 # Waiting room (joined arena, not started)
 waiting:
-  title: "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
+  title: "%animation:title%"
   lines:
     - ""
     - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
@@ -50,7 +56,7 @@ starting:
     - ""
 
 playing:
-  title: "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
+  title: "%animation:title%"
   lines:
     - ""
     - "<gray>Alive: <red>%blazechaos_alive%</red>"

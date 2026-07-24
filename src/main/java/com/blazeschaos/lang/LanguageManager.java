@@ -116,6 +116,14 @@ public final class LanguageManager {
         return text;
     }
 
+    public void send(@NotNull CommandSender sender, @NotNull String path) {
+        sender.sendMessage(parseFor(sender, prefix() + raw(path)));
+    }
+
+    public void send(@NotNull CommandSender sender, @NotNull String path, @NotNull Map<String, String> placeholders) {
+        sender.sendMessage(parseFor(sender, prefix() + raw(path, placeholders)));
+    }
+
     public @NotNull Component component(@NotNull String path) {
         return ColorUtil.parse(prefix() + raw(path));
     }
@@ -132,12 +140,15 @@ public final class LanguageManager {
         return ColorUtil.parse(raw(path, placeholders));
     }
 
-    public void send(@NotNull CommandSender sender, @NotNull String path) {
-        sender.sendMessage(component(path));
-    }
-
-    public void send(@NotNull CommandSender sender, @NotNull String path, @NotNull Map<String, String> placeholders) {
-        sender.sendMessage(component(path, placeholders));
+    private @NotNull Component parseFor(@NotNull CommandSender sender, @NotNull String text) {
+        if (sender instanceof org.bukkit.entity.Player player) {
+            try {
+                return ColorUtil.parse(plugin.placeholders().apply(player, text));
+            } catch (Throwable ignored) {
+                return ColorUtil.parse(text);
+            }
+        }
+        return ColorUtil.parse(text);
     }
 
     public @NotNull List<String> list(@NotNull String path) {

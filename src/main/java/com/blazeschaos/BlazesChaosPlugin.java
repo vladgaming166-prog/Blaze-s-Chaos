@@ -10,15 +10,20 @@ import com.blazeschaos.event.EventDifficultyManager;
 import com.blazeschaos.game.GameManager;
 import com.blazeschaos.lang.LanguageManager;
 import com.blazeschaos.listener.GameListener;
+import com.blazeschaos.listener.LobbyProtectionListener;
 import com.blazeschaos.lobby.LobbyManager;
+import com.blazeschaos.lobby.SpawnConfirmListener;
 import com.blazeschaos.loot.LootManager;
 import com.blazeschaos.loot.LootRarityManager;
 import com.blazeschaos.placeholder.BlazeChaosExpansion;
+import com.blazeschaos.scoreboard.AnimationManager;
 import com.blazeschaos.scoreboard.ScoreboardManager;
 import com.blazeschaos.setup.SetupModeManager;
 import com.blazeschaos.shop.ShopManager;
 import com.blazeschaos.tablist.TablistManager;
+import com.blazeschaos.util.PlaceholderService;
 import com.blazeschaos.vault.VaultHook;
+import com.blazeschaos.world.PassiveAnimalManager;
 import com.blazeschaos.world.WorldResetManager;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -36,6 +41,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private LobbyManager lobbyManager;
     private ScoreboardManager scoreboardManager;
     private TablistManager tablistManager;
+    private AnimationManager animationManager;
     private SetupModeManager setupModeManager;
     private VaultHook vaultHook;
     private CoinsManager coinsManager;
@@ -43,6 +49,10 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private LootManager lootManager;
     private EventDifficultyManager difficultyManager;
     private LootRarityManager lootRarityManager;
+    private PlaceholderService placeholderService;
+    private PassiveAnimalManager passiveAnimalManager;
+    private SpawnConfirmListener spawnConfirmListener;
+    private BlazeChaosExpansion placeholderExpansion;
 
     @Override
     public void onEnable() {
@@ -55,6 +65,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         this.vaultHook = new VaultHook(this);
         vaultHook.hook();
 
+        this.placeholderService = new PlaceholderService(this);
         this.coinsManager = new CoinsManager(this);
         this.difficultyManager = new EventDifficultyManager(this);
         this.lootRarityManager = new LootRarityManager(this);
@@ -65,10 +76,13 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         this.eventManager = new ChaosEventManager(this);
         this.worldResetManager = new WorldResetManager(this);
         this.lobbyManager = new LobbyManager(this);
+        this.animationManager = new AnimationManager(this);
         this.scoreboardManager = new ScoreboardManager(this);
         this.tablistManager = new TablistManager(this);
+        this.passiveAnimalManager = new PassiveAnimalManager(this);
         this.gameManager = new GameManager(this);
         this.setupModeManager = new SetupModeManager(this);
+        this.spawnConfirmListener = new SpawnConfirmListener(this);
 
         BlazeChaosCommand command = new BlazeChaosCommand(this);
         PluginCommand pluginCommand = getCommand("bc");
@@ -80,15 +94,16 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         }
 
         Bukkit.getPluginManager().registerEvents(new GameListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new LobbyProtectionListener(this), this);
         Bukkit.getPluginManager().registerEvents(setupModeManager, this);
         Bukkit.getPluginManager().registerEvents(shopManager, this);
+        Bukkit.getPluginManager().registerEvents(spawnConfirmListener, this);
+
         scoreboardManager.start();
         tablistManager.start();
+        passiveAnimalManager.start();
 
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            new BlazeChaosExpansion(this).register();
-            getLogger().info("PlaceholderAPI hooked.");
-        }
+        hookPlaceholderAPI();
 
         getLogger().info("Blaze's Chaos v" + getPluginMeta().getVersion()
                 + " enabled (lang=" + lang().languageCode() + ").");
@@ -105,6 +120,15 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         if (tablistManager != null) {
             tablistManager.stop();
         }
+        if (passiveAnimalManager != null) {
+            passiveAnimalManager.stop();
+        }
+        if (placeholderExpansion != null) {
+            try {
+                placeholderExpansion.unregister();
+            } catch (Throwable ignored) {
+            }
+        }
         if (databaseManager != null) {
             databaseManager.disconnect();
         }
@@ -120,8 +144,26 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         lootManager.reload();
         difficultyManager.reload();
         lootRarityManager.reload();
+        animationManager.reload();
         scoreboardManager.start();
         tablistManager.start();
+        passiveAnimalManager.start();
+        hookPlaceholderAPI();
+    }
+
+    private void hookPlaceholderAPI() {
+        if (!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            return;
+        }
+        if (placeholderExpansion != null) {
+            try {
+                placeholderExpansion.unregister();
+            } catch (Throwable ignored) {
+            }
+        }
+        placeholderExpansion = new BlazeChaosExpansion(this);
+        placeholderExpansion.register();
+        getLogger().info("PlaceholderAPI hooked.");
     }
 
     public @NotNull ConfigManager configs() {
@@ -164,6 +206,10 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         return tablistManager;
     }
 
+    public @NotNull AnimationManager animationManager() {
+        return animationManager;
+    }
+
     public @NotNull SetupModeManager setupMode() {
         return setupModeManager;
     }
@@ -190,5 +236,17 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
     public @NotNull LootRarityManager lootRarityManager() {
         return lootRarityManager;
+    }
+
+    public @NotNull PlaceholderService placeholders() {
+        return placeholderService;
+    }
+
+    public @NotNull PassiveAnimalManager passiveAnimals() {
+        return passiveAnimalManager;
+    }
+
+    public @NotNull SpawnConfirmListener spawnConfirm() {
+        return spawnConfirmListener;
     }
 }

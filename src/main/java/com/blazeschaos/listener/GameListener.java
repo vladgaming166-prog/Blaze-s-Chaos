@@ -3,7 +3,7 @@ package com.blazeschaos.listener;
 import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.game.GameInstance;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
@@ -43,19 +43,25 @@ public final class GameListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (plugin.gameManager().getByPlayer(player) != null) {
             return;
         }
-        if (plugin.lobbyManager().isLobbyWorld(player.getWorld())) {
-            plugin.lobbyManager().giveLobbyItems(player);
-        } else {
-            plugin.lobbyManager().removeLobbyItems(player);
-        }
-        plugin.scoreboardManager().applyLobby(player);
-        plugin.tablistManager().apply(player);
+        plugin.lobbyManager().handleServerJoinSpawn(player);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline() || plugin.gameManager().getByPlayer(player) != null) {
+                return;
+            }
+            if (plugin.lobbyManager().isLobbyWorld(player.getWorld())) {
+                plugin.lobbyManager().giveLobbyItems(player);
+            } else {
+                plugin.lobbyManager().removeLobbyItems(player);
+            }
+            plugin.scoreboardManager().applyLobby(player);
+            plugin.tablistManager().apply(player);
+        });
     }
 
     @EventHandler
@@ -114,10 +120,20 @@ public final class GameListener implements Listener {
         Player player = event.getPlayer();
         GameInstance game = plugin.gameManager().getByPlayer(player);
         if (game == null) {
-            if (plugin.lobbyManager().getLobbyLocation() != null) {
-                event.setRespawnLocation(plugin.lobbyManager().getLobbyLocation());
+            Location spawn = plugin.lobbyManager().getEffectiveSpawn();
+            if (spawn == null) {
+                spawn = plugin.lobbyManager().getLobbyLocation();
             }
-            Bukkit.getScheduler().runTask(plugin, () -> plugin.lobbyManager().giveLobbyItems(player));
+            if (spawn != null) {
+                event.setRespawnLocation(spawn);
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (player.isOnline()) {
+                    plugin.lobbyManager().giveLobbyItems(player);
+                    plugin.scoreboardManager().applyLobby(player);
+                    plugin.tablistManager().apply(player);
+                }
+            });
             return;
         }
         if (game.getArena().getSpectator() != null) {

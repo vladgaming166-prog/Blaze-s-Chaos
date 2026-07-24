@@ -5,7 +5,6 @@ import com.blazeschaos.game.GameInstance;
 import com.blazeschaos.game.GameState;
 import com.blazeschaos.util.ColorUtil;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
-import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -21,7 +20,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,7 +31,7 @@ public final class ScoreboardManager {
     };
 
     private final BlazesChaosPlugin plugin;
-    private final Map<UUID, Scoreboard> boards = new ConcurrentHashMap<>();
+    private final java.util.Map<UUID, Scoreboard> boards = new ConcurrentHashMap<>();
     private int titleFrame;
     private @Nullable BukkitTask task;
 
@@ -43,11 +41,22 @@ public final class ScoreboardManager {
 
     public void start() {
         stopTask();
+        if (!plugin.configs().scoreboard().getBoolean("enabled", true)) {
+            return;
+        }
         int interval = Math.max(1, plugin.configs().scoreboard().getInt("update-interval", 20));
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             titleFrame++;
+            plugin.animationManager().tick();
             for (Player player : Bukkit.getOnlinePlayers()) {
-                refresh(player);
+                try {
+                    refresh(player);
+                } catch (Throwable ex) {
+                    if (plugin.configs().debug()) {
+                        plugin.getLogger().warning("Scoreboard refresh failed for "
+                                + player.getName() + ": " + ex.getMessage());
+                    }
+                }
             }
         }, interval, interval);
     }
@@ -115,6 +124,9 @@ public final class ScoreboardManager {
         FileConfiguration config = plugin.configs().scoreboard();
         Scoreboard board = boards.computeIfAbsent(player.getUniqueId(),
                 id -> Bukkit.getScoreboardManager().getNewScoreboard());
+        if (player.getScoreboard() != board) {
+            player.setScoreboard(board);
+        }
         Objective objective = board.getObjective("blazechaos");
         if (objective == null) {
             objective = board.registerNewObjective("blazechaos", Criteria.DUMMY, Component.empty());
@@ -124,7 +136,7 @@ public final class ScoreboardManager {
             objective.numberFormat(NumberFormat.blank());
         }
 
-        objective.displayName(ColorUtil.parse(resolveTitle(config, section)));
+        objective.displayName(ColorUtil.parse(applyAll(player, game, resolveTitle(config, section))));
 
         List<String> lines = config.getStringList(section + ".lines");
         if (lines.isEmpty() && section.equals("server-lobby")) {
@@ -132,7 +144,7 @@ public final class ScoreboardManager {
         }
         List<String> rendered = new ArrayList<>();
         for (String line : lines) {
-            rendered.add(applyPlaceholders(player, game, line));
+            rendered.add(applyAll(player, game, line));
         }
         while (rendered.size() > 15) {
             rendered.removeLast();
@@ -154,68 +166,35 @@ public final class ScoreboardManager {
             } else if (!team.hasEntry(entry)) {
                 team.addEntry(entry);
             }
-            // Modern TAB-like: put text in prefix, keep suffix empty
             String text = rendered.get(i);
-            if (text.length() > 64) {
-                text = text.substring(0, 64);
-            }
             team.prefix(ColorUtil.parse(text));
             team.suffix(Component.empty());
             objective.getScore(entry).setScore(15 - i);
         }
-
-        player.setScoreboard(board);
     }
 
     private @NotNull String resolveTitle(@NotNull FileConfiguration config, @NotNull String section) {
+        String configured = config.getString(section + ".title", "");
+        if (configured != null && configured.contains("%animation:")) {
+            return configured;
+        }
         if (config.getBoolean("animations.enabled", true)) {
+            // Prefer dedicated animation named "title"
+            if (plugin.animationManager().get("title") != null) {
+                return "%animation:title%";
+            }
             List<String> frames = config.getStringList("animations.title-frames");
             if (!frames.isEmpty()) {
-                return frames.get(Math.floorMod(titleFrame, frames.size()));
+                int frameInterval = Math.max(1, config.getInt("animations.frame-interval", 1));
+                return frames.get(Math.floorMod(titleFrame / frameInterval, frames.size()));
             }
         }
         return config.getString(section + ".title", "<gold>Blaze's Chaos</gold>");
     }
 
-    private @NotNull String applyPlaceholders(@NotNull Player player, @Nullable GameInstance game, @NotNull String input) {
-        String text = input
-                .replace("%blazechaos_players%", game == null ? "0" : String.valueOf(game.playerCount()))
-                .replace("%blazechaos_alive%", game == null ? "0" : String.valueOf(game.aliveCount()))
-                .replace("%blazechaos_event%", currentEventName(game))
-                .replace("%blazechaos_next_event%", game == null ? "-" : String.valueOf(game.getNextEventSeconds()))
-                .replace("%blazechaos_time%", game == null ? "0" : String.valueOf(resolveTime(game)))
-                .replace("%blazechaos_map%", game == null ? "-" : game.getArena().getDisplayName())
-                .replace("%blazechaos_state%", game == null ? "Lobby" : game.getState().display())
-                .replace("%server_online%", String.valueOf(Bukkit.getOnlinePlayers().size()))
-                .replace("%player%", player.getName());
-
-        var stats = plugin.database().getStats(player.getUniqueId(), player.getName());
-        text = text
-                .replace("%blazechaos_wins%", String.valueOf(stats.wins()))
-                .replace("%blazechaos_games%", String.valueOf(stats.games()))
-                .replace("%blazechaos_kills%", String.valueOf(stats.kills()))
-                .replace("%blazechaos_coins%", String.valueOf(stats.coins()));
-
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            text = PlaceholderAPI.setPlaceholders(player, text);
-        }
-        return text;
-    }
-
-    private int resolveTime(@NotNull GameInstance game) {
-        if (game.getState() == GameState.STARTING) {
-            return game.getCountdownSecondsLeft();
-        }
-        return game.getGameSeconds();
-    }
-
-    private @NotNull String currentEventName(@Nullable GameInstance game) {
-        if (game == null || game.getActiveEvent() == null) {
-            return "None";
-        }
-        String id = game.getActiveEvent().getId();
-        return ColorUtil.strip(plugin.configs().events().getString("display-names." + id,
-                game.getActiveEvent().getDefaultDisplayName()));
+    private @NotNull String applyAll(@NotNull Player player, @Nullable GameInstance game, @NotNull String input) {
+        String text = plugin.animationManager().resolve(input);
+        return plugin.placeholders().apply(player, game, text);
     }
 
     public void remove(@NotNull Player player) {

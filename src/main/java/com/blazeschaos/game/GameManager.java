@@ -103,8 +103,6 @@ public final class GameManager {
         }
         game.leave(player, true);
         playerArena.remove(player.getUniqueId());
-        plugin.scoreboardManager().applyLobby(player);
-        plugin.tablistManager().apply(player);
         return true;
     }
 
