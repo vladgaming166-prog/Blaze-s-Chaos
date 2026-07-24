@@ -15,6 +15,9 @@ import com.blazeschaos.lobby.LobbyManager;
 import com.blazeschaos.lobby.SpawnConfirmListener;
 import com.blazeschaos.loot.LootManager;
 import com.blazeschaos.loot.LootRarityManager;
+import com.blazeschaos.npc.NpcListener;
+import com.blazeschaos.npc.NpcManager;
+import com.blazeschaos.npc.gui.NpcGui;
 import com.blazeschaos.placeholder.BlazeChaosExpansion;
 import com.blazeschaos.scoreboard.AnimationManager;
 import com.blazeschaos.scoreboard.ScoreboardManager;
@@ -53,6 +56,9 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private PassiveAnimalManager passiveAnimalManager;
     private SpawnConfirmListener spawnConfirmListener;
     private BlazeChaosExpansion placeholderExpansion;
+    private NpcManager npcManager;
+    private NpcGui npcGui;
+    private com.blazeschaos.npc.NpcCommandHandler npcCommands;
 
     @Override
     public void onEnable() {
@@ -83,6 +89,9 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         this.gameManager = new GameManager(this);
         this.setupModeManager = new SetupModeManager(this);
         this.spawnConfirmListener = new SpawnConfirmListener(this);
+        this.npcGui = new NpcGui(this);
+        this.npcManager = new NpcManager(this);
+        this.npcCommands = new com.blazeschaos.npc.NpcCommandHandler(this);
 
         BlazeChaosCommand command = new BlazeChaosCommand(this);
         PluginCommand pluginCommand = getCommand("bc");
@@ -98,6 +107,8 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(setupModeManager, this);
         Bukkit.getPluginManager().registerEvents(shopManager, this);
         Bukkit.getPluginManager().registerEvents(spawnConfirmListener, this);
+        Bukkit.getPluginManager().registerEvents(new NpcListener(this), this);
+        Bukkit.getPluginManager().registerEvents(npcGui, this);
 
         scoreboardManager.start();
         tablistManager.start();
@@ -111,6 +122,9 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (npcManager != null) {
+            npcManager.stop();
+        }
         if (gameManager != null) {
             gameManager.shutdown();
         }
@@ -145,6 +159,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         difficultyManager.reload();
         lootRarityManager.reload();
         animationManager.reload();
+        npcManager.reload();
         scoreboardManager.start();
         tablistManager.start();
         passiveAnimalManager.start();
@@ -248,5 +263,17 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
     public @NotNull SpawnConfirmListener spawnConfirm() {
         return spawnConfirmListener;
+    }
+
+    public @NotNull NpcManager npcManager() {
+        return npcManager;
+    }
+
+    public @NotNull NpcGui npcGui() {
+        return npcGui;
+    }
+
+    public @NotNull com.blazeschaos.npc.NpcCommandHandler npcCommands() {
+        return npcCommands;
     }
 }

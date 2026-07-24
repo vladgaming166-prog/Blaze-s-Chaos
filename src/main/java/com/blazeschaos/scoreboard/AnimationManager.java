@@ -15,13 +15,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * TAB-style animation definitions from scoreboardanimations.yml.
- * Reference in scoreboard lines with {@code %animation:name%} or {@code {animation:name}}.
+ * Animation engine for scoreboards, holograms, placeholders, etc.
+ * Loads both scoreboardanimations.yml and animations.yml.
  */
 public final class AnimationManager {
 
     private static final Pattern PERCENT = Pattern.compile("%animation:([a-zA-Z0-9_-]+)%", Pattern.CASE_INSENSITIVE);
     private static final Pattern BRACE = Pattern.compile("\\{animation:([a-zA-Z0-9_-]+)}", Pattern.CASE_INSENSITIVE);
+    private static final Pattern BLAZE = Pattern.compile("%blazechaos_animation_([a-zA-Z0-9_-]+)%", Pattern.CASE_INSENSITIVE);
 
     private final BlazesChaosPlugin plugin;
     private final Map<String, Animation> animations = new LinkedHashMap<>();
@@ -34,21 +35,32 @@ public final class AnimationManager {
 
     public void reload() {
         animations.clear();
-        FileConfiguration config = plugin.configs().animations();
+        loadFrom(plugin.configs().scoreboardAnimations());
+        loadFrom(plugin.configs().globalAnimations());
+        if (plugin.configs().debug()) {
+            plugin.getLogger().info("Loaded " + animations.size() + " animations.");
+        }
+    }
+
+    private void loadFrom(@NotNull FileConfiguration config) {
         for (String key : config.getKeys(false)) {
+            if (key.equalsIgnoreCase("config-version")) {
+                continue;
+            }
             ConfigurationSection section = config.getConfigurationSection(key);
             if (section == null) {
                 continue;
             }
-            int interval = Math.max(1, section.getInt("change-interval", 20));
+            int interval = Math.max(1, section.getInt("change-interval",
+                    section.getInt("interval", 20)));
             List<String> texts = section.getStringList("texts");
+            if (texts.isEmpty()) {
+                texts = section.getStringList("frames");
+            }
             if (texts.isEmpty()) {
                 continue;
             }
             animations.put(key.toLowerCase(Locale.ROOT), new Animation(interval, texts));
-        }
-        if (plugin.configs().debug()) {
-            plugin.getLogger().info("Loaded " + animations.size() + " scoreboard animations.");
         }
     }
 
@@ -56,10 +68,20 @@ public final class AnimationManager {
         ticks++;
     }
 
+    public long ticks() {
+        return ticks;
+    }
+
     public @NotNull String resolve(@NotNull String input) {
         String text = replace(PERCENT, input);
         text = replace(BRACE, text);
+        text = replace(BLAZE, text);
         return text;
+    }
+
+    public @NotNull String frame(@NotNull String name) {
+        Animation animation = animations.get(name.toLowerCase(Locale.ROOT));
+        return animation == null ? "" : animation.current(ticks);
     }
 
     private @NotNull String replace(@NotNull Pattern pattern, @NotNull String input) {
@@ -93,8 +115,8 @@ public final class AnimationManager {
         }
 
         public @NotNull String current(long globalTicks) {
-            int frame = (int) ((globalTicks / changeInterval) % texts.size());
-            return texts.get(frame);
+            int frame = (int) ((globalTicks / Math.max(1, changeInterval)) % texts.size());
+            return texts.get(Math.max(0, frame));
         }
 
         public int changeInterval() {

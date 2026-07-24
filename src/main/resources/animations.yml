@@ -1,0 +1,41 @@
+# Global animated placeholders
+# Use as %blazechaos_animation_<name>% or %animation:<name>%
+# interval is in animation engine ticks (advanced each scoreboard update)
+config-version: 1
+
+title:
+  interval: 2
+  frames:
+    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
+    - "<gradient:#FFD700:#FF4500><bold>Blaze's Chaos</bold></gradient>"
+    - "&6&lBlaze's Chaos"
+    - "&e&lBlaze's Chaos"
+    - "&f&lBlaze's Chaos"
+
+server:
+  interval: 3
+  frames:
+    - "&aplay.example.ro"
+    - "&fplay.example.ro"
+    - "&eplay.example.ro"
+
+ip:
+  interval: 4
+  frames:
+    - "&bplay.example.ro"
+    - "&3play.example.ro"
+    - "&fplay.example.ro"
+
+queue:
+  interval: 5
+  frames:
+    - "&aQueue Open"
+    - "&2Queue Open"
+    - "&fQueue Open"
+
+play:
+  interval: 4
+  frames:
+    - "&eClick to Play"
+    - "&6Click to Play"
+    - "&fClick to Play"

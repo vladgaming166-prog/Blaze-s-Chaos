@@ -56,6 +56,7 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             case "enablerandomchestloot" -> handleLootToggle(sender);
             case "eventsdifficulty", "difficulty" -> handleDifficulty(sender, args);
             case "chestlootrarity", "lootrarity" -> handleLootRarity(sender, args);
+            case "npc" -> plugin.npcCommands().handle(sender, args);
             case "version" -> plugin.lang().send(sender, "general.version",
                     Map.of("version", plugin.getPluginMeta().getVersion()));
             case "createarena" -> plugin.lang().send(sender, "general.unknown-command");
@@ -368,8 +369,11 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
                     "help", "join", "leave", "lobby", "setlobby", "list", "deletearena",
                     "setup", "reload", "forcestart", "stop", "next", "debug", "info", "version",
                     "coins", "balance", "shop", "language", "enablerandomchestloot",
-                    "eventsdifficulty", "chestlootrarity"
+                    "eventsdifficulty", "chestlootrarity", "npc"
             ));
+        }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("npc")) {
+            return plugin.npcCommands().tabComplete(args);
         }
         if (args.length == 2) {
             String sub = args[0].toLowerCase(Locale.ROOT);

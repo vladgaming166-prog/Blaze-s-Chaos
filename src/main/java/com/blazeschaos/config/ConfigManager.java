@@ -28,7 +28,9 @@ public final class ConfigManager {
     private FileConfiguration arenas;
     private FileConfiguration scoreboard;
     private FileConfiguration tablist;
-    private FileConfiguration animations;
+    private FileConfiguration scoreboardAnimations;
+    private FileConfiguration globalAnimations;
+    private FileConfiguration npcs;
     private FileConfiguration worldReset;
     private FileConfiguration permissions;
     private FileConfiguration shop;
@@ -48,7 +50,9 @@ public final class ConfigManager {
         arenas = loadYaml("arenas.yml");
         scoreboard = loadYaml("scoreboardconfig.yml");
         tablist = loadYaml("tablist.yml");
-        animations = loadYaml("scoreboardanimations.yml");
+        scoreboardAnimations = loadYaml("scoreboardanimations.yml");
+        globalAnimations = loadYaml("animations.yml");
+        npcs = loadYaml("npcs.yml");
         worldReset = loadYaml("worldreset.yml");
         permissions = loadYaml("permissions.yml");
         shop = loadYaml("shop.yml");
@@ -61,7 +65,9 @@ public final class ConfigManager {
         softSaveMerged("events.yml", events);
         softSaveMerged("scoreboardconfig.yml", scoreboard);
         softSaveMerged("tablist.yml", tablist);
-        softSaveMerged("scoreboardanimations.yml", animations);
+        softSaveMerged("scoreboardanimations.yml", scoreboardAnimations);
+        softSaveMerged("animations.yml", globalAnimations);
+        softSaveMerged("npcs.yml", npcs);
         softSaveMerged("loot.yml", loot);
         softSaveMerged("shop.yml", shop);
         softSaveMerged("worldreset.yml", worldReset);
@@ -76,7 +82,9 @@ public final class ConfigManager {
         arenas = reloadYaml("arenas.yml");
         scoreboard = reloadYaml("scoreboardconfig.yml");
         tablist = reloadYaml("tablist.yml");
-        animations = reloadYaml("scoreboardanimations.yml");
+        scoreboardAnimations = reloadYaml("scoreboardanimations.yml");
+        globalAnimations = reloadYaml("animations.yml");
+        npcs = reloadYaml("npcs.yml");
         worldReset = reloadYaml("worldreset.yml");
         permissions = reloadYaml("permissions.yml");
         shop = reloadYaml("shop.yml");
@@ -296,8 +304,21 @@ public final class ConfigManager {
         return tablist;
     }
 
+    public @NotNull FileConfiguration scoreboardAnimations() {
+        return scoreboardAnimations;
+    }
+
+    /** @deprecated use {@link #scoreboardAnimations()} */
     public @NotNull FileConfiguration animations() {
-        return animations;
+        return scoreboardAnimations;
+    }
+
+    public @NotNull FileConfiguration globalAnimations() {
+        return globalAnimations;
+    }
+
+    public @NotNull FileConfiguration npcs() {
+        return npcs;
     }
 
     public @NotNull FileConfiguration shop() {
