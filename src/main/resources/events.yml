@@ -1,0 +1,179 @@
+# Chaos Event Configuration
+
+interval-seconds: 60
+announce-sound: ENTITY_ENDER_DRAGON_GROWL
+announce-title: true
+
+enabled-events:
+  lava-rising: true
+  tnt-rain: true
+  block-party: true
+  spleef: true
+  lightning-storm: true
+  strong-wind: true
+  ice-age: true
+  darkness: true
+  meteor-shower: true
+  flood: true
+  chicken-madness: true
+  random-explosions: true
+  tree-growth: true
+  falling-blocks: true
+  double-damage: true
+  only-bows: true
+  knockback-madness: true
+  low-gravity: true
+  resistance: true
+  fire-spread: true
+
+duration:
+  lava-rising: 45
+  tnt-rain: 30
+  block-party: 20
+  spleef: 25
+  lightning-storm: 30
+  strong-wind: 25
+  ice-age: 40
+  darkness: 35
+  meteor-shower: 25
+  flood: 40
+  chicken-madness: 30
+  random-explosions: 25
+  tree-growth: 20
+  falling-blocks: 30
+  double-damage: 40
+  only-bows: 35
+  knockback-madness: 30
+  low-gravity: 35
+  resistance: 30
+  fire-spread: 40
+
+chance:
+  lava-rising: 15
+  tnt-rain: 12
+  block-party: 10
+  spleef: 12
+  lightning-storm: 14
+  strong-wind: 12
+  ice-age: 10
+  darkness: 10
+  meteor-shower: 5
+  flood: 12
+  chicken-madness: 15
+  random-explosions: 10
+  tree-growth: 12
+  falling-blocks: 12
+  double-damage: 14
+  only-bows: 10
+  knockback-madness: 12
+  low-gravity: 12
+  resistance: 8
+  fire-spread: 10
+
+cooldown:
+  lava-rising: 120
+  tnt-rain: 90
+  block-party: 100
+  spleef: 90
+  lightning-storm: 80
+  strong-wind: 70
+  ice-age: 100
+  darkness: 90
+  meteor-shower: 150
+  flood: 120
+  chicken-madness: 60
+  random-explosions: 90
+  tree-growth: 70
+  falling-blocks: 80
+  double-damage: 100
+  only-bows: 110
+  knockback-madness: 80
+  low-gravity: 90
+  resistance: 100
+  fire-spread: 90
+
+settings:
+  lava-rising:
+    rise-interval-ticks: 40
+    blocks-per-rise: 1
+    start-y-offset: -5
+  tnt-rain:
+    interval-ticks: 20
+    tnt-per-wave: 3
+    fuse-ticks: 40
+  block-party:
+    safe-colors:
+      - RED
+      - BLUE
+      - GREEN
+      - YELLOW
+      - ORANGE
+      - PURPLE
+      - WHITE
+      - BLACK
+  spleef:
+    radius: 3
+    interval-ticks: 15
+  lightning-storm:
+    interval-ticks: 25
+    strikes-per-wave: 2
+  strong-wind:
+    strength: 1.2
+    interval-ticks: 10
+  ice-age:
+    apply-slowness: true
+  darkness:
+    blindness-amplifier: 0
+  meteor-shower:
+    interval-ticks: 30
+    meteors-per-wave: 2
+    explosion-power: 2.5
+  flood:
+    rise-interval-ticks: 40
+    blocks-per-rise: 1
+  chicken-madness:
+    chickens-per-player: 20
+  random-explosions:
+    interval-ticks: 35
+    power: 2.0
+  tree-growth:
+    trees-per-wave: 4
+    interval-ticks: 40
+  falling-blocks:
+    interval-ticks: 20
+    blocks-per-wave: 8
+  double-damage:
+    multiplier: 2.0
+  only-bows: {}
+  knockback-madness:
+    multiplier: 3.0
+  low-gravity:
+    jump-amplifier: 2
+    slow-falling: true
+  resistance:
+    amplifier: 1
+  fire-spread:
+    interval-ticks: 30
+    fires-per-wave: 5
+
+display-names:
+  lava-rising: "<red>Lava Rising</red>"
+  tnt-rain: "<gold>TNT Rain</gold>"
+  block-party: "<light_purple>Block Party</light_purple>"
+  spleef: "<aqua>Spleef</aqua>"
+  lightning-storm: "<yellow>Lightning Storm</yellow>"
+  strong-wind: "<white>Strong Wind</white>"
+  ice-age: "<aqua>Ice Age</aqua>"
+  darkness: "<dark_gray>Darkness</dark_gray>"
+  meteor-shower: "<gold>Meteor Shower</gold>"
+  flood: "<blue>Flood</blue>"
+  chicken-madness: "<yellow>Chicken Madness</yellow>"
+  random-explosions: "<red>Random Explosions</red>"
+  tree-growth: "<green>Tree Growth</green>"
+  falling-blocks: "<gray>Falling Blocks</gray>"
+  double-damage: "<dark_red>Double Damage</dark_red>"
+  only-bows: "<green>Only Bows</green>"
+  knockback-madness: "<light_purple>Knockback Madness</light_purple>"
+  low-gravity: "<white>Low Gravity</white>"
+  resistance: "<aqua>Resistance</aqua>"
+  fire-spread: "<gold>Fire Spread</gold>"

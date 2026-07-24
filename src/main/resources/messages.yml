@@ -1,0 +1,71 @@
+prefix: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> "
+
+general:
+  no-permission: "<red>You don't have permission to do that.</red>"
+  player-only: "<red>Only players can use this command.</red>"
+  reload-success: "<green>Configuration reloaded successfully.</green>"
+  unknown-command: "<red>Unknown subcommand. Use <yellow>/bc help</yellow>.</red>"
+  version: "<yellow>Blaze's Chaos</yellow> <gray>v%version%</gray>"
+
+lobby:
+  teleported: "<green>Teleported to the lobby.</green>"
+  set: "<green>Global lobby location set.</green>"
+  not-set: "<red>Lobby location is not set.</red>"
+
+arena:
+  created: "<green>Arena <yellow>%arena%</yellow> created. Use <yellow>/bc setup</yellow> to configure it.</green>"
+  deleted: "<green>Arena <yellow>%arena%</yellow> deleted.</green>"
+  not-found: "<red>Arena not found.</red>"
+  already-exists: "<red>An arena with that name already exists.</red>"
+  not-setup: "<red>This arena is not fully set up yet.</red>"
+  saved: "<green>Arena settings saved.</green>"
+  setup-finished: "<green>Arena <yellow>%arena%</yellow> setup complete!</green>"
+  in-use: "<red>That arena is currently in use.</red>"
+  list-header: "<gold>Arenas:</gold>"
+  list-entry: "<gray>- <yellow>%arena%</yellow> <dark_gray>(%state%)</dark_gray> <aqua>%players%/%max%</aqua>"
+
+game:
+  joined: "<green>You joined <yellow>%arena%</yellow>!</green>"
+  left: "<yellow>You left the game.</yellow>"
+  full: "<red>This game is full.</red>"
+  already-in: "<red>You are already in a game.</red>"
+  not-in: "<red>You are not in a game.</red>"
+  starting: "<gold>Game starting in <yellow>%time%</yellow> seconds!</gold>"
+  started: "<gradient:#FF4500:#FFD700><bold>CHAOS BEGINS!</bold></gradient>"
+  eliminated: "<red>%player%</red> <gray>was eliminated! <yellow>%alive%</yellow> remain.</gray>"
+  winner: "<gold><bold>%player%</bold></gold> <yellow>wins Blaze's Chaos!</yellow>"
+  no-winner: "<yellow>No winner — the chaos consumed everyone.</yellow>"
+  force-started: "<green>Game force-started.</green>"
+  stopped: "<red>Game stopped by an admin.</red>"
+  deathmatch: "<dark_red><bold>DEATHMATCH!</bold></dark_red> <red>The border is collapsing!</red>"
+  countdown-cancelled: "<yellow>Countdown cancelled — not enough players.</yellow>"
+
+event:
+  starting: "<gradient:#FF4500:#FFD700><bold>CHAOS EVENT:</bold></gradient> <yellow>%event%</yellow>"
+  ending: "<gray>Chaos event <yellow>%event%</yellow> has ended.</gray>"
+  next: "<aqua>Next event in <yellow>%time%</yellow>s</aqua>"
+  forced: "<green>Forced next chaos event.</green>"
+
+admin:
+  debug-on: "<green>Debug mode enabled.</green>"
+  debug-off: "<yellow>Debug mode disabled.</yellow>"
+  info: "<gold>Arena:</gold> <yellow>%arena%</yellow> <gray>|</gray> <gold>State:</gold> <yellow>%state%</yellow> <gray>|</gray> <gold>Players:</gold> <yellow>%players%</yellow> <gray>|</gray> <gold>Event:</gold> <yellow>%event%</yellow>"
+
+help:
+  - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos Commands</bold></gradient>"
+  - "<yellow>/bc join [arena]</yellow> <gray>- Join a game</gray>"
+  - "<yellow>/bc leave</yellow> <gray>- Leave your game</gray>"
+  - "<yellow>/bc lobby</yellow> <gray>- Go to lobby</gray>"
+  - "<yellow>/bc list</yellow> <gray>- List arenas</gray>"
+  - "<yellow>/bc info</yellow> <gray>- Game info</gray>"
+  - "<yellow>/bc version</yellow> <gray>- Plugin version</gray>"
+  - "<gray>---</gray>"
+  - "<yellow>/bc createarena <name></yellow> <gray>- Create arena</gray>"
+  - "<yellow>/bc deletearena <name></yellow> <gray>- Delete arena</gray>"
+  - "<yellow>/bc setup [arena]</yellow> <gray>- Setup GUI</gray>"
+  - "<yellow>/bc setlobby</yellow> <gray>- Set global lobby</gray>"
+  - "<yellow>/bc forcestart</yellow> <gray>- Force start</gray>"
+  - "<yellow>/bc stop</yellow> <gray>- Stop game</gray>"
+  - "<yellow>/bc next</yellow> <gray>- Force next event</gray>"
+  - "<yellow>/bc reload</yellow> <gray>- Reload configs</gray>"
+  - "<yellow>/bc debug</yellow> <gray>- Toggle debug</gray>"

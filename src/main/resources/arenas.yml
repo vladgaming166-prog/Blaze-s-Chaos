@@ -1,0 +1,3 @@
+# Arena data is managed at runtime. This file stores persisted arenas.
+
+arenas: {}

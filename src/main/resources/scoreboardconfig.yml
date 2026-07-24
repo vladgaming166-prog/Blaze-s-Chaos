@@ -1,0 +1,46 @@
+enabled: true
+update-interval: 20
+
+animations:
+  enabled: true
+  title-frames:
+    - "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
+    - "<gradient:#FFD700:#FF4500><bold>BLAZE'S CHAOS</bold></gradient>"
+    - "<gradient:#FF6347:#FFA500><bold>BLAZE'S CHAOS</bold></gradient>"
+  frame-interval: 10
+
+lobby:
+  title: "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
+  lines:
+    - ""
+    - "<gray>Players: <yellow>%blazechaos_players%</yellow>"
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
+    - "<gray>State: <green>%blazechaos_state%</green>"
+    - ""
+    - "<gold>Waiting for players...</gold>"
+    - ""
+
+game:
+  title: "<gradient:#FF4500:#FFD700><bold>BLAZE'S CHAOS</bold></gradient>"
+  lines:
+    - ""
+    - "<gray>Alive: <red>%blazechaos_alive%</red>"
+    - "<gray>Event: <yellow>%blazechaos_event%</yellow>"
+    - "<gray>Next: <aqua>%blazechaos_next_event%s</aqua>"
+    - "<gray>Time: <white>%blazechaos_time%s</white>"
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
+    - ""
+
+spectator:
+  title: "<gradient:#888888:#CCCCCC><bold>SPECTATING</bold></gradient>"
+  lines:
+    - ""
+    - "<gray>Alive: <red>%blazechaos_alive%</red>"
+    - "<gray>Event: <yellow>%blazechaos_event%</yellow>"
+    - "<gray>Map: <aqua>%blazechaos_map%</aqua>"
+    - ""
+    - "<dark_gray>You died!</dark_gray>"
+    - ""
+
+# Hide default sidebar score numbers (15..1)
+hide-scores: true

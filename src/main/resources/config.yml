@@ -1,0 +1,40 @@
+# Blaze's Chaos - Main Configuration
+
+settings:
+  prefix: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> "
+  min-players: 2
+  max-players: 24
+  countdown-seconds: 30
+  chaos-interval-seconds: 60
+  deathmatch-after-seconds: 600
+  deathmatch-border-size: 50
+  ending-seconds: 10
+  allow-rejoin: false
+  spectator-on-death: true
+  clear-inventory-on-join: true
+  give-kit-on-start: false
+  join-item:
+    enabled: true
+    slot: 0
+    material: BLAZE_POWDER
+    name: "<gradient:#FF4500:#FFD700>Join Blaze's Chaos</gradient>"
+    lore:
+      - "<gray>Right-click to join!</gray>"
+  leave-item:
+    enabled: true
+    slot: 8
+    material: RED_BED
+    name: "<red>Leave Game</red>"
+    lore:
+      - "<gray>Right-click to leave</gray>"
+
+rewards:
+  win-money: 100.0
+  kill-money: 5.0
+  participation-money: 10.0
+
+debug: false
+
+lobby:
+  location: {}
+  npc: {}

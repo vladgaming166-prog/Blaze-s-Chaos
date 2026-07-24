@@ -1,0 +1,26 @@
+# Fast world copy/reset system
+
+enabled: true
+template-folder: templates
+active-folder: worlds
+backup-on-first-load: true
+
+# Files/folders skipped during copy
+skip:
+  - uid.dat
+  - session.lock
+  - playerdata
+  - stats
+  - advancements
+
+# Unload world before reset
+unload-before-reset: true
+save-before-unload: false
+
+# Delay (ticks) after match end before reset begins
+reset-delay-ticks: 40
+
+messages:
+  resetting: "<yellow>Resetting arena world...</yellow>"
+  reset-complete: "<green>Arena world restored.</green>"
+  reset-failed: "<red>World reset failed. Check console.</red>"

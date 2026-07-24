@@ -1,0 +1,30 @@
+# Permission reference (also declared in plugin.yml)
+
+permissions:
+  blazechaos.use:
+    description: Access basic commands
+    default: true
+  blazechaos.play:
+    description: Join and play
+    default: true
+  blazechaos.admin:
+    description: Full admin
+    default: op
+  blazechaos.setup:
+    description: Arena setup
+    default: op
+  blazechaos.reload:
+    description: Reload configs
+    default: op
+  blazechaos.forcestart:
+    description: Force start games
+    default: op
+  blazechaos.stop:
+    description: Stop games
+    default: op
+  blazechaos.debug:
+    description: Debug mode
+    default: op
+  blazechaos.next:
+    description: Force next chaos event
+    default: op
