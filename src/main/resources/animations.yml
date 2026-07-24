@@ -1,41 +1,81 @@
-# Global animated placeholders
-# Use as %blazechaos_animation_<name>% or %animation:<name>%
-# interval is in animation engine ticks (advanced each scoreboard update)
-config-version: 7
+# Blaze's Chaos — unified animations
+# Use anywhere: %animation:name%  or  {animation:name}
+# Also supported: %blazechaos_animation_<name>% / %blazechaosanimation_<name>%
+#
+# change-interval / interval = animation engine ticks
+# (advanced once per scoreboard update by default)
+#
+# Shared by: scoreboard, tablist, bossbars, holograms, NPCs, titles, actionbars
+config-version: 8
 
 title:
-  interval: 2
+  change-interval: 2
   frames:
     - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
     - "<gradient:#FFD700:#FF4500><bold>Blaze's Chaos</bold></gradient>"
+    - "<gradient:#FF6347:#FFA500><bold>Blaze's Chaos</bold></gradient>"
     - "&6&lBlaze's Chaos"
     - "&e&lBlaze's Chaos"
-    - "&f&lBlaze's Chaos"
 
 server:
-  interval: 3
+  change-interval: 5
   frames:
     - "&aplay.example.ro"
     - "&fplay.example.ro"
     - "&eplay.example.ro"
 
 ip:
-  interval: 4
+  change-interval: 4
   frames:
     - "&bplay.example.ro"
     - "&3play.example.ro"
     - "&fplay.example.ro"
 
+discord:
+  change-interval: 8
+  frames:
+    - "&9discord.gg/example"
+    - "&bdiscord.gg/example"
+    - "&fdiscord.gg/example"
+
+coins:
+  change-interval: 10
+  frames:
+    - "&6Coins"
+    - "&eCoins"
+    - "&fCoins"
+
+online:
+  change-interval: 15
+  frames:
+    - "&aOnline"
+    - "&2Online"
+    - "&fOnline"
+
 queue:
-  interval: 5
+  change-interval: 5
   frames:
     - "&aQueue Open"
     - "&2Queue Open"
     - "&fQueue Open"
 
 play:
-  interval: 4
+  change-interval: 4
   frames:
     - "&eClick to Play"
     - "&6Click to Play"
     - "&fClick to Play"
+
+event:
+  change-interval: 6
+  frames:
+    - "&eChaos Event"
+    - "&6Chaos Event"
+    - "&cChaos Event"
+
+footer:
+  change-interval: 6
+  frames:
+    - "&7Survive the chaos"
+    - "&8Survive the chaos"
+    - "&fSurvive the chaos"

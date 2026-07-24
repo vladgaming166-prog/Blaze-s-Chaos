@@ -55,6 +55,16 @@ public final class PlaceholderService {
                 }
             }
         }
+        // Second pass: nested animation placeholders that appeared after PAPI / internals
+        try {
+            if (plugin.animationManager() != null
+                    && (text.indexOf('%') >= 0 || text.indexOf('{') >= 0)
+                    && (text.contains("animation:") || text.contains("blazechaosanimation_")
+                    || text.contains("blazechaos_animation_"))) {
+                text = plugin.animationManager().resolve(text);
+            }
+        } catch (Throwable ignored) {
+        }
         return text;
     }
 

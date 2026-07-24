@@ -25,19 +25,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Flicker-free sidebar scoreboard.
- * Reuses one scoreboard/objective/teams per player and only writes when content changes.
+ * Reuses one scoreboard / objective / teams per player and only writes when content changes.
  */
 public final class ScoreboardManager {
 
     private static final String OBJECTIVE_NAME = "blazechaos";
+    private static final String TEAM_PREFIX = "bc";
     private static final String[] ENTRY_KEYS = {
             "§0§r", "§1§r", "§2§r", "§3§r", "§4§r", "§5§r", "§6§r", "§7§r",
             "§8§r", "§9§r", "§a§r", "§b§r", "§c§r", "§d§r", "§e§r"
     };
 
     private final BlazesChaosPlugin plugin;
-    private final ConcurrentHashMap<UUID, Scoreboard> boards = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, CachedBoard> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, PlayerBoard> boards = new ConcurrentHashMap<>();
     private @Nullable BukkitTask task;
 
     public ScoreboardManager(@NotNull BlazesChaosPlugin plugin) {
@@ -51,7 +51,6 @@ public final class ScoreboardManager {
         }
         int interval = Math.max(1, plugin.configs().scoreboard().getInt("update-interval", 20));
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            // Advance animations once per scoreboard update (identical to pre-redesign timing)
             plugin.animationManager().tick();
             for (Player player : Bukkit.getOnlinePlayers()) {
                 try {
@@ -75,11 +74,9 @@ public final class ScoreboardManager {
                 remove(player);
             } else {
                 boards.remove(uuid);
-                cache.remove(uuid);
             }
         }
         boards.clear();
-        cache.clear();
     }
 
     private void stopTask() {
@@ -101,12 +98,18 @@ public final class ScoreboardManager {
     }
 
     public void applyLobby(@NotNull Player player) {
-        cache.remove(player.getUniqueId());
+        PlayerBoard board = boards.get(player.getUniqueId());
+        if (board != null) {
+            board.invalidate();
+        }
         render(player, "server-lobby", null);
     }
 
     public void apply(@NotNull Player player, @NotNull GameInstance game) {
-        cache.remove(player.getUniqueId());
+        PlayerBoard board = boards.get(player.getUniqueId());
+        if (board != null) {
+            board.invalidate();
+        }
         render(player, resolveSection(player, game), game);
     }
 
@@ -133,22 +136,28 @@ public final class ScoreboardManager {
 
     private void render(@NotNull Player player, @NotNull String section, @Nullable GameInstance game) {
         FileConfiguration config = plugin.configs().scoreboard();
-        Scoreboard board = boards.computeIfAbsent(player.getUniqueId(),
-                id -> Bukkit.getScoreboardManager().getNewScoreboard());
+        PlayerBoard state = boards.computeIfAbsent(player.getUniqueId(), id -> createBoard(player));
 
+        Scoreboard board = state.scoreboard;
         if (player.getScoreboard() != board) {
             player.setScoreboard(board);
         }
 
-        Objective objective = board.getObjective(OBJECTIVE_NAME);
-        if (objective == null) {
-            // Clean up any stale objectives with same display slot
-            Objective existing = board.getObjective(DisplaySlot.SIDEBAR);
-            if (existing != null && !OBJECTIVE_NAME.equals(existing.getName())) {
+        Objective objective = state.objective;
+        if (objective == null || board.getObjective(OBJECTIVE_NAME) == null) {
+            // Remove any foreign sidebar objective to avoid duplicates
+            Objective sidebar = board.getObjective(DisplaySlot.SIDEBAR);
+            if (sidebar != null && !OBJECTIVE_NAME.equals(sidebar.getName())) {
+                sidebar.unregister();
+            }
+            Objective existing = board.getObjective(OBJECTIVE_NAME);
+            if (existing != null) {
                 existing.unregister();
             }
             objective = board.registerNewObjective(OBJECTIVE_NAME, Criteria.DUMMY, Component.empty());
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+            state.objective = objective;
+            ensureTeams(state);
         } else if (objective.getDisplaySlot() != DisplaySlot.SIDEBAR) {
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         }
@@ -163,68 +172,115 @@ public final class ScoreboardManager {
             lines = config.getStringList("lobby.lines");
         }
 
-        List<String> rendered = new ArrayList<>(Math.min(15, lines.size()));
-        for (String line : lines) {
-            if (rendered.size() >= 15) {
-                break;
-            }
-            rendered.add(applyAll(player, game, line));
+        int count = Math.min(15, lines.size());
+        List<String> rendered = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            rendered.add(applyAll(player, game, lines.get(i)));
         }
 
-        CachedBoard previous = cache.get(player.getUniqueId());
-        if (previous != null
-                && Objects.equals(previous.title, titleRaw)
-                && previous.lines.equals(rendered)
-                && previous.section.equals(section)) {
-            // Content unchanged — skip writes to avoid flicker
+        // Skip all packet writes when nothing changed
+        if (state.section.equals(section)
+                && Objects.equals(state.title, titleRaw)
+                && state.lines.equals(rendered)) {
             return;
         }
 
-        Component titleComponent = ColorUtil.parse(titleRaw);
-        if (previous == null || !Objects.equals(previous.title, titleRaw)) {
-            objective.displayName(titleComponent);
+        if (!Objects.equals(state.title, titleRaw)) {
+            objective.displayName(ColorUtil.parse(titleRaw));
+            state.title = titleRaw;
         }
 
         for (int i = 0; i < ENTRY_KEYS.length; i++) {
             String entry = ENTRY_KEYS[i];
-            Team team = board.getTeam("bc" + i);
+            Team team = state.teams[i];
+            if (team == null) {
+                team = ensureTeam(board, i);
+                state.teams[i] = team;
+            }
             if (i >= rendered.size()) {
-                board.resetScores(entry);
-                // Keep team registered empty to avoid recreate churn; clear prefix
-                if (team != null) {
+                if (state.activeLines > i) {
+                    board.resetScores(entry);
                     team.prefix(Component.empty());
                     team.suffix(Component.empty());
                 }
                 continue;
             }
-            if (team == null) {
-                team = board.registerNewTeam("bc" + i);
-            }
             if (!team.hasEntry(entry)) {
-                // Ensure only this entry
                 for (String existing : new ArrayList<>(team.getEntries())) {
                     team.removeEntry(existing);
                 }
                 team.addEntry(entry);
             }
             String text = rendered.get(i);
-            boolean lineChanged = previous == null
-                    || previous.lines.size() <= i
-                    || !Objects.equals(previous.lines.get(i), text);
+            boolean lineChanged = state.lines.size() <= i || !Objects.equals(state.lines.get(i), text);
             if (lineChanged) {
                 team.prefix(ColorUtil.parse(text));
                 team.suffix(Component.empty());
             }
-            objective.getScore(entry).setScore(15 - i);
+            // Score ranks are stable; only set once or when line newly appears
+            if (state.activeLines <= i) {
+                objective.getScore(entry).setScore(15 - i);
+            }
         }
 
-        cache.put(player.getUniqueId(), new CachedBoard(section, titleRaw, List.copyOf(rendered)));
+        // Clear leftover scores if board shrank
+        for (int i = rendered.size(); i < state.activeLines; i++) {
+            board.resetScores(ENTRY_KEYS[i]);
+            if (state.teams[i] != null) {
+                state.teams[i].prefix(Component.empty());
+                state.teams[i].suffix(Component.empty());
+            }
+        }
+
+        state.section = section;
+        state.lines = List.copyOf(rendered);
+        state.activeLines = rendered.size();
+    }
+
+    private @NotNull PlayerBoard createBoard(@NotNull Player player) {
+        Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
+        Objective objective = board.registerNewObjective(OBJECTIVE_NAME, Criteria.DUMMY, Component.empty());
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        PlayerBoard state = new PlayerBoard(board, objective);
+        ensureTeams(state);
+        player.setScoreboard(board);
+        return state;
+    }
+
+    private void ensureTeams(@NotNull PlayerBoard state) {
+        for (int i = 0; i < ENTRY_KEYS.length; i++) {
+            if (state.teams[i] == null) {
+                state.teams[i] = ensureTeam(state.scoreboard, i);
+            }
+        }
+    }
+
+    private @NotNull Team ensureTeam(@NotNull Scoreboard board, int index) {
+        String name = TEAM_PREFIX + index;
+        Team team = board.getTeam(name);
+        if (team == null) {
+            team = board.registerNewTeam(name);
+        }
+        String entry = ENTRY_KEYS[index];
+        if (!team.hasEntry(entry)) {
+            for (String existing : new ArrayList<>(team.getEntries())) {
+                team.removeEntry(existing);
+            }
+            team.addEntry(entry);
+        }
+        return team;
     }
 
     private @NotNull String resolveTitle(@NotNull FileConfiguration config, @NotNull String section) {
         String configured = config.getString(section + ".title", "");
         if (configured != null && !configured.isBlank()) {
             return configured;
+        }
+        if (config.getBoolean("animations.enabled", true)) {
+            List<String> frames = config.getStringList("animations.title-frames");
+            if (!frames.isEmpty()) {
+                return frames.get(0);
+            }
         }
         if (plugin.animationManager().get("title") != null) {
             return "%animation:title%";
@@ -233,24 +289,24 @@ public final class ScoreboardManager {
     }
 
     private @NotNull String applyAll(@NotNull Player player, @Nullable GameInstance game, @NotNull String input) {
-        // Placeholders service also resolves animations; resolve once here for clarity
-        String text = plugin.animationManager().resolve(input);
-        return plugin.placeholders().apply(player, game, text);
+        // Single path: PlaceholderService resolves animations + internal + PlaceholderAPI
+        return plugin.placeholders().apply(player, game, input);
     }
 
     public void remove(@NotNull Player player) {
         UUID id = player.getUniqueId();
-        Scoreboard board = boards.remove(id);
-        cache.remove(id);
-        if (board != null) {
+        PlayerBoard state = boards.remove(id);
+        if (state != null) {
             try {
-                Objective objective = board.getObjective(OBJECTIVE_NAME);
-                if (objective != null) {
-                    objective.unregister();
+                if (state.objective != null) {
+                    state.objective.unregister();
                 }
-                for (Team team : new ArrayList<>(board.getTeams())) {
-                    if (team.getName().startsWith("bc")) {
-                        team.unregister();
+                for (Team team : state.teams) {
+                    if (team != null) {
+                        try {
+                            team.unregister();
+                        } catch (Throwable ignored) {
+                        }
                     }
                 }
             } catch (Throwable ignored) {
@@ -261,6 +317,25 @@ public final class ScoreboardManager {
         }
     }
 
-    private record CachedBoard(@NotNull String section, @NotNull String title, @NotNull List<String> lines) {
+    private static final class PlayerBoard {
+        private final Scoreboard scoreboard;
+        private @Nullable Objective objective;
+        private final Team[] teams = new Team[ENTRY_KEYS.length];
+        private @NotNull String section = "";
+        private @NotNull String title = "";
+        private @NotNull List<String> lines = List.of();
+        private int activeLines;
+
+        private PlayerBoard(@NotNull Scoreboard scoreboard, @NotNull Objective objective) {
+            this.scoreboard = scoreboard;
+            this.objective = objective;
+        }
+
+        private void invalidate() {
+            section = "";
+            title = "";
+            lines = List.of();
+            activeLines = 0;
+        }
     }
 }

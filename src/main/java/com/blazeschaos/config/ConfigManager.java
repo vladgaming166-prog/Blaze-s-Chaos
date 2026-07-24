@@ -4,6 +4,7 @@ import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.lang.LanguageManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -28,8 +29,7 @@ public final class ConfigManager {
     private FileConfiguration arenas;
     private FileConfiguration scoreboard;
     private FileConfiguration tablist;
-    private FileConfiguration scoreboardAnimations;
-    private FileConfiguration globalAnimations;
+    private FileConfiguration animations;
     private FileConfiguration npcs;
     private FileConfiguration worldReset;
     private FileConfiguration permissions;
@@ -50,8 +50,8 @@ public final class ConfigManager {
         arenas = loadYaml("arenas.yml");
         scoreboard = loadYaml("scoreboardconfig.yml");
         tablist = loadYaml("tablist.yml");
-        scoreboardAnimations = loadYaml("scoreboardanimations.yml");
-        globalAnimations = loadYaml("animations.yml");
+        animations = loadYaml("animations.yml");
+        migrateLegacyScoreboardAnimations();
         npcs = loadYaml("npcs.yml");
         worldReset = loadYaml("worldreset.yml");
         permissions = loadYaml("permissions.yml");
@@ -65,8 +65,7 @@ public final class ConfigManager {
         softSaveMerged("events.yml", events);
         softSaveMerged("scoreboardconfig.yml", scoreboard);
         softSaveMerged("tablist.yml", tablist);
-        softSaveMerged("scoreboardanimations.yml", scoreboardAnimations);
-        softSaveMerged("animations.yml", globalAnimations);
+        softSaveMerged("animations.yml", animations);
         softSaveMerged("npcs.yml", npcs);
         softSaveMerged("loot.yml", loot);
         softSaveMerged("shop.yml", shop);
@@ -82,8 +81,8 @@ public final class ConfigManager {
         arenas = reloadYaml("arenas.yml");
         scoreboard = reloadYaml("scoreboardconfig.yml");
         tablist = reloadYaml("tablist.yml");
-        scoreboardAnimations = reloadYaml("scoreboardanimations.yml");
-        globalAnimations = reloadYaml("animations.yml");
+        animations = reloadYaml("animations.yml");
+        migrateLegacyScoreboardAnimations();
         npcs = reloadYaml("npcs.yml");
         worldReset = reloadYaml("worldreset.yml");
         permissions = reloadYaml("permissions.yml");
@@ -94,6 +93,49 @@ public final class ConfigManager {
         }
         languageManager.load();
         validateCore();
+    }
+
+    /**
+     * Migrates legacy scoreboardanimations.yml into animations.yml.
+     * Never overwrites existing animation names. Never deletes user data
+     * (legacy file is renamed to a .bak).
+     */
+    private void migrateLegacyScoreboardAnimations() {
+        File legacy = new File(plugin.getDataFolder(), "scoreboardanimations.yml");
+        if (!legacy.exists()) {
+            return;
+        }
+        try {
+            YamlConfiguration legacyCfg = YamlConfiguration.loadConfiguration(legacy);
+            int imported = 0;
+            for (String key : legacyCfg.getKeys(false)) {
+                if (key.equalsIgnoreCase("config-version")) {
+                    continue;
+                }
+                ConfigurationSection section = legacyCfg.getConfigurationSection(key);
+                if (section == null) {
+                    continue;
+                }
+                if (animations.contains(key) && animations.getConfigurationSection(key) != null) {
+                    // Preserve existing animations.yml entry
+                    continue;
+                }
+                animations.createSection(key, section.getValues(true));
+                imported++;
+            }
+            if (imported > 0) {
+                save(animations, "animations.yml");
+                plugin.getLogger().info("Migrated " + imported
+                        + " animation(s) from scoreboardanimations.yml into animations.yml.");
+            }
+            File backup = new File(plugin.getDataFolder(),
+                    "scoreboardanimations.yml.migrated-" + System.currentTimeMillis() + ".bak");
+            Files.move(legacy.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            plugin.getLogger().info("Archived legacy scoreboardanimations.yml as " + backup.getName()
+                    + " (animations now live in animations.yml only).");
+        } catch (IOException ex) {
+            plugin.getLogger().log(Level.WARNING, "Failed to migrate scoreboardanimations.yml", ex);
+        }
     }
 
     private void migrateMainConfig() {
@@ -110,7 +152,6 @@ public final class ConfigManager {
                     changed = true;
                 }
             }
-            // Restore exact pre-redesign branding from f6744fc (static orange→gold gradient)
             final String exactPrefix =
                     "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> ";
             for (String key : List.of(
@@ -159,59 +200,81 @@ public final class ConfigManager {
             return;
         }
         int jarVersion = 1;
+        YamlConfiguration jarDefaults = null;
         try (InputStream stream = plugin.getResource(name)) {
             if (stream != null) {
-                YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+                jarDefaults = YamlConfiguration.loadConfiguration(
                         new InputStreamReader(stream, StandardCharsets.UTF_8));
-                jarVersion = defaults.getInt("config-version", 1);
+                jarVersion = jarDefaults.getInt("config-version", 1);
             }
         } catch (IOException ignored) {
         }
         int diskVersion = yaml.getInt("config-version", 0);
-        if (diskVersion < jarVersion) {
-            // Visual / schema upgrades — refresh jar defaults with backup
-            if (name.equals("scoreboardanimations.yml")
-                    || name.equals("animations.yml")
-                    || name.equals("scoreboardconfig.yml")
-                    || name.equals("tablist.yml")) {
-                try {
-                    File backup = new File(plugin.getDataFolder(),
-                            name + ".v" + diskVersion + "-" + System.currentTimeMillis() + ".bak");
-                    Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    plugin.saveResource(name, true);
-                    plugin.getLogger().info("Upgraded " + name + " to config-version " + jarVersion
-                            + " (backup: " + backup.getName() + ").");
-                    File refreshed = new File(plugin.getDataFolder(), name);
-                    switch (name) {
-                        case "scoreboardanimations.yml" -> {
-                            scoreboardAnimations = YamlConfiguration.loadConfiguration(refreshed);
-                            mergeDefaults(scoreboardAnimations, name);
-                        }
-                        case "animations.yml" -> {
-                            globalAnimations = YamlConfiguration.loadConfiguration(refreshed);
-                            mergeDefaults(globalAnimations, name);
-                        }
-                        case "scoreboardconfig.yml" -> {
-                            scoreboard = YamlConfiguration.loadConfiguration(refreshed);
-                            mergeDefaults(scoreboard, name);
-                        }
-                        case "tablist.yml" -> {
-                            tablist = YamlConfiguration.loadConfiguration(refreshed);
-                            mergeDefaults(tablist, name);
-                        }
-                        default -> {
-                        }
-                    }
-                    return;
-                } catch (IOException ex) {
-                    plugin.getLogger().log(Level.WARNING, "Failed to upgrade " + name, ex);
-                }
-            }
-            yaml.set("config-version", jarVersion);
-            save(yaml, name);
-            plugin.getLogger().info("Updated " + name + " to config-version " + jarVersion
-                    + " (user values preserved via defaults merge).");
+        if (diskVersion >= jarVersion) {
+            return;
         }
+
+        // animations.yml: add missing defaults only — never overwrite existing animations
+        if (name.equals("animations.yml") && jarDefaults != null) {
+            try {
+                File backup = new File(plugin.getDataFolder(),
+                        name + ".v" + diskVersion + "-" + System.currentTimeMillis() + ".bak");
+                Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                int added = 0;
+                for (String key : jarDefaults.getKeys(false)) {
+                    if (key.equalsIgnoreCase("config-version")) {
+                        continue;
+                    }
+                    if (yaml.contains(key) && yaml.getConfigurationSection(key) != null) {
+                        continue;
+                    }
+                    ConfigurationSection section = jarDefaults.getConfigurationSection(key);
+                    if (section != null) {
+                        yaml.createSection(key, section.getValues(true));
+                    } else {
+                        yaml.set(key, jarDefaults.get(key));
+                    }
+                    added++;
+                }
+                yaml.set("config-version", jarVersion);
+                save(yaml, name);
+                animations = yaml;
+                plugin.getLogger().info("Upgraded animations.yml to config-version " + jarVersion
+                        + " (added " + added + " missing animation(s); existing preserved; backup: "
+                        + backup.getName() + ").");
+            } catch (IOException ex) {
+                plugin.getLogger().log(Level.WARNING, "Failed to upgrade animations.yml", ex);
+            }
+            return;
+        }
+
+        // scoreboard / tablist: refresh jar layout with backup
+        if (name.equals("scoreboardconfig.yml") || name.equals("tablist.yml")) {
+            try {
+                File backup = new File(plugin.getDataFolder(),
+                        name + ".v" + diskVersion + "-" + System.currentTimeMillis() + ".bak");
+                Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                plugin.saveResource(name, true);
+                plugin.getLogger().info("Upgraded " + name + " to config-version " + jarVersion
+                        + " (backup: " + backup.getName() + ").");
+                File refreshed = new File(plugin.getDataFolder(), name);
+                if (name.equals("scoreboardconfig.yml")) {
+                    scoreboard = YamlConfiguration.loadConfiguration(refreshed);
+                    mergeDefaults(scoreboard, name);
+                } else {
+                    tablist = YamlConfiguration.loadConfiguration(refreshed);
+                    mergeDefaults(tablist, name);
+                }
+            } catch (IOException ex) {
+                plugin.getLogger().log(Level.WARNING, "Failed to upgrade " + name, ex);
+            }
+            return;
+        }
+
+        yaml.set("config-version", jarVersion);
+        save(yaml, name);
+        plugin.getLogger().info("Updated " + name + " to config-version " + jarVersion
+                + " (user values preserved via defaults merge).");
     }
 
     private void ensureMainConfig() {
@@ -285,6 +348,26 @@ public final class ConfigManager {
             }
             YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
                     new InputStreamReader(stream, StandardCharsets.UTF_8));
+            // For animations: only fill missing top-level keys (never clobber user animations)
+            if (name.equals("animations.yml")) {
+                for (String key : defaults.getKeys(false)) {
+                    if (key.equalsIgnoreCase("config-version")) {
+                        continue;
+                    }
+                    if (!yaml.contains(key)) {
+                        ConfigurationSection section = defaults.getConfigurationSection(key);
+                        if (section != null) {
+                            yaml.createSection(key, section.getValues(true));
+                        } else {
+                            yaml.set(key, defaults.get(key));
+                        }
+                    }
+                }
+                if (!yaml.contains("config-version")) {
+                    yaml.set("config-version", defaults.getInt("config-version", 1));
+                }
+                return;
+            }
             yaml.setDefaults(defaults);
             yaml.options().copyDefaults(true);
         } catch (IOException exception) {
@@ -293,7 +376,6 @@ public final class ConfigManager {
     }
 
     public void saveArenas() {
-        // Automatic backup before overwrite
         File arenasFile = new File(plugin.getDataFolder(), "arenas.yml");
         if (arenasFile.exists()) {
             File backupDir = new File(plugin.getDataFolder(), "backups");
@@ -375,17 +457,19 @@ public final class ConfigManager {
         return tablist;
     }
 
-    public @NotNull FileConfiguration scoreboardAnimations() {
-        return scoreboardAnimations;
-    }
-
-    /** @deprecated use {@link #scoreboardAnimations()} */
+    /** Unified animations.yml (single animation source). */
     public @NotNull FileConfiguration animations() {
-        return scoreboardAnimations;
+        return animations;
     }
 
+    /** @deprecated use {@link #animations()} */
+    public @NotNull FileConfiguration scoreboardAnimations() {
+        return animations;
+    }
+
+    /** @deprecated use {@link #animations()} */
     public @NotNull FileConfiguration globalAnimations() {
-        return globalAnimations;
+        return animations;
     }
 
     public @NotNull FileConfiguration npcs() {

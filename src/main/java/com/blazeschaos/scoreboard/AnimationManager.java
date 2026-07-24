@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -18,27 +19,22 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Single efficient TAB-style animation engine.
+ * Single unified animation engine (animations.yml).
+ * Used by scoreboard, tablist, holograms, NPCs, titles, actionbars, bossbars, etc.
  * <p>
- * Each placeholder resolves to EXACTLY one named animation
- * ({@code %blazechaosanimation_title%} → only "title").
- * <p>
- * Supports:
- * <ul>
- *   <li>Frame cycling ({@code frames} / {@code texts})</li>
- *   <li>Moving RGB / gradient waves that travel across letters</li>
- * </ul>
+ * Placeholders (each resolves to exactly one named animation):
+ * {@code %animation:title%}, {@code {animation:title}},
+ * {@code %blazechaos_animation_title%}, {@code %blazechaosanimation_title%}
  */
 public final class AnimationManager {
 
     private static final Pattern[] PATTERNS = {
-            Pattern.compile("%blazechaosanimation_([a-zA-Z0-9_-]+)%", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("%blazechaos_animation_([a-zA-Z0-9_-]+)%", Pattern.CASE_INSENSITIVE),
             Pattern.compile("%animation:([a-zA-Z0-9_-]+)%", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("\\{animation:([a-zA-Z0-9_-]+)}", Pattern.CASE_INSENSITIVE)
+            Pattern.compile("\\{animation:([a-zA-Z0-9_-]+)}", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("%blazechaosanimation_([a-zA-Z0-9_-]+)%", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("%blazechaos_animation_([a-zA-Z0-9_-]+)%", Pattern.CASE_INSENSITIVE)
     };
 
-    /** Classic Blaze's Chaos orange → gold brand palette (Update 3–4). */
     private static final int[] BRAND_PALETTE = {
             0xFF4500, 0xFF6347, 0xFFA500, 0xFFD700, 0xFFA500, 0xFF6347, 0xFF4500
     };
@@ -49,9 +45,14 @@ public final class AnimationManager {
             0x0000FF, 0x4000FF, 0x8000FF, 0xBF00FF, 0xFF00FF, 0xFF00BF, 0xFF0080, 0xFF0040
     };
 
+    private static final int MAX_NESTING = 5;
+
     private final BlazesChaosPlugin plugin;
     private final Map<String, Animation> animations = new LinkedHashMap<>();
+    /** Per-tick frame cache — one resolve per animation name per tick. */
+    private final Map<String, String> frameCache = new HashMap<>();
     private long ticks;
+    private long cacheTick = -1L;
     private @Nullable BukkitTask task;
 
     public AnimationManager(@NotNull BlazesChaosPlugin plugin) {
@@ -60,10 +61,8 @@ public final class AnimationManager {
     }
 
     /**
-     * Optional fine-grained ticker for moving-gradient animations only.
-     * Frame-based animations (default / pre-redesign style) advance from
-     * {@link ScoreboardManager} so {@code change-interval} matches the original
-     * scoreboard-update-tick semantics.
+     * Fine-grained ticker only when moving-gradient animations exist.
+     * Frame animations advance via {@link #tick()} from the scoreboard updater.
      */
     public void start() {
         stop();
@@ -88,9 +87,10 @@ public final class AnimationManager {
 
     public void reload() {
         animations.clear();
-        loadFrom(plugin.configs().scoreboardAnimations());
-        loadFrom(plugin.configs().globalAnimations());
-        plugin.getLogger().info("Loaded " + animations.size() + " animations.");
+        frameCache.clear();
+        cacheTick = -1L;
+        loadFrom(plugin.configs().animations());
+        plugin.getLogger().info("Loaded " + animations.size() + " animations from animations.yml.");
     }
 
     private void loadFrom(@NotNull FileConfiguration config) {
@@ -103,8 +103,8 @@ public final class AnimationManager {
                 continue;
             }
             String id = key.toLowerCase(Locale.ROOT);
-            int interval = Math.max(1, section.getInt("interval",
-                    section.getInt("change-interval", 20)));
+            int interval = Math.max(1, section.getInt("change-interval",
+                    section.getInt("interval", 20)));
 
             String type = section.getString("type", "").toLowerCase(Locale.ROOT);
             boolean moving = section.getBoolean("rgb", false)
@@ -194,26 +194,55 @@ public final class AnimationManager {
 
     public void tick() {
         ticks++;
+        // Invalidate frame cache for the new tick
+        if (cacheTick != ticks) {
+            frameCache.clear();
+            cacheTick = ticks;
+        }
     }
 
     public long ticks() {
         return ticks;
     }
 
+    /**
+     * Resolves animation placeholders, including nested ones
+     * (e.g. a frame that itself contains {@code %animation:other%}).
+     */
     public @NotNull String resolve(@NotNull String input) {
         if (input.indexOf('%') < 0 && input.indexOf('{') < 0) {
             return input;
         }
         String text = input;
-        for (Pattern pattern : PATTERNS) {
-            text = replaceNamed(pattern, text);
+        for (int depth = 0; depth < MAX_NESTING; depth++) {
+            String previous = text;
+            for (Pattern pattern : PATTERNS) {
+                text = replaceNamed(pattern, text);
+            }
+            if (text.equals(previous)) {
+                break;
+            }
+            if (text.indexOf('%') < 0 && text.indexOf('{') < 0) {
+                break;
+            }
         }
         return text;
     }
 
     public @NotNull String frame(@NotNull String name) {
-        Animation animation = animations.get(name.toLowerCase(Locale.ROOT));
-        return animation == null ? "" : animation.current(ticks);
+        String id = name.toLowerCase(Locale.ROOT);
+        if (cacheTick != ticks) {
+            frameCache.clear();
+            cacheTick = ticks;
+        }
+        String cached = frameCache.get(id);
+        if (cached != null) {
+            return cached;
+        }
+        Animation animation = animations.get(id);
+        String value = animation == null ? "" : animation.current(ticks);
+        frameCache.put(id, value);
+        return value;
     }
 
     private @NotNull String replaceNamed(@NotNull Pattern pattern, @NotNull String input) {
@@ -225,8 +254,10 @@ public final class AnimationManager {
         StringBuilder sb = new StringBuilder(input.length() + 64);
         while (matcher.find()) {
             String name = matcher.group(1).toLowerCase(Locale.ROOT);
-            Animation animation = animations.get(name);
-            String replacement = animation == null ? matcher.group(0) : animation.current(ticks);
+            String replacement = frame(name);
+            if (replacement.isEmpty() && animations.get(name) == null) {
+                replacement = matcher.group(0);
+            }
             matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(sb);
@@ -289,21 +320,11 @@ public final class AnimationManager {
             };
         }
 
-        /**
-         * TAB-like traveling gradient: colors continuously move across letters.
-         * Each character samples a smoothly interpolated point on the palette wave.
-         */
         private @NotNull String renderMovingGradient(int step) {
             if (sourceText.isEmpty()) {
                 return "";
             }
             StringBuilder out = new StringBuilder(sourceText.length() * 18);
-            int visible = 0;
-            for (int i = 0; i < sourceText.length(); i++) {
-                if (sourceText.charAt(i) != ' ') {
-                    visible++;
-                }
-            }
             int painted = 0;
             double phase = step * speed;
             for (int i = 0; i < sourceText.length(); i++) {
@@ -312,7 +333,6 @@ public final class AnimationManager {
                     out.append(' ');
                     continue;
                 }
-                // Wave travels left→right across visible characters
                 double t = painted * spread + phase;
                 int color = samplePalette(palette, t);
                 out.append("<#").append(String.format("%06X", color & 0xFFFFFF)).append('>');
@@ -326,7 +346,6 @@ public final class AnimationManager {
             return out.toString();
         }
 
-        /** Smooth multi-stop palette sample. {@code t} is continuous and wraps. */
         private static int samplePalette(@NotNull int[] palette, double t) {
             if (palette.length == 1) {
                 return palette[0];

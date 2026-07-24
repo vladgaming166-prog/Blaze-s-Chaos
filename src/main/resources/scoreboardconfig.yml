@@ -1,14 +1,14 @@
 # Scoreboard configuration
 # Supports: MiniMessage, & legacy codes, hex (#RRGGBB / &#RRGGBB), PlaceholderAPI
-# Animations: use %animation:name% from scoreboardanimations.yml
-config-version: 7
+# Animations: use %animation:name% from animations.yml
+config-version: 8
 
 enabled: true
 update-interval: 20
 
 animations:
   enabled: true
-  # Legacy inline frames (still supported). Prefer scoreboardanimations.yml + %animation:title%
+  # Legacy inline frames (still supported). Prefer animations.yml + %animation:title%
   title-frames:
     - "%animation:title%"
   # How many update ticks between title frame advances when using title-frames list
@@ -24,15 +24,14 @@ server-lobby:
     - ""
     - "%animation:server%"
     - ""
-    - "<white>%animation:online%:</white> <aqua>%server_online%</aqua>"
-    - "<white>%animation:coins%:</white> <gold>%blazechaos_coins%</gold>"
-    - "<white>Wins:</white> <green>%blazechaos_wins%</green>"
-    - "<white>Kills:</white> <red>%blazechaos_kills%</red>"
+    - "<white>Online </white><aqua>%server_online%</aqua>"
+    - "<white>Coins </white><gold>%blazechaos_coins%</gold>"
+    - "<white>Wins </white><green>%blazechaos_wins%</green>"
+    - "<white>Kills </white><red>%blazechaos_kills%</red>"
     - ""
     - "<gray>Discord:</gray>"
     - "%animation:discord%"
     - ""
-    - "%animation:footer%"
 
 # Waiting room (joined arena, not started)
 waiting:
