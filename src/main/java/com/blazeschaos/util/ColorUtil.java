@@ -12,11 +12,8 @@ import java.util.regex.Pattern;
 
 /**
  * Parses text for Adventure display.
- * <p>
- * Restores the pre-break behaviour: any string containing MiniMessage {@code <tags>}
- * is parsed with MiniMessage. Legacy {@code &} codes are used only when no {@code <}
- * tags are present. Hex helpers apply only on the legacy path so gradients like
- * {@code <gradient:#FFFFFF:#45A000>} are never mangled into raw visible tags.
+ * Supports MiniMessage, legacy {@code &} codes, {@code &#RRGGBB}/{@code #RRGGBB} hex,
+ * and Birdflop-style animated RGB strings.
  */
 public final class ColorUtil {
 
@@ -26,7 +23,7 @@ public final class ColorUtil {
             .hexColors()
             .useUnusualXRepeatedCharacterHexFormat()
             .build();
-    private static final Pattern HEX_BARE = Pattern.compile("(?i)(?<![&<])#([0-9A-F]{6})");
+    private static final Pattern HEX_BARE = Pattern.compile("(?i)(?<![&<:])#([0-9A-F]{6})(?![>0-9A-Fa-f])");
     private static final Pattern HEX_AMP = Pattern.compile("(?i)&#([0-9A-F]{6})");
 
     private ColorUtil() {
@@ -38,20 +35,68 @@ public final class ColorUtil {
         }
         String text = input;
 
-        // MiniMessage whenever angle-bracket tags exist (same rule as the working version).
-        // Never rewrite # colors inside these strings.
-        if (text.indexOf('<') >= 0) {
+        boolean hasMiniTags = looksLikeMiniMessage(text);
+        boolean hasLegacyHex = text.contains("&#") || text.contains("&x") || text.contains("§x");
+
+        // Pure MiniMessage (gradients etc.)
+        if (hasMiniTags && !hasLegacyHex) {
             return MINI.deserialize(text).decoration(TextDecoration.ITALIC, false);
         }
 
-        // Legacy-only: & codes, optional # / &# hex
-        if (text.indexOf('&') >= 0 || text.indexOf('#') >= 0 || text.indexOf('§') >= 0) {
+        // Birdflop RGB / legacy — including mixed with MiniMessage
+        if (hasLegacyHex || text.indexOf('&') >= 0 || text.indexOf('§') >= 0 || text.indexOf('#') >= 0) {
+            if (hasMiniTags) {
+                text = normalizeLegacyHex(text);
+                text = legacyHexToMini(text);
+                return MINI.deserialize(text).decoration(TextDecoration.ITALIC, false);
+            }
             text = normalizeLegacyHex(text);
             return LEGACY.deserialize(text).decoration(TextDecoration.ITALIC, false);
         }
 
-        // Plain text — MiniMessage handles it safely (previous default path)
         return MINI.deserialize(text).decoration(TextDecoration.ITALIC, false);
+    }
+
+    private static boolean looksLikeMiniMessage(@NotNull String text) {
+        if (text.indexOf('<') < 0) {
+            return false;
+        }
+        String lower = text.toLowerCase();
+        return lower.contains("<gradient") || lower.contains("<rainbow") || lower.contains("<bold")
+                || lower.contains("<italic") || lower.contains("<underlined") || lower.contains("<strikethrough")
+                || lower.contains("<obfuscated") || lower.contains("<reset") || lower.contains("<color")
+                || lower.contains("<#") || lower.contains("<green") || lower.contains("<red")
+                || lower.contains("<gold") || lower.contains("<aqua") || lower.contains("<yellow")
+                || lower.contains("<white") || lower.contains("<gray") || lower.contains("<dark_")
+                || lower.contains("<hover") || lower.contains("<click") || lower.contains("</");
+    }
+
+    private static @NotNull String legacyHexToMini(@NotNull String input) {
+        Matcher amp = Pattern.compile("(?i)&#([0-9A-F]{6})").matcher(input);
+        StringBuilder sb = new StringBuilder();
+        while (amp.find()) {
+            amp.appendReplacement(sb, Matcher.quoteReplacement("<#" + amp.group(1) + ">"));
+        }
+        amp.appendTail(sb);
+        // Also convert &x&R&R&G&G&B&B produced by normalizeLegacyHex
+        Matcher x = Pattern.compile("(?i)&x(?:&([0-9A-F])){6}").matcher(sb.toString());
+        StringBuilder out = new StringBuilder();
+        while (x.find()) {
+            String raw = x.group(0);
+            StringBuilder hex = new StringBuilder(6);
+            for (int i = 0; i < raw.length(); i++) {
+                if (raw.charAt(i) == '&' && i + 1 < raw.length() && raw.charAt(i + 1) != 'x' && raw.charAt(i + 1) != 'X') {
+                    hex.append(raw.charAt(i + 1));
+                }
+            }
+            if (hex.length() == 6) {
+                x.appendReplacement(out, Matcher.quoteReplacement("<#" + hex + ">"));
+            } else {
+                x.appendReplacement(out, Matcher.quoteReplacement(raw));
+            }
+        }
+        x.appendTail(out);
+        return out.toString();
     }
 
     private static @NotNull String normalizeLegacyHex(@NotNull String input) {

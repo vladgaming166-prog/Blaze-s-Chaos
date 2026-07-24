@@ -86,6 +86,18 @@ public final class NpcInstance {
         animTick = 0;
     }
 
+    /** Re-show packet player for a joining / nearby player. */
+    public void showFor(@NotNull Player player) {
+        if (!spawned) {
+            return;
+        }
+        packetNpc.showFor(player);
+    }
+
+    public void hideFrom(@NotNull Player player) {
+        packetNpc.hide(player);
+    }
+
     public void refreshSkin() {
         packetNpc.refreshSkin();
     }

@@ -136,6 +136,29 @@ public final class ConfigManager {
         }
         int diskVersion = yaml.getInt("config-version", 0);
         if (diskVersion < jarVersion) {
+            // Animation schemas changed (RGB/gradient) — refresh jar defaults with backup
+            if (name.equals("scoreboardanimations.yml") || name.equals("animations.yml")) {
+                try {
+                    File backup = new File(plugin.getDataFolder(),
+                            name + ".v" + diskVersion + "-" + System.currentTimeMillis() + ".bak");
+                    Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    plugin.saveResource(name, true);
+                    plugin.getLogger().info("Upgraded " + name + " to config-version " + jarVersion
+                            + " (backup: " + backup.getName() + ").");
+                    if (name.equals("scoreboardanimations.yml")) {
+                        scoreboardAnimations = YamlConfiguration.loadConfiguration(
+                                new File(plugin.getDataFolder(), name));
+                        mergeDefaults(scoreboardAnimations, name);
+                    } else {
+                        globalAnimations = YamlConfiguration.loadConfiguration(
+                                new File(plugin.getDataFolder(), name));
+                        mergeDefaults(globalAnimations, name);
+                    }
+                    return;
+                } catch (IOException ex) {
+                    plugin.getLogger().log(Level.WARNING, "Failed to upgrade " + name, ex);
+                }
+            }
             yaml.set("config-version", jarVersion);
             save(yaml, name);
             plugin.getLogger().info("Updated " + name + " to config-version " + jarVersion

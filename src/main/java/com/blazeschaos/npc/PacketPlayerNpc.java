@@ -5,9 +5,11 @@ import com.blazeschaos.npc.nms.NmsBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,6 +17,7 @@ import java.util.logging.Level;
 
 /**
  * Real packet-based player NPC visible to nearby players.
+ * Spawn sequence (Paper 1.21): PlayerInfo → short delay → AddEntity + metadata.
  */
 public final class PacketPlayerNpc {
 
@@ -25,10 +28,11 @@ public final class PacketPlayerNpc {
     private final String profileName;
 
     private @Nullable Object nmsPlayer;
-    private @Nullable Object gameProfile;
     private int entityId = -1;
     private final Set<UUID> viewers = ConcurrentHashMap.newKeySet();
-    private final Set<UUID> tabCleanupScheduled = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> pendingSpawn = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, BukkitTask> tabCleanupTasks = new ConcurrentHashMap<>();
+    private final Map<UUID, BukkitTask> spawnDelayTasks = new ConcurrentHashMap<>();
     private float renderYaw;
     private float renderPitch;
     private float targetYaw;
@@ -37,15 +41,19 @@ public final class PacketPlayerNpc {
     private double lastSentY = Double.NaN;
     private double lastSentZ = Double.NaN;
     private boolean spawned;
+    private boolean loggedSpawnError;
 
     public PacketPlayerNpc(@NotNull BlazesChaosPlugin plugin, @NotNull NmsBridge nms,
                               @NotNull NpcDefinition definition) {
         this.plugin = plugin;
         this.nms = nms;
         this.definition = definition;
-        this.profileId = UUID.nameUUIDFromBytes(("BlazeNPC:" + definition.getId()).getBytes());
+        // Unique profile UUID per NPC id (stable across restarts)
+        this.profileId = UUID.nameUUIDFromBytes(("BlazeNPC-v2:" + definition.getId()).getBytes());
         String skinName = definition.getSkin().profileName();
-        this.profileName = skinName == null || skinName.isBlank() ? "NPC" : skinName;
+        this.profileName = skinName == null || skinName.isBlank()
+                ? ("BC_" + definition.getId()).replaceAll("[^A-Za-z0-9_]", "_")
+                : skinName;
         Location loc = definition.getLocation();
         this.renderYaw = loc == null ? 0f : loc.getYaw();
         this.targetYaw = renderYaw;
@@ -69,6 +77,11 @@ public final class PacketPlayerNpc {
 
     public void spawnForNearby() {
         if (!nms.available()) {
+            if (!loggedSpawnError) {
+                loggedSpawnError = true;
+                plugin.getLogger().warning("NPC " + definition.getId() + " cannot render: "
+                        + nms.failureReason());
+            }
             return;
         }
         Location loc = definition.getLocation();
@@ -81,12 +94,14 @@ public final class PacketPlayerNpc {
                 ensureNmsEntity(loc);
             }
         } catch (Throwable ex) {
-            plugin.getLogger().log(Level.WARNING, "Failed to create packet NPC " + definition.getId(), ex);
+            if (!loggedSpawnError) {
+                loggedSpawnError = true;
+                plugin.getLogger().log(Level.WARNING, "Failed to create packet NPC " + definition.getId(), ex);
+            }
             return;
         }
         spawned = true;
-        double range = definition.getViewDistance();
-        double rangeSq = range * range;
+        double rangeSq = definition.getViewDistance() * definition.getViewDistance();
         double despawnSq = definition.getDespawnDistance() * definition.getDespawnDistance();
         for (Player player : loc.getWorld().getPlayers()) {
             double dist = player.getLocation().distanceSquared(loc);
@@ -109,10 +124,37 @@ public final class PacketPlayerNpc {
         }
     }
 
+    /** Force (re)show for a specific player — join / chunk / teleport. */
+    public void showFor(@NotNull Player player) {
+        if (!nms.available()) {
+            return;
+        }
+        Location loc = definition.getLocation();
+        if (loc == null || loc.getWorld() == null || player.getWorld() != loc.getWorld()) {
+            return;
+        }
+        if (player.getLocation().distanceSquared(loc)
+                > definition.getViewDistance() * definition.getViewDistance()) {
+            return;
+        }
+        try {
+            if (nmsPlayer == null) {
+                ensureNmsEntity(loc);
+            }
+            spawned = true;
+            // Force re-send even if already a viewer
+            forceReshow(player);
+        } catch (Throwable ex) {
+            plugin.getLogger().log(Level.WARNING, "Failed to show NPC " + definition.getId()
+                    + " to " + player.getName(), ex);
+        }
+    }
+
     private void ensureNmsEntity(@NotNull Location loc) throws Exception {
         SkinData skin = definition.getSkin();
-        gameProfile = nms.createProfile(profileId, profileName, skin.texture(), skin.signature());
-        nmsPlayer = nms.createServerPlayer(loc, gameProfile);
+        Object profile = nms.createProfile(profileId, profileName, skin.texture(), skin.signature());
+        entityId = nms.nextEntityId();
+        nmsPlayer = nms.createServerPlayer(loc, profile, entityId);
         entityId = nms.entityId(nmsPlayer);
         renderYaw = loc.getYaw();
         targetYaw = renderYaw;
@@ -130,25 +172,64 @@ public final class PacketPlayerNpc {
         if (!viewers.add(player.getUniqueId())) {
             return;
         }
-        try {
-            nms.sendSpawn(player, nmsPlayer);
-            nms.sendLook(player, nmsPlayer, renderYaw, renderPitch);
-            scheduleTabCleanup(player);
-        } catch (Throwable ex) {
+        beginSpawnSequence(player, false);
+    }
+
+    private void forceReshow(@NotNull Player player) {
+        cancelPending(player.getUniqueId());
+        viewers.add(player.getUniqueId());
+        beginSpawnSequence(player, true);
+    }
+
+    private void beginSpawnSequence(@NotNull Player player, boolean reshow) {
+        Location loc = definition.getLocation();
+        if (loc == null || nmsPlayer == null) {
             viewers.remove(player.getUniqueId());
-            if (plugin.configs().debug()) {
-                plugin.getLogger().log(Level.WARNING, "Failed to spawn NPC for " + player.getName(), ex);
-            }
+            return;
         }
+        UUID id = player.getUniqueId();
+        cancelSpawnDelay(id);
+        try {
+            nms.sendPlayerInfo(player, nmsPlayer);
+        } catch (Throwable ex) {
+            viewers.remove(id);
+            plugin.getLogger().log(Level.WARNING, "NPC PlayerInfo failed for " + player.getName(), ex);
+            return;
+        }
+        pendingSpawn.add(id);
+        // Critical on 1.21: client needs a tick after tab-list add before AddEntity
+        BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            spawnDelayTasks.remove(id);
+            pendingSpawn.remove(id);
+            if (!viewers.contains(id) || nmsPlayer == null) {
+                return;
+            }
+            Player online = Bukkit.getPlayer(id);
+            if (online == null || !online.isOnline()) {
+                viewers.remove(id);
+                return;
+            }
+            Location current = definition.getLocation();
+            if (current == null) {
+                return;
+            }
+            try {
+                nms.sendSpawnEntity(online, nmsPlayer, current);
+                nms.sendLook(online, nmsPlayer, renderYaw, renderPitch);
+                scheduleTabCleanup(online);
+            } catch (Throwable ex) {
+                viewers.remove(id);
+                plugin.getLogger().log(Level.WARNING, "NPC AddEntity failed for " + online.getName(), ex);
+            }
+        }, reshow ? 2L : 3L);
+        spawnDelayTasks.put(id, task);
     }
 
     private void scheduleTabCleanup(@NotNull Player player) {
         UUID id = player.getUniqueId();
-        if (!tabCleanupScheduled.add(id)) {
-            return;
-        }
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            tabCleanupScheduled.remove(id);
+        cancelTabCleanup(id);
+        BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            tabCleanupTasks.remove(id);
             if (!viewers.contains(id) || nmsPlayer == null) {
                 return;
             }
@@ -157,10 +238,12 @@ public final class PacketPlayerNpc {
                 return;
             }
             try {
+                nms.setListed(nmsPlayer, false);
                 nms.sendTabRemove(online, profileId);
             } catch (Throwable ignored) {
             }
-        }, 40L);
+        }, 60L);
+        tabCleanupTasks.put(id, task);
     }
 
     public void hide(@Nullable Player player) {
@@ -171,24 +254,20 @@ public final class PacketPlayerNpc {
     }
 
     public void hide(@NotNull UUID playerId) {
-        Player player = Bukkit.getPlayer(playerId);
-        hide(playerId, player);
+        hide(playerId, Bukkit.getPlayer(playerId));
     }
 
     private void hide(@NotNull UUID playerId, @Nullable Player player) {
-        tabCleanupScheduled.remove(playerId);
-        if (!viewers.remove(playerId)) {
+        cancelPending(playerId);
+        boolean wasViewer = viewers.remove(playerId);
+        if (!wasViewer && player == null) {
             return;
         }
         if (player == null || !player.isOnline()) {
             return;
         }
         try {
-            if (nmsPlayer != null) {
-                nms.sendDespawn(player, nmsPlayer, profileId, entityId);
-            } else if (entityId > 0) {
-                nms.sendDespawn(player, profileId, entityId);
-            }
+            nms.sendDespawn(player, profileId, entityId);
         } catch (Throwable ex) {
             if (plugin.configs().debug()) {
                 plugin.getLogger().log(Level.WARNING, "Failed to despawn NPC for " + player.getName(), ex);
@@ -196,14 +275,39 @@ public final class PacketPlayerNpc {
         }
     }
 
+    private void cancelPending(@NotNull UUID playerId) {
+        cancelSpawnDelay(playerId);
+        cancelTabCleanup(playerId);
+        pendingSpawn.remove(playerId);
+    }
+
+    private void cancelSpawnDelay(@NotNull UUID playerId) {
+        BukkitTask task = spawnDelayTasks.remove(playerId);
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+    private void cancelTabCleanup(@NotNull UUID playerId) {
+        BukkitTask task = tabCleanupTasks.remove(playerId);
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
     public void despawnAll() {
         for (UUID id : Set.copyOf(viewers)) {
             hide(id);
         }
+        for (UUID id : Set.copyOf(spawnDelayTasks.keySet())) {
+            cancelPending(id);
+        }
+        for (UUID id : Set.copyOf(tabCleanupTasks.keySet())) {
+            cancelTabCleanup(id);
+        }
         viewers.clear();
-        tabCleanupScheduled.clear();
+        pendingSpawn.clear();
         nmsPlayer = null;
-        gameProfile = null;
         spawned = false;
         entityId = -1;
         lastSentX = Double.NaN;
@@ -254,7 +358,6 @@ public final class PacketPlayerNpc {
             targetYaw = loc.getYaw();
             targetPitch = 0f;
         }
-
         renderYaw = lerpAngle(renderYaw, targetYaw, 0.28f);
         renderPitch = renderPitch + (targetPitch - renderPitch) * 0.22f;
     }
@@ -265,7 +368,7 @@ public final class PacketPlayerNpc {
         }
         for (UUID id : viewers) {
             Player viewer = Bukkit.getPlayer(id);
-            if (viewer == null) {
+            if (viewer == null || pendingSpawn.contains(id)) {
                 continue;
             }
             try {
@@ -329,6 +432,9 @@ public final class PacketPlayerNpc {
                     || Math.abs(y - lastSentY) > 0.001
                     || Math.abs(z - lastSentZ) > 0.001;
             for (UUID id : viewers) {
+                if (pendingSpawn.contains(id)) {
+                    continue;
+                }
                 Player viewer = Bukkit.getPlayer(id);
                 if (viewer == null || !viewer.isOnline()) {
                     continue;

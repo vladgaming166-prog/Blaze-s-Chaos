@@ -163,6 +163,32 @@ public final class NpcManager {
 
     public void clearPlayer(@NotNull Player player) {
         selected.remove(player.getUniqueId());
+        hideFrom(player);
+    }
+
+    /** Show all nearby NPCs to a player (join / teleport / world change). */
+    public void showNearbyFor(@NotNull Player player) {
+        Location loc = player.getLocation();
+        for (NpcInstance instance : instances.values()) {
+            NpcDefinition def = instance.definition();
+            Location npcLoc = def.getLocation();
+            if (npcLoc == null || npcLoc.getWorld() != loc.getWorld() || !def.isVisible()) {
+                continue;
+            }
+            double range = def.getViewDistance();
+            if (npcLoc.distanceSquared(loc) <= range * range) {
+                if (!instance.isSpawned()) {
+                    spawnReady(instance);
+                }
+                instance.showFor(player);
+            }
+        }
+    }
+
+    public void hideFrom(@NotNull Player player) {
+        for (NpcInstance instance : instances.values()) {
+            instance.hideFrom(player);
+        }
     }
 
     public @NotNull NpcDefinition create(@NotNull Player player, @NotNull NpcMode mode) {
@@ -262,14 +288,13 @@ public final class NpcManager {
             plugin.lang().send(player, "general.no-permission");
             return;
         }
-        instance.playClickAnimation();
+        // Open GUI immediately — animation is cosmetic
         if (def.isOpenGui()) {
             NpcGui.openMain(plugin, player, def.getMode());
-        } else if (def.getMode() == NpcMode.RANDOM) {
-            quickJoin(player);
         } else {
             quickJoin(player);
         }
+        instance.playClickAnimation();
     }
 
     public void quickJoin(@NotNull Player player) {
