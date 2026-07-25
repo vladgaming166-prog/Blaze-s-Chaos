@@ -268,6 +268,22 @@ public final class ConfigManager {
             return;
         }
 
+        // shop.yml: refresh trail cosmetics catalog on version bump (backup first)
+        if (name.equals("shop.yml") && jarDefaults != null) {
+            try {
+                File backup = new File(plugin.getDataFolder(),
+                        name + ".v" + diskVersion + "-" + System.currentTimeMillis() + ".bak");
+                Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                plugin.saveResource(name, true);
+                shop = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), name));
+                plugin.getLogger().info("Upgraded shop.yml to config-version " + jarVersion
+                        + " (backup: " + backup.getName() + ").");
+            } catch (IOException ex) {
+                plugin.getLogger().log(Level.WARNING, "Failed to upgrade shop.yml", ex);
+            }
+            return;
+        }
+
         // scoreboard / tablist: refresh jar layout with backup
         if (name.equals("scoreboardconfig.yml") || name.equals("tablist.yml")) {
             try {

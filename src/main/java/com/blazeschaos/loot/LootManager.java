@@ -4,7 +4,6 @@ import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.arena.Arena;
 import com.blazeschaos.game.GameInstance;
 import com.blazeschaos.game.GameModeType;
-import com.blazeschaos.game.SurvivalObjective;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -65,8 +64,33 @@ public final class LootManager {
             return;
         }
         boolean shardLoot = game.getMode() == GameModeType.SOLO_SURVIVAL
-                && game.getSurvivalObjective() == SurvivalObjective.CHAOS_SHARD;
-        fillChestsInWorld(game.getArena(), world, center, shardLoot);
+                && plugin.survivalObjective().isLootObtainEnabled();
+        if (enabled) {
+            fillChestsInWorld(game.getArena(), world, center, shardLoot);
+        } else if (shardLoot) {
+            // Loot tables off, but Chaos Shard chest inject can still run
+            injectShardsOnly(game.getArena(), world, center);
+        }
+    }
+
+    private void injectShardsOnly(@NotNull Arena arena, @NotNull World world, @NotNull Location center) {
+        int radius = (int) Math.ceil(arena.getBorderSize() / 2.0) + 16;
+        int minChunkX = (center.getBlockX() - radius) >> 4;
+        int maxChunkX = (center.getBlockX() + radius) >> 4;
+        int minChunkZ = (center.getBlockZ() - radius) >> 4;
+        int maxChunkZ = (center.getBlockZ() + radius) >> 4;
+        for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+            for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
+                if (!world.isChunkLoaded(cx, cz)) {
+                    world.getChunkAt(cx, cz);
+                }
+                for (BlockState state : world.getChunkAt(cx, cz).getTileEntities()) {
+                    if (state instanceof Chest chest) {
+                        plugin.survivalObjective().maybeAddShardToLoot(chest.getBlockInventory());
+                    }
+                }
+            }
+        }
     }
 
     private void fillChestsInWorld(@NotNull Arena arena, @NotNull World world,

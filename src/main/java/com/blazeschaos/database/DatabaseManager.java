@@ -211,6 +211,19 @@ public final class DatabaseManager {
         saveStats(stats.withSelected(selected));
     }
 
+    public void deselectCosmetic(@NotNull UUID uuid, @NotNull String name, @NotNull String category) {
+        PlayerStats stats = getStats(uuid, name);
+        Set<String> selected = new HashSet<>(stats.selectedCosmetics());
+        selected.removeIf(entry -> entry.startsWith(category.toLowerCase() + ":"));
+        saveStats(stats.withSelected(selected));
+    }
+
+    public boolean isCosmeticSelected(@NotNull UUID uuid, @NotNull String name,
+                                      @NotNull String category, @NotNull String id) {
+        String key = category.toLowerCase() + ":" + id.toLowerCase();
+        return getStats(uuid, name).selectedCosmetics().contains(key);
+    }
+
     private static @NotNull Set<String> parseSet(@NotNull String raw) {
         if (raw == null || raw.isBlank()) {
             return new HashSet<>();

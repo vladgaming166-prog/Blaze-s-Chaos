@@ -79,6 +79,7 @@ solo-survival:
   objective-survive: "<green>Obiectiv:</green> <white>Supraviețuiește %time%s</white>"
   objective-shard: "<light_purple>Obiectiv:</light_purple> <white>Obține Chaos Shard</white>"
   shard-spawned: "<gold>Un Chaos Shard a apărut în arenă!</gold>"
+  shard-mined: "<light_purple>Un Chaos Shard a căzut din minereu!</light_purple>"
   need-shard: "<red>Ai nevoie de Chaos Shard.</red>"
   victory: "<gradient:#FF4500:#FFD700><bold>VICTORIE!</bold></gradient> <gray>Solo Survival complet.</gray>"
   win-time-usage: "<yellow>Utilizare:</yellow> <white>/bc solosurvivalwintime <secunde></white> <gray>(actual: %time%s)</gray>"
@@ -221,6 +222,7 @@ coins:
 shop:
   purchased: "<green>Ai cumpărat <yellow>%item%</yellow> pentru <gold>%cost%</gold> coins!</green>"
   selected: "<aqua>Ai selectat <yellow>%item%</yellow>.</aqua>"
+  unequipped: "<yellow>Ai dezechipat <white>%item%</white>.</yellow>"
   not-enough: "<red>Nu ai destule coins!</red> <gray>(îți trebuie %cost%, ai %balance%)</gray>"
 
 browser:

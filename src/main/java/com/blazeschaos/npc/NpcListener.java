@@ -12,6 +12,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
@@ -103,5 +104,19 @@ public final class NpcListener implements Listener {
         // Respawn packet/Citizens NPCs whose chunks just loaded
         plugin.getServer().getScheduler().runTaskLater(plugin, () ->
                 plugin.npcManager().onChunkLoad(event.getChunk()), 2L);
+    }
+
+    @EventHandler
+    public void onPluginEnable(@NotNull PluginEnableEvent event) {
+        // Citizens (re)load — refresh skins so NPCs never stay Steve
+        if (!event.getPlugin().getName().equalsIgnoreCase("Citizens")) {
+            return;
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            plugin.npcManager().refreshAllSkins();
+        }, 20L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            plugin.npcManager().refreshAllSkins();
+        }, 60L);
     }
 }

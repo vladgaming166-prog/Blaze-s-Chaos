@@ -79,6 +79,7 @@ solo-survival:
   objective-survive: "<green>Objective:</green> <white>Survive %time%s</white>"
   objective-shard: "<light_purple>Objective:</light_purple> <white>Obtain the Chaos Shard</white> <gray>(loot or craft)</gray>"
   shard-spawned: "<gold>A Chaos Shard has appeared in the arena!</gold>"
+  shard-mined: "<light_purple>A Chaos Shard dropped from the ore!</light_purple>"
   need-shard: "<red>You need the Chaos Shard.</red>"
   victory: "<gradient:#FF4500:#FFD700><bold>VICTORY!</bold></gradient> <gray>Solo Survival complete.</gray>"
   win-time-usage: "<yellow>Usage:</yellow> <white>/bc solosurvivalwintime <seconds></white> <gray>(current: %time%s)</gray>"
@@ -223,6 +224,7 @@ coins:
 shop:
   purchased: "<green>Purchased <yellow>%item%</yellow> for <gold>%cost%</gold> coins!</green>"
   selected: "<aqua>Selected <yellow>%item%</yellow>.</aqua>"
+  unequipped: "<yellow>Unequipped <white>%item%</white>.</yellow>"
   not-enough: "<red>Not enough coins!</red> <gray>(need %cost%, have %balance%)</gray>"
 
 browser:

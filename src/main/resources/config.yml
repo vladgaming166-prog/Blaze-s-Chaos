@@ -176,9 +176,37 @@ solo-survival:
       - "<yellow>Obtain this to win Solo Survival.</yellow>"
     custom-model-data: 0
     itemsadder-id: ""
+  shard:
+    obtain:
+      crafting: true
+      mining: true
+      loot-chests: true
+    mining:
+      # 0.03% chance when breaking listed ores
+      chance: 0.0003
+      ores:
+        - COAL_ORE
+        - DEEPSLATE_COAL_ORE
+        - IRON_ORE
+        - DEEPSLATE_IRON_ORE
+        - GOLD_ORE
+        - DEEPSLATE_GOLD_ORE
+        - NETHER_GOLD_ORE
+        - DIAMOND_ORE
+        - DEEPSLATE_DIAMOND_ORE
+        - EMERALD_ORE
+        - DEEPSLATE_EMERALD_ORE
+        - REDSTONE_ORE
+        - DEEPSLATE_REDSTONE_ORE
+        - LAPIS_ORE
+        - DEEPSLATE_LAPIS_ORE
+        - ANCIENT_DEBRIS
+    loot:
+      # Very rare in natural loot chests / structures
+      chance: 0.008
   loot:
     enabled: true
-    chest-chance: 0.18
+    chest-chance: 0.008
   # Vanilla crafting table recipe (ItemsAdder supported for the result item)
   # Pattern: Iron | Coal | Iron / Coal | Egg | Coal / Iron | Coal | Iron
   crafting:
@@ -194,6 +222,15 @@ solo-survival:
   victory-altar:
     material: LODESTONE
     accept-material-anywhere: false
+
+# Cosmetics (particle trails)
+cosmetics:
+  trails:
+    enabled: true
+    particle-amount: 2
+    spacing: 0.35
+    speed: 0.02
+    tick-interval: 2
 
 lobby-items:
   enabled: true

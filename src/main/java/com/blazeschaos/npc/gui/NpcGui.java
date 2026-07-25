@@ -82,14 +82,136 @@ public final class NpcGui implements Listener {
                 "<gray>Mode: " + mode.colorName(),
                 "",
                 mode == NpcMode.RANDOM
-                        ? "<yellow>Click for a random mode</yellow>"
-                        : "<yellow>Click to join</yellow>"
+                        ? "<yellow>Click for a random mode lobby</yellow>"
+                        : "<yellow>Click to open mode menu</yellow>"
         );
         ItemStack item = new ItemBuilder(material)
                 .name(mode.colorName())
                 .lore(lore)
                 .build();
         return tag(item, "choose_" + mode.name().toLowerCase(Locale.ROOT), null, mode.name());
+    }
+
+    /**
+     * Professional per-mode lobby — Play / Choose Map / Statistics. Never auto-joins.
+     */
+    public void showModeLobby(@NotNull Player player, @NotNull NpcMode mode) {
+        ModeLobbyHolder holder = new ModeLobbyHolder(mode);
+        Inventory inventory = Bukkit.createInventory(holder, 27,
+                ColorUtil.parse(mode.colorName()));
+        holder.bind(inventory);
+        fillBorderSmall(inventory);
+
+        Arena best = plugin.npcManager().findBestArena();
+        GameModeType gameMode = mode.toGameMode();
+        GameInstance game = best == null ? null : plugin.gameManager().get(best, gameMode);
+        int players = game == null ? 0 : game.playerCount();
+        int max = game == null ? (mode == NpcMode.SOLO_SURVIVAL ? 1 : (best == null ? 24 : best.getMaxPlayers()))
+                : game.effectiveMaxPlayers();
+        String mapName = best == null ? "-" : best.getDisplayName();
+        String status = "<green>Waiting</green>";
+        if (game != null) {
+            if (game.getState().isActive()) {
+                status = "<red>Playing</red>";
+            } else if (game.getState() == GameState.STARTING) {
+                status = "<gold>Starting</gold>";
+            }
+        }
+
+        List<String> infoLore = new ArrayList<>();
+        infoLore.add("<gray>Players: <aqua>" + players + "</aqua>/<aqua>" + max + "</aqua>");
+        infoLore.add("<gray>Map: <white>" + mapName + "</white>");
+        infoLore.add("<gray>Status: " + status);
+        if (mode == NpcMode.SOLO_SURVIVAL) {
+            infoLore.add("<gray>Objective: <light_purple>Survive / Chaos Shard</light_purple>");
+        }
+        infoLore.add("");
+        infoLore.add("<yellow>Select an option below</yellow>");
+
+        Material icon = switch (mode) {
+            case TEAMS, DUOS, TRIOS, SQUADS -> Material.GOLDEN_SWORD;
+            case MEGA -> Material.DIAMOND_SWORD;
+            case SOLO_SURVIVAL -> Material.AMETHYST_SHARD;
+            default -> Material.IRON_SWORD;
+        };
+        inventory.setItem(4, new ItemBuilder(icon).name(mode.colorName()).lore(infoLore).glow(true).build());
+
+        inventory.setItem(11, actionItem("lobby_play", Material.LIME_CONCRETE, "<green><bold>Play</bold></green>",
+                List.of("<gray>Join the best available arena</gray>", "<yellow>Click to play</yellow>")));
+        inventory.setItem(13, actionItem("lobby_maps", Material.MAP, "<aqua><bold>Choose Map</bold></aqua>",
+                List.of("<gray>Browse arenas for this mode</gray>", "<yellow>Click to open</yellow>")));
+        if (mode == NpcMode.SOLO_SURVIVAL) {
+            inventory.setItem(15, actionItem("lobby_objective", Material.BOOK,
+                    "<light_purple><bold>Objective</bold></light_purple>",
+                    List.of("<gray>Pick Survive or Chaos Shard</gray>", "<yellow>Click to open</yellow>")));
+        } else {
+            inventory.setItem(15, actionItem("lobby_stats", Material.BOOK, "<green><bold>Statistics</bold></green>",
+                    List.of(
+                            "<gray>Wins: <white>%blazechaos_wins%</white></gray>",
+                            "<gray>Kills: <white>%blazechaos_kills%</white></gray>",
+                            "<gray>Coins: <gold>%blazechaos_coins%</gold></gray>"
+                    ), player));
+        }
+        inventory.setItem(22, actionItem("lobby_back", Material.ARROW, "<red>Back</red>",
+                List.of("<gray>Close this menu</gray>")));
+
+        player.openInventory(inventory);
+    }
+
+    public void showMaps(@NotNull Player player, @NotNull GameModeType mode) {
+        MapsHolder holder = new MapsHolder(mode);
+        Inventory inventory = Bukkit.createInventory(holder, 54,
+                ColorUtil.parse("<aqua><bold>Map Selector</bold></aqua>"));
+        holder.bind(inventory);
+        fillBorder(inventory);
+
+        int slot = 10;
+        for (Arena arena : plugin.arenaManager().all()) {
+            if (slot == 17 || slot == 26 || slot == 35) {
+                slot += 2;
+            }
+            if (slot >= 44) {
+                break;
+            }
+            inventory.setItem(slot++, mapItem(player, arena, mode));
+        }
+
+        inventory.setItem(48, tag(new ItemBuilder(Material.ARROW).name("<yellow>Back</yellow>")
+                .lore(List.of("<gray>Return to mode menu</gray>")).build(),
+                "maps_back_mode", null, mode.name()));
+        player.openInventory(inventory);
+    }
+
+    private @NotNull ItemStack mapItem(@NotNull Player player, @NotNull Arena arena, @NotNull GameModeType mode) {
+        GameInstance game = plugin.gameManager().get(arena, mode);
+        String status = "<green>Waiting</green>";
+        Material icon = Material.LIME_CONCRETE;
+        if (!arena.isReady()) {
+            status = "<red>Setup</red>";
+            icon = Material.BARRIER;
+        } else if (game != null && game.getState().isActive()) {
+            status = "<red>Playing</red>";
+            icon = Material.RED_CONCRETE;
+        } else if (game != null && game.getState() == GameState.STARTING) {
+            status = "<gold>Starting</gold>";
+            icon = Material.YELLOW_CONCRETE;
+        }
+        int players = game == null ? 0 : game.playerCount();
+        int max = game == null ? modeMax(mode, arena) : game.effectiveMaxPlayers();
+        boolean fav = plugin.npcManager().isFavorite(player, arena.getName());
+        List<String> lore = new ArrayList<>();
+        lore.add("<gray>Mode: " + mode.colorName());
+        lore.add("<gray>Status: " + status);
+        lore.add("<gray>Players: <aqua>" + players + "</aqua>/<aqua>" + max + "</aqua>");
+        lore.add("");
+        lore.add("<yellow>Click to join</yellow>");
+        lore.add(fav ? "<gold>★ Favorite</gold>" : "<dark_gray>☆ Not favorited</dark_gray>");
+        ItemStack item = new ItemBuilder(icon)
+                .name((fav ? "<gold>★ </gold>" : "") + "<white>" + arena.getDisplayName() + "</white>")
+                .lore(lore)
+                .glow(fav)
+                .build();
+        return tag(item, "join_mode_map", arena.getName(), mode.name());
     }
 
     public void showMain(@NotNull Player player, @NotNull NpcMode preferred) {
@@ -133,27 +255,7 @@ public final class NpcGui implements Listener {
     }
 
     public void showMaps(@NotNull Player player) {
-        MapsHolder holder = new MapsHolder();
-        Inventory inventory = Bukkit.createInventory(holder, 54,
-                ColorUtil.parse("<aqua><bold>Map Selector</bold></aqua>"));
-        holder.bind(inventory);
-        fillBorder(inventory);
-
-        int slot = 10;
-        for (Arena arena : plugin.arenaManager().all()) {
-            if (slot == 17 || slot == 26 || slot == 35) {
-                slot += 2;
-            }
-            if (slot >= 44) {
-                break;
-            }
-            inventory.setItem(slot++, mapItem(player, arena));
-        }
-
-        inventory.setItem(48, actionItem("main", Material.ARROW, "<yellow>Back</yellow>", List.of("<gray>Return to menu</gray>")));
-        inventory.setItem(49, actionItem("quick", Material.COMPASS, "<gold>Quick Join</gold>",
-                List.of("<gray>Best available arena</gray>")));
-        player.openInventory(inventory);
+        showMaps(player, GameModeType.SOLO);
     }
 
     public void showArenaModes(@NotNull Player player, @NotNull Arena arena) {
@@ -336,7 +438,8 @@ public final class NpcGui implements Listener {
     public void onClick(@NotNull InventoryClickEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
         if (!(holder instanceof MainHolder) && !(holder instanceof MapsHolder)
-                && !(holder instanceof ModeHolder) && !(holder instanceof ChooseModeHolder)) {
+                && !(holder instanceof ModeHolder) && !(holder instanceof ChooseModeHolder)
+                && !(holder instanceof ModeLobbyHolder)) {
             return;
         }
         event.setCancelled(true);
@@ -356,6 +459,53 @@ public final class NpcGui implements Listener {
 
         if (holder instanceof ChooseModeHolder) {
             handleChooseModeClick(player, action);
+            return;
+        }
+        if (holder instanceof ModeLobbyHolder lobbyHolder) {
+            handleModeLobbyClick(player, lobbyHolder.mode(), action);
+            return;
+        }
+        if (action.equals("join_mode_map") && arenaName != null && modeName != null) {
+            if (event.isShiftClick()) {
+                plugin.npcManager().toggleFavorite(player, arenaName);
+                try {
+                    showMaps(player, GameModeType.parse(modeName));
+                } catch (IllegalArgumentException ignored) {
+                    showMaps(player);
+                }
+                return;
+            }
+            Arena arena = plugin.arenaManager().get(arenaName);
+            if (arena == null) {
+                plugin.lang().send(player, "arena.not-found");
+                return;
+            }
+            try {
+                GameModeType mode = GameModeType.parse(modeName);
+                player.closeInventory();
+                if (mode.isSoloSurvival()) {
+                    plugin.survivalObjectiveGui().open(player, arena);
+                } else {
+                    plugin.gameManager().join(player, arena, mode);
+                }
+            } catch (IllegalArgumentException ex) {
+                plugin.lang().send(player, "modes.not-available", Map.of("mode", modeName));
+            }
+            return;
+        }
+        if (action.equals("maps_back_mode") && modeName != null) {
+            try {
+                GameModeType gm = GameModeType.parse(modeName);
+                NpcMode npcMode = switch (gm) {
+                    case TEAMS -> NpcMode.TEAMS;
+                    case MEGA -> NpcMode.MEGA;
+                    case SOLO_SURVIVAL -> NpcMode.SOLO_SURVIVAL;
+                    default -> NpcMode.SOLO;
+                };
+                showModeLobby(player, npcMode);
+            } catch (IllegalArgumentException ex) {
+                showChooseMode(player);
+            }
             return;
         }
 
@@ -427,17 +577,11 @@ public final class NpcGui implements Listener {
                 player.closeInventory();
                 plugin.npcManager().quickJoin(player);
             }
-            case "mode_solo" -> quickMode(player, GameModeType.SOLO);
-            case "mode_teams", "mode_duos", "mode_trios", "mode_squads" -> quickMode(player, GameModeType.TEAMS);
-            case "mode_mega" -> quickMode(player, GameModeType.MEGA);
-            case "mode_solo_survival" -> {
-                player.closeInventory();
-                plugin.survivalObjectiveGui().open(player, null);
-            }
-            case "mode_random" -> {
-                player.closeInventory();
-                plugin.npcManager().quickJoinRandom(player);
-            }
+            case "mode_solo" -> showModeLobby(player, NpcMode.SOLO);
+            case "mode_teams", "mode_duos", "mode_trios", "mode_squads" -> showModeLobby(player, NpcMode.TEAMS);
+            case "mode_mega" -> showModeLobby(player, NpcMode.MEGA);
+            case "mode_solo_survival" -> showModeLobby(player, NpcMode.SOLO_SURVIVAL);
+            case "mode_random" -> showChooseMode(player);
             case "shop" -> {
                 player.closeInventory();
                 plugin.shopManager().open(player);
@@ -463,17 +607,51 @@ public final class NpcGui implements Listener {
     private void handleChooseModeClick(@NotNull Player player, @NotNull String action) {
         switch (action) {
             case "choose_back" -> player.closeInventory();
-            case "choose_solo" -> quickMode(player, GameModeType.SOLO);
+            case "choose_solo" -> showModeLobby(player, NpcMode.SOLO);
             case "choose_teams", "choose_duos", "choose_trios", "choose_squads" ->
-                    quickMode(player, GameModeType.TEAMS);
-            case "choose_mega" -> quickMode(player, GameModeType.MEGA);
-            case "choose_solo_survival" -> {
+                    showModeLobby(player, NpcMode.TEAMS);
+            case "choose_mega" -> showModeLobby(player, NpcMode.MEGA);
+            case "choose_solo_survival" -> showModeLobby(player, NpcMode.SOLO_SURVIVAL);
+            case "choose_random" -> {
+                java.util.List<GameModeType> modes = plugin.npcManager().enabledPlayModes();
+                if (modes.isEmpty()) {
+                    plugin.lang().send(player, "game.no-arenas");
+                    return;
+                }
+                GameModeType picked = modes.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(modes.size()));
+                NpcMode lobby = switch (picked) {
+                    case TEAMS -> NpcMode.TEAMS;
+                    case MEGA -> NpcMode.MEGA;
+                    case SOLO_SURVIVAL -> NpcMode.SOLO_SURVIVAL;
+                    default -> NpcMode.SOLO;
+                };
+                showModeLobby(player, lobby);
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void handleModeLobbyClick(@NotNull Player player, @NotNull NpcMode mode, @NotNull String action) {
+        switch (action) {
+            case "lobby_back" -> player.closeInventory();
+            case "lobby_play" -> {
+                player.closeInventory();
+                if (mode == NpcMode.SOLO_SURVIVAL) {
+                    plugin.survivalObjectiveGui().open(player, null);
+                } else if (mode == NpcMode.RANDOM) {
+                    plugin.npcManager().quickJoinRandom(player);
+                } else {
+                    plugin.npcManager().quickJoin(player, mode.toGameMode());
+                }
+            }
+            case "lobby_maps" -> showMaps(player, mode.toGameMode());
+            case "lobby_objective" -> {
                 player.closeInventory();
                 plugin.survivalObjectiveGui().open(player, null);
             }
-            case "choose_random" -> {
-                player.closeInventory();
-                plugin.npcManager().quickJoinRandom(player);
+            case "lobby_stats" -> {
+                // stay open — stats are shown on the item
             }
             default -> {
             }
@@ -512,7 +690,20 @@ public final class NpcGui implements Listener {
     }
 
     public static final class MapsHolder implements InventoryHolder {
+        private final @Nullable GameModeType mode;
         private @Nullable Inventory inventory;
+
+        public MapsHolder() {
+            this.mode = GameModeType.SOLO;
+        }
+
+        public MapsHolder(@NotNull GameModeType mode) {
+            this.mode = mode;
+        }
+
+        public @Nullable GameModeType mode() {
+            return mode;
+        }
 
         public void bind(@NotNull Inventory inventory) {
             this.inventory = inventory;
@@ -524,6 +715,31 @@ public final class NpcGui implements Listener {
                 return inventory;
             }
             return Bukkit.createInventory(this, 54);
+        }
+    }
+
+    public static final class ModeLobbyHolder implements InventoryHolder {
+        private final NpcMode mode;
+        private @Nullable Inventory inventory;
+
+        public ModeLobbyHolder(@NotNull NpcMode mode) {
+            this.mode = mode;
+        }
+
+        public @NotNull NpcMode mode() {
+            return mode;
+        }
+
+        public void bind(@NotNull Inventory inventory) {
+            this.inventory = inventory;
+        }
+
+        @Override
+        public @NotNull Inventory getInventory() {
+            if (inventory != null) {
+                return inventory;
+            }
+            return Bukkit.createInventory(this, 27);
         }
     }
 

@@ -78,11 +78,25 @@ public final class SkinService {
     }
 
     public void resolveAsync(@NotNull SkinData skin, @NotNull Runnable onComplete) {
+        resolveAsyncWithRetry(skin, onComplete, 4);
+    }
+
+    /**
+     * Resolves a skin asynchronously and retries on failure so NPCs never stay Steve forever.
+     */
+    public void resolveAsyncWithRetry(@NotNull SkinData skin, @NotNull Runnable onComplete, int attemptsLeft) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 resolveSync(skin);
             } catch (Exception ex) {
-                plugin.getLogger().log(Level.WARNING, "Failed to resolve NPC skin", ex);
+                plugin.getLogger().log(Level.WARNING, "Failed to resolve NPC skin (attempts left="
+                        + attemptsLeft + ")", ex);
+            }
+            if (!skin.hasTextures() && skin.type() != SkinData.Type.NONE && attemptsLeft > 1) {
+                long delay = Math.max(20L, (5L - attemptsLeft) * 40L);
+                Bukkit.getScheduler().runTaskLater(plugin,
+                        () -> resolveAsyncWithRetry(skin, onComplete, attemptsLeft - 1), delay);
+                return;
             }
             Bukkit.getScheduler().runTask(plugin, onComplete);
         });
@@ -109,6 +123,9 @@ public final class SkinService {
             fetchPlayerSkin(skin, skin.value());
         } else if (skin.type() == SkinData.Type.URL && skin.value() != null) {
             fetchUrlSkin(skin, skin.value());
+        } else if (skin.type() == SkinData.Type.TEXTURE && !skin.hasTextures() && skin.value() != null) {
+            // value may store texture payload for TEXTURE type
+            skin.setTexture(skin.value());
         }
 
         if (skin.hasTextures()) {
@@ -158,9 +175,10 @@ public final class SkinService {
 
     private @Nullable String httpGet(@NotNull String url) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
+        connection.setConnectTimeout(8000);
+        connection.setReadTimeout(8000);
         connection.setRequestProperty("User-Agent", "BlazesChaos/1.0");
+        connection.setInstanceFollowRedirects(true);
         int code = connection.getResponseCode();
         if (code != 200) {
             return null;

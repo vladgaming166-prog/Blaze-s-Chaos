@@ -15,11 +15,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.world.LootGenerateEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -27,8 +31,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -49,7 +55,8 @@ public final class SurvivalObjectiveService implements Listener {
 
     public void register() {
         Bukkit.getPluginManager().registerEvents(this, plugin);
-        registerRecipe();
+        // Delay one tick so Paper recipe manager is ready after enable / reload
+        Bukkit.getScheduler().runTask(plugin, this::registerRecipe);
     }
 
     /**
@@ -71,36 +78,56 @@ public final class SurvivalObjectiveService implements Listener {
         plugin.saveConfig();
     }
 
+    public boolean isCraftingObtainEnabled() {
+        if (plugin.getConfig().contains("solo-survival.shard.obtain.crafting")) {
+            return plugin.getConfig().getBoolean("solo-survival.shard.obtain.crafting", true);
+        }
+        return plugin.getConfig().getBoolean("solo-survival.crafting.enabled", true);
+    }
+
+    public boolean isMiningObtainEnabled() {
+        return plugin.getConfig().getBoolean("solo-survival.shard.obtain.mining", true);
+    }
+
+    public boolean isLootObtainEnabled() {
+        if (plugin.getConfig().contains("solo-survival.shard.obtain.loot-chests")) {
+            return plugin.getConfig().getBoolean("solo-survival.shard.obtain.loot-chests", true);
+        }
+        return plugin.getConfig().getBoolean("solo-survival.loot.enabled", true);
+    }
+
+    /**
+     * Registers the Chaos Shard shaped recipe for Paper 1.21+.
+     * Safe across /reload and restarts — removes previous key first, no duplicates.
+     */
     public void registerRecipe() {
-        if (!plugin.getConfig().getBoolean("solo-survival.crafting.enabled", true)) {
-            if (recipeRegistered) {
-                try {
-                    Bukkit.removeRecipe(recipeKey);
-                } catch (Throwable ignored) {
-                }
-                recipeRegistered = false;
-            }
+        unregisterRecipe();
+        if (!isCraftingObtainEnabled()) {
             return;
         }
-        if (recipeRegistered) {
-            try {
-                Bukkit.removeRecipe(recipeKey);
-            } catch (Throwable ignored) {
+        ItemStack result = createChaosShard();
+        if (result.getType().isAir() || result.getAmount() < 1) {
+            result = new ItemStack(Material.AMETHYST_SHARD);
+            ItemMeta meta = result.getItemMeta();
+            if (meta != null) {
+                meta.getPersistentDataContainer().set(shardKey, PersistentDataType.BYTE, (byte) 1);
+                result.setItemMeta(meta);
             }
         }
-        ItemStack result = createChaosShard();
+        result.setAmount(1);
+
         ShapedRecipe recipe = new ShapedRecipe(recipeKey, result);
         List<String> shape = plugin.getConfig().getStringList("solo-survival.crafting.shape");
         if (shape.isEmpty()) {
-            // Iron|Coal|Iron / Coal|Egg|Coal / Iron|Coal|Iron
             shape = List.of("ICI", "CEC", "ICI");
         }
         recipe.shape(shape.toArray(new String[0]));
+
         var ingredients = plugin.getConfig().getConfigurationSection("solo-survival.crafting.ingredients");
         if (ingredients == null) {
-            recipe.setIngredient('I', Material.IRON_INGOT);
-            recipe.setIngredient('C', Material.COAL);
-            recipe.setIngredient('E', Material.EGG);
+            recipe.setIngredient('I', new RecipeChoice.MaterialChoice(Material.IRON_INGOT));
+            recipe.setIngredient('C', new RecipeChoice.MaterialChoice(Material.COAL));
+            recipe.setIngredient('E', new RecipeChoice.MaterialChoice(Material.EGG));
         } else {
             for (String key : ingredients.getKeys(false)) {
                 if (key.isEmpty()) {
@@ -109,15 +136,61 @@ public final class SurvivalObjectiveService implements Listener {
                 char c = key.charAt(0);
                 Material mat = Material.matchMaterial(ingredients.getString(key, "AIR"));
                 if (mat != null && mat != Material.AIR) {
-                    recipe.setIngredient(c, mat);
+                    recipe.setIngredient(c, new RecipeChoice.MaterialChoice(mat));
                 }
             }
         }
+
+        boolean added;
         try {
-            Bukkit.addRecipe(recipe);
-            recipeRegistered = true;
+            // Paper: resendRecipes=true pushes the recipe to online clients
+            added = Bukkit.addRecipe(recipe, true);
+        } catch (NoSuchMethodError legacy) {
+            try {
+                added = Bukkit.addRecipe(recipe);
+            } catch (Exception ex) {
+                plugin.getLogger().warning("Could not register Chaos Shard recipe: " + ex.getMessage());
+                return;
+            }
         } catch (Exception ex) {
             plugin.getLogger().warning("Could not register Chaos Shard recipe: " + ex.getMessage());
+            return;
+        }
+        if (!added && Bukkit.getRecipe(recipeKey) == null) {
+            plugin.getLogger().warning("Chaos Shard recipe was not added (addRecipe returned false).");
+            return;
+        }
+        recipeRegistered = true;
+        discoverForOnline();
+        plugin.getLogger().info("Registered Chaos Shard crafting recipe (" + recipeKey + ").");
+    }
+
+    public void unregisterRecipe() {
+        try {
+            Bukkit.removeRecipe(recipeKey, true);
+        } catch (NoSuchMethodError legacy) {
+            try {
+                Bukkit.removeRecipe(recipeKey);
+            } catch (Throwable ignored) {
+            }
+        } catch (Throwable ignored) {
+        }
+        recipeRegistered = false;
+    }
+
+    public void discoverFor(@NotNull Player player) {
+        if (!recipeRegistered || !isCraftingObtainEnabled()) {
+            return;
+        }
+        try {
+            player.discoverRecipe(recipeKey);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void discoverForOnline() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            discoverFor(player);
         }
     }
 
@@ -166,17 +239,113 @@ public final class SurvivalObjectiveService implements Listener {
         return stack;
     }
 
-    /** Chance 0.0–1.0 to insert a Chaos Shard into a filled chest. */
+    /** Chance 0.0–1.0 to insert a Chaos Shard into a filled match chest. */
     public void maybeAddShardToLoot(@NotNull org.bukkit.inventory.Inventory inventory) {
-        if (!plugin.getConfig().getBoolean("solo-survival.loot.enabled", true)) {
+        if (!isLootObtainEnabled()) {
             return;
         }
-        double chance = plugin.getConfig().getDouble("solo-survival.loot.chest-chance", 0.15);
+        double chance = plugin.getConfig().getDouble("solo-survival.shard.loot.chance",
+                plugin.getConfig().getDouble("solo-survival.loot.chest-chance", 0.008));
         if (ThreadLocalRandom.current().nextDouble() > Math.max(0.0, Math.min(1.0, chance))) {
             return;
         }
         int slot = ThreadLocalRandom.current().nextInt(inventory.getSize());
         inventory.setItem(slot, createChaosShard());
+    }
+
+    private boolean isShardOre(@NotNull Material type) {
+        Set<Material> defaults = EnumSet.of(
+                Material.COAL_ORE, Material.DEEPSLATE_COAL_ORE,
+                Material.IRON_ORE, Material.DEEPSLATE_IRON_ORE,
+                Material.GOLD_ORE, Material.DEEPSLATE_GOLD_ORE, Material.NETHER_GOLD_ORE,
+                Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE,
+                Material.EMERALD_ORE, Material.DEEPSLATE_EMERALD_ORE,
+                Material.REDSTONE_ORE, Material.DEEPSLATE_REDSTONE_ORE,
+                Material.LAPIS_ORE, Material.DEEPSLATE_LAPIS_ORE,
+                Material.ANCIENT_DEBRIS
+        );
+        List<String> configured = plugin.getConfig().getStringList("solo-survival.shard.mining.ores");
+        if (configured.isEmpty()) {
+            return defaults.contains(type);
+        }
+        for (String name : configured) {
+            Material mat = Material.matchMaterial(name);
+            if (mat != null && mat == type) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onOreBreak(@NotNull BlockBreakEvent event) {
+        if (!isMiningObtainEnabled()) {
+            return;
+        }
+        Player player = event.getPlayer();
+        GameInstance game = plugin.gameManager().getByPlayer(player);
+        if (game == null || !game.getMode().isSoloSurvival() || !game.getState().isActive()) {
+            return;
+        }
+        if (!game.isAlive(player.getUniqueId())) {
+            return;
+        }
+        if (!isShardOre(event.getBlock().getType())) {
+            return;
+        }
+        // Default 0.03% = 0.0003
+        double chance = plugin.getConfig().getDouble("solo-survival.shard.mining.chance", 0.0003);
+        if (ThreadLocalRandom.current().nextDouble() > Math.max(0.0, Math.min(1.0, chance))) {
+            return;
+        }
+        Location dropAt = event.getBlock().getLocation().add(0.5, 0.5, 0.5);
+        Item dropped = event.getBlock().getWorld().dropItemNaturally(dropAt, createChaosShard());
+        dropped.setPickupDelay(5);
+        dropped.setGlowing(true);
+        game.trackEntity(dropped);
+        plugin.lang().send(player, "solo-survival.shard-mined");
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onLootGenerate(@NotNull LootGenerateEvent event) {
+        if (!isLootObtainEnabled()) {
+            return;
+        }
+        // Very rare natural structure / buried treasure / dungeon / mineshaft / etc.
+        double chance = plugin.getConfig().getDouble("solo-survival.shard.loot.chance", 0.008);
+        if (ThreadLocalRandom.current().nextDouble() > Math.max(0.0, Math.min(1.0, chance))) {
+            return;
+        }
+        List<ItemStack> loot = event.getLoot();
+        loot.add(createChaosShard());
+    }
+
+    @EventHandler
+    public void onJoinDiscover(@NotNull PlayerJoinEvent event) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (event.getPlayer().isOnline()) {
+                discoverFor(event.getPlayer());
+            }
+        }, 40L);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPrepareCraft(@NotNull PrepareItemCraftEvent event) {
+        if (!isCraftingObtainEnabled() || event.getRecipe() == null) {
+            return;
+        }
+        NamespacedKey key = null;
+        if (event.getRecipe() instanceof org.bukkit.Keyed keyed) {
+            key = keyed.getKey();
+        }
+        if (key == null || !key.equals(recipeKey)) {
+            // Also accept if result already tagged
+            ItemStack result = event.getInventory().getResult();
+            if (!isChaosShard(result)) {
+                return;
+            }
+        }
+        event.getInventory().setResult(createChaosShard());
     }
 
     public void spawnShardInWorld(@NotNull GameInstance game) {

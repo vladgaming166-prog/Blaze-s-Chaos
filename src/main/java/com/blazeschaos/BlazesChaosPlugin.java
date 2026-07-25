@@ -4,6 +4,7 @@ import com.blazeschaos.arena.ArenaManager;
 import com.blazeschaos.coins.CoinsManager;
 import com.blazeschaos.command.BlazeChaosCommand;
 import com.blazeschaos.config.ConfigManager;
+import com.blazeschaos.cosmetics.CosmeticTrailManager;
 import com.blazeschaos.database.DatabaseManager;
 import com.blazeschaos.event.ChaosEventManager;
 import com.blazeschaos.event.EventDifficultyManager;
@@ -52,6 +53,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private VaultHook vaultHook;
     private CoinsManager coinsManager;
     private ShopManager shopManager;
+    private CosmeticTrailManager cosmeticTrailManager;
     private LootManager lootManager;
     private EventDifficultyManager difficultyManager;
     private LootRarityManager lootRarityManager;
@@ -83,6 +85,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         this.lootRarityManager = new LootRarityManager(this);
         this.lootManager = new LootManager(this);
         this.shopManager = new ShopManager(this);
+        this.cosmeticTrailManager = new CosmeticTrailManager(this);
 
         this.arenaManager = new ArenaManager(this);
         this.eventManager = new ChaosEventManager(this);
@@ -124,6 +127,8 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         scoreboardManager.start();
         tablistManager.start();
         passiveAnimalManager.start();
+        cosmeticTrailManager.start();
+        npcManager.scheduleStartupSkinRefresh();
 
         hookPlaceholderAPI();
 
@@ -133,6 +138,9 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (cosmeticTrailManager != null) {
+            cosmeticTrailManager.stop();
+        }
         if (npcManager != null) {
             npcManager.stop();
         }
@@ -173,6 +181,8 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         scoreboardManager.start();
         tablistManager.start();
         passiveAnimalManager.start();
+        cosmeticTrailManager.reload();
+        cosmeticTrailManager.start();
         survivalObjectiveService.registerRecipe();
         hookPlaceholderAPI();
     }
@@ -264,6 +274,10 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
     public @NotNull ShopManager shopManager() {
         return shopManager;
+    }
+
+    public @NotNull CosmeticTrailManager cosmetics() {
+        return cosmeticTrailManager;
     }
 
     public @NotNull LootManager lootManager() {

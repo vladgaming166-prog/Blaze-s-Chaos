@@ -36,7 +36,7 @@ public final class ShopManager implements Listener {
     public void open(@NotNull Player player) {
         ShopHolder holder = new ShopHolder();
         Inventory inventory = Bukkit.createInventory(holder,
-                plugin.configs().shop().getInt("size", 27),
+                plugin.configs().shop().getInt("size", 54),
                 ColorUtil.parse(plugin.configs().shop().getString("title", "<gold>Shop</gold>")));
         holder.bind(inventory);
         ConfigurationSection items = plugin.configs().shop().getConfigurationSection("items");
@@ -51,16 +51,25 @@ public final class ShopManager implements Listener {
                     material = Material.CHEST;
                 }
                 int cost = section.getInt("cost", 100);
+                String category = section.getString("category", "cosmetic").toLowerCase(Locale.ROOT);
                 boolean owned = plugin.database().ownsCosmetic(player.getUniqueId(), player.getName(), id);
+                boolean selected = plugin.database().isCosmeticSelected(player.getUniqueId(), player.getName(), category, id);
                 List<String> lore = new ArrayList<>(section.getStringList("lore"));
                 lore.add("");
-                lore.add(owned
-                        ? "<green>Owned — click to select</green>"
-                        : "<yellow>Cost: <white>" + cost + "</white> coins</yellow>");
+                if (selected) {
+                    lore.add("<green><bold>SELECTED</bold></green>");
+                    lore.add("<yellow>Click to unequip</yellow>");
+                } else if (owned) {
+                    lore.add("<aqua>OWNED</aqua>");
+                    lore.add("<yellow>Click to select</yellow>");
+                } else {
+                    lore.add("<red>LOCKED</red>");
+                    lore.add("<yellow>Price: <white>" + cost + "</white> coins</yellow>");
+                }
                 ItemStack icon = new ItemBuilder(material)
                         .name(section.getString("name", id))
                         .lore(lore)
-                        .glow(owned)
+                        .glow(selected || owned)
                         .build();
                 ItemMeta meta = icon.getItemMeta();
                 if (meta != null) {
@@ -72,8 +81,9 @@ public final class ShopManager implements Listener {
         }
         ItemStack balance = new ItemBuilder(Material.GOLD_INGOT)
                 .name("<gold>Your Coins: <white>" + plugin.coinsManager().balance(player) + "</white></gold>")
+                .lore(List.of("<gray>Buy trails with coins.</gray>", "<gray>Only one trail can be active.</gray>"))
                 .build();
-        inventory.setItem(plugin.configs().shop().getInt("balance-slot", 22), balance);
+        inventory.setItem(plugin.configs().shop().getInt("balance-slot", 49), balance);
         player.openInventory(inventory);
     }
 
@@ -104,9 +114,17 @@ public final class ShopManager implements Listener {
 
     private void purchaseOrSelect(@NotNull Player player, @NotNull String id, @NotNull ConfigurationSection section) {
         String category = section.getString("category", "cosmetic").toLowerCase(Locale.ROOT);
-        if (plugin.database().ownsCosmetic(player.getUniqueId(), player.getName(), id)) {
-            plugin.database().selectCosmetic(player.getUniqueId(), player.getName(), category, id);
-            plugin.lang().send(player, "shop.selected", Map.of("item", ColorUtil.strip(section.getString("name", id))));
+        boolean owned = plugin.database().ownsCosmetic(player.getUniqueId(), player.getName(), id);
+        if (owned) {
+            if (plugin.database().isCosmeticSelected(player.getUniqueId(), player.getName(), category, id)) {
+                plugin.database().deselectCosmetic(player.getUniqueId(), player.getName(), category);
+                plugin.lang().send(player, "shop.unequipped", Map.of(
+                        "item", ColorUtil.strip(section.getString("name", id))));
+            } else {
+                plugin.database().selectCosmetic(player.getUniqueId(), player.getName(), category, id);
+                plugin.lang().send(player, "shop.selected", Map.of(
+                        "item", ColorUtil.strip(section.getString("name", id))));
+            }
             return;
         }
         int cost = section.getInt("cost", 100);
@@ -137,7 +155,7 @@ public final class ShopManager implements Listener {
             if (inventory != null) {
                 return inventory;
             }
-            return Bukkit.createInventory(this, 27);
+            return Bukkit.createInventory(this, 54);
         }
     }
 }

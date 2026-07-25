@@ -35,6 +35,7 @@ public final class NpcManager {
     private final Map<UUID, java.util.Set<String>> favorites = new ConcurrentHashMap<>();
     private final java.util.Set<String> resolvingSkins = ConcurrentHashMap.newKeySet();
     private @Nullable BukkitTask task;
+    private @Nullable BukkitTask skinWatchTask;
     private int tickCounter;
 
     public NpcManager(@NotNull BlazesChaosPlugin plugin) {
@@ -72,6 +73,10 @@ public final class NpcManager {
             task.cancel();
             task = null;
         }
+        if (skinWatchTask != null) {
+            skinWatchTask.cancel();
+            skinWatchTask = null;
+        }
         for (NpcInstance instance : instances.values()) {
             instance.despawn();
         }
@@ -81,6 +86,7 @@ public final class NpcManager {
         stop();
         load();
         start();
+        scheduleStartupSkinRefresh();
     }
 
     public void load() {
@@ -149,28 +155,17 @@ public final class NpcManager {
     private void spawnReady(@NotNull NpcInstance instance) {
         NpcDefinition def = instance.definition();
         if (def.getSkin().type() != SkinData.Type.NONE && !def.getSkin().hasTextures()) {
-            if (!resolvingSkins.add(def.getId())) {
-                return;
-            }
-            String id = def.getId();
-            skins.resolveAsync(def.getSkin(), () -> {
-                resolvingSkins.remove(id);
-                if (!plugin.isEnabled()) {
-                    return;
-                }
-                NpcInstance current = instances.get(id);
-                if (current == null || current != instance) {
-                    return;
-                }
-                if (!current.isSpawned()) {
-                    current.spawn();
-                } else {
-                    current.refreshSkin();
-                }
-                save();
-            });
+            ensureSkinLoaded(instance, false);
         } else {
             instance.spawn();
+            // Re-apply textures shortly after spawn to beat Steve/Alex client race
+            if (def.getSkin().hasTextures()) {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (instances.get(def.getId()) == instance && instance.isSpawned()) {
+                        instance.refreshSkin();
+                    }
+                }, 10L);
+            }
         }
     }
 
@@ -217,20 +212,44 @@ public final class NpcManager {
             if (!def.isVisible()) {
                 continue;
             }
+            if (def.getSkin().type() != SkinData.Type.NONE && !def.getSkin().hasTextures()) {
+                ensureSkinLoaded(instance, false);
+            }
             if (!instance.isSpawned()) {
                 spawnReady(instance);
             } else {
                 instance.showForNearbyInChunk();
+                if (def.getSkin().hasTextures()) {
+                    instance.refreshSkin();
+                }
             }
         }
+    }
+
+    public void scheduleStartupSkinRefresh() {
+        Bukkit.getScheduler().runTaskLater(plugin, this::refreshAllSkins, 40L);
+        Bukkit.getScheduler().runTaskLater(plugin, this::refreshAllSkins, 100L);
+        Bukkit.getScheduler().runTaskLater(plugin, this::refreshAllSkins, 200L);
+        if (skinWatchTask != null) {
+            skinWatchTask.cancel();
+        }
+        // Periodic recovery — never leave Steve permanently
+        skinWatchTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (NpcInstance instance : instances.values()) {
+                SkinData skin = instance.definition().getSkin();
+                if (skin.type() != SkinData.Type.NONE && !skin.hasTextures()) {
+                    ensureSkinLoaded(instance, true);
+                }
+            }
+        }, 20L * 30, 20L * 30);
     }
 
     public @NotNull NpcDefinition create(@NotNull Player player, @NotNull NpcMode mode) {
         String id = uniqueId(mode);
         NpcDefinition def = new NpcDefinition(id);
         def.setMode(mode);
-        // Mode-specific NPCs instant-join; ALL uses Choose Mode GUI (open-gui unused for ALL).
-        def.setOpenGui(false);
+        // Always open mode GUI on click (never instant join)
+        def.setOpenGui(true);
         def.setLocation(player.getLocation());
         def.setHologramLines(NpcDefinition.defaultHologram(mode));
         def.setAnimation(NpcAnimationType.LOOK_AROUND);
@@ -241,6 +260,47 @@ public final class NpcManager {
         save();
         spawnReady(instance);
         return def;
+    }
+
+    /** Refresh all NPC skins after startup / Citizens reload / delayed recovery. */
+    public void refreshAllSkins() {
+        for (NpcInstance instance : instances.values()) {
+            ensureSkinLoaded(instance, true);
+        }
+    }
+
+    public void ensureSkinLoaded(@NotNull NpcInstance instance, boolean forceRefresh) {
+        NpcDefinition def = instance.definition();
+        SkinData skin = def.getSkin();
+        if (skin.type() == SkinData.Type.NONE) {
+            return;
+        }
+        if (skin.hasTextures() && !forceRefresh) {
+            if (instance.isSpawned()) {
+                instance.refreshSkin();
+            }
+            return;
+        }
+        String id = def.getId();
+        if (!resolvingSkins.add(id) && !forceRefresh) {
+            return;
+        }
+        skins.resolveAsyncWithRetry(skin, () -> {
+            resolvingSkins.remove(id);
+            if (!plugin.isEnabled()) {
+                return;
+            }
+            NpcInstance current = instances.get(id);
+            if (current == null) {
+                return;
+            }
+            if (!current.isSpawned()) {
+                current.spawn();
+            } else {
+                current.refreshSkin();
+            }
+            save();
+        }, 4);
     }
 
     private @NotNull String uniqueId(@NotNull NpcMode mode) {
@@ -325,19 +385,13 @@ public final class NpcManager {
             return;
         }
         NpcMode mode = def.getMode();
-        // ALL → Choose Mode GUI only (never instant join)
-        if (mode.isAll()) {
+        // Never instant-join — always open a professional GUI
+        if (mode.isAll() || mode == NpcMode.RANDOM) {
             plugin.npcGui().showChooseMode(player);
-        } else if (def.isOpenGui()) {
-            // Legacy open-gui:true keeps the full browser menu
-            NpcGui.openMain(plugin, player, mode);
-        } else if (mode == NpcMode.SOLO_SURVIVAL || mode.toGameMode().isSoloSurvival()) {
-            plugin.survivalObjectiveGui().open(player, null);
-        } else if (mode == NpcMode.RANDOM) {
-            quickJoinRandom(player);
+        } else if (mode == NpcMode.DUOS || mode == NpcMode.TRIOS || mode == NpcMode.SQUADS) {
+            plugin.npcGui().showModeLobby(player, NpcMode.TEAMS);
         } else {
-            // Mode-specific NPCs: instant join
-            quickJoin(player, mode.toGameMode());
+            plugin.npcGui().showModeLobby(player, mode);
         }
         instance.playClickAnimation();
     }
