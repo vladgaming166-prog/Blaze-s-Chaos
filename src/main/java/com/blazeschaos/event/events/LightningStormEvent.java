@@ -23,7 +23,7 @@ public final class LightningStormEvent extends ChaosEvent {
     public void start(@NotNull GameInstance game) {
         tickCounter = 0;
         interval = scaledInterval(game, settingInt("interval-ticks", 25));
-        World world = game.getArena().getWorld();
+        World world = game.getInstanceWorld();
         if (world != null) {
             world.setStorm(true);
             world.setThundering(true);
@@ -54,7 +54,7 @@ public final class LightningStormEvent extends ChaosEvent {
 
     @Override
     public void end(@NotNull GameInstance game) {
-        World world = game.getArena().getWorld();
+        World world = game.getInstanceWorld();
         if (world != null) {
             world.setStorm(false);
             world.setThundering(false);

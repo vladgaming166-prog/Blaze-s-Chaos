@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 public final class NightVisionOnlyEvent extends ChaosEvent {
     public NightVisionOnlyEvent() { super("night-vision-only", "Night Vision Only"); }
     @Override public void start(@NotNull GameInstance game) {
-        if (game.getArena().getWorld() != null) game.getArena().getWorld().setTime(18000);
+        if (game.getInstanceWorld() != null) game.getInstanceWorld().setTime(18000);
         for (Player player : game.getAlivePlayers()) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, getDurationSeconds() * 20, 0, false, false, true));
             player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, getDurationSeconds() * 20, 0, false, false, true));

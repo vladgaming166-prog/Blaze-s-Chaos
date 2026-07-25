@@ -2,9 +2,7 @@ package com.blazeschaos.game;
 
 import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.arena.Arena;
-import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,21 +15,18 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Manages independent match instances. Each match gets its own temporary world copy.
+ */
 public final class GameManager {
 
     private final BlazesChaosPlugin plugin;
     private final Map<String, GameInstance> games = new ConcurrentHashMap<>();
-    private final Map<UUID, String> playerArena = new ConcurrentHashMap<>();
+    private final Map<UUID, String> playerInstance = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> preparing = new ConcurrentHashMap<>();
 
     public GameManager(@NotNull BlazesChaosPlugin plugin) {
         this.plugin = plugin;
-    }
-
-    public @NotNull String gameKey(@NotNull Arena arena, @NotNull GameModeType mode) {
-        if (!multiModeEnabled(arena)) {
-            return arena.getName();
-        }
-        return arena.getName() + ":" + mode.name().toLowerCase(Locale.ROOT);
     }
 
     public boolean multiModeEnabled(@NotNull Arena arena) {
@@ -47,9 +42,8 @@ public final class GameManager {
         List<GameModeType> fromGlobal = global.isEmpty()
                 ? List.of(GameModeType.SOLO, GameModeType.TEAMS, GameModeType.MEGA, GameModeType.SOLO_SURVIVAL)
                 : GameModeType.parseList(global);
-        List<GameModeType> arenaModes = arena.getAvailableModes();
         List<GameModeType> out = new ArrayList<>();
-        for (GameModeType mode : arenaModes) {
+        for (GameModeType mode : arena.getAvailableModes()) {
             if (fromGlobal.contains(mode) && !out.contains(mode)) {
                 out.add(mode);
             }
@@ -60,46 +54,60 @@ public final class GameManager {
         return out;
     }
 
-    public @NotNull GameInstance getOrCreate(@NotNull Arena arena) {
-        return getOrCreate(arena, GameModeType.SOLO);
+    public @Nullable GameInstance getByInstanceId(@NotNull String instanceId) {
+        return games.get(instanceId);
     }
 
-    public @NotNull GameInstance getOrCreate(@NotNull Arena arena, @NotNull GameModeType mode) {
-        GameModeType resolved = multiModeEnabled(arena) ? mode : GameModeType.SOLO;
-        String key = gameKey(arena, resolved);
-        return games.computeIfAbsent(key, name -> {
-            GameInstance game = new GameInstance(plugin, arena, resolved);
-            game.startTicking();
-            return game;
-        });
-    }
-
-    public @Nullable GameInstance get(@NotNull String arenaName) {
-        return games.get(arenaName.toLowerCase(Locale.ROOT));
+    public @Nullable GameInstance get(@NotNull String key) {
+        GameInstance direct = games.get(key.toLowerCase(Locale.ROOT));
+        if (direct != null) {
+            return direct;
+        }
+        // Legacy: arena name → first joinable / any instance
+        for (GameInstance game : games.values()) {
+            if (game.getArena().getName().equalsIgnoreCase(key)) {
+                return game;
+            }
+        }
+        return null;
     }
 
     public @Nullable GameInstance get(@NotNull Arena arena, @NotNull GameModeType mode) {
-        return games.get(gameKey(arena, mode));
+        for (GameInstance game : games.values()) {
+            if (game.getArena().getName().equals(arena.getName())
+                    && game.getMode() == mode
+                    && game.getState().isJoinable()
+                    && !game.isFull()) {
+                return game;
+            }
+        }
+        return null;
     }
 
     public @Nullable GameInstance getByPlayer(@NotNull Player player) {
-        String key = playerArena.get(player.getUniqueId());
-        return key == null ? null : games.get(key);
+        String id = playerInstance.get(player.getUniqueId());
+        return id == null ? null : games.get(id);
     }
 
     public boolean join(@NotNull Player player, @Nullable Arena arena) {
-        return join(player, arena, GameModeType.SOLO);
+        return join(player, arena, GameModeType.SOLO, null);
     }
 
     public boolean join(@NotNull Player player, @Nullable Arena arena, @NotNull GameModeType mode) {
+        return join(player, arena, mode, null);
+    }
+
+    public boolean join(@NotNull Player player, @Nullable Arena arena, @NotNull GameModeType mode,
+                        @Nullable SurvivalObjective objective) {
         if (getByPlayer(player) != null) {
             plugin.lang().send(player, "game.already-in");
             return false;
         }
-        Arena target = arena;
-        if (target == null) {
-            target = plugin.arenaManager().findJoinable();
+        if (preparing.containsKey(player.getUniqueId())) {
+            plugin.lang().send(player, "game.preparing");
+            return false;
         }
+        Arena target = arena != null ? arena : plugin.arenaManager().findJoinable();
         if (target == null) {
             plugin.lang().send(player, "game.no-arenas");
             return false;
@@ -115,65 +123,92 @@ public final class GameManager {
             plugin.lang().send(player, "modes.not-available", Map.of("mode", resolved.display()));
             return false;
         }
-        if (isArenaWorldBusy(target, resolved)) {
-            plugin.lang().send(player, "arena.in-use");
-            return false;
+
+        SurvivalObjective obj = objective;
+        if (resolved.isSoloSurvival() && obj == null) {
+            obj = SurvivalObjective.SURVIVE;
         }
-        ensureWorldLoaded(target);
-        if (target.getSpawn() == null || target.getWorld() == null) {
-            plugin.lang().send(player, "arena.not-setup", Map.of("missing", "world"));
-            return false;
+
+        // Solo Survival / full instances: always create a fresh instance
+        boolean forceNew = resolved.isSoloSurvival()
+                || resolved == GameModeType.MEGA
+                || plugin.getConfig().getBoolean("modes.always-new-instance", false);
+
+        if (!forceNew) {
+            GameInstance existing = findJoinable(target, resolved);
+            if (existing != null && existing.isWorldReady()) {
+                if (existing.join(player)) {
+                    playerInstance.put(player.getUniqueId(), existing.getInstanceId());
+                    return true;
+                }
+            }
         }
-        GameInstance game = getOrCreate(target, resolved);
-        if (game.isFull()) {
-            plugin.lang().send(player, "game.full");
-            return false;
-        }
-        if (!game.getState().isJoinable()) {
-            plugin.lang().send(player, "arena.in-use");
-            return false;
-        }
-        if (game.join(player)) {
-            playerArena.put(player.getUniqueId(), gameKey(target, resolved));
-            return true;
-        }
-        return false;
+
+        prepareAndJoin(player, target, resolved, obj);
+        return true;
     }
 
-    /**
-     * Same physical arena world can only host one populated/active mode instance at a time.
-     */
-    private boolean isArenaWorldBusy(@NotNull Arena arena, @NotNull GameModeType joiningMode) {
-        String arenaName = arena.getName();
+    private @Nullable GameInstance findJoinable(@NotNull Arena arena, @NotNull GameModeType mode) {
         for (GameInstance game : games.values()) {
-            if (!game.getArena().getName().equals(arenaName)) {
+            if (!game.getArena().getName().equals(arena.getName())) {
                 continue;
             }
-            if (game.getMode() == joiningMode) {
+            if (game.getMode() != mode) {
                 continue;
             }
-            if (game.playerCount() > 0 || game.getState().isActive()
-                    || game.getState() == GameState.STARTING
-                    || game.getState() == GameState.ENDING
-                    || game.getState() == GameState.RESETTING) {
-                return true;
+            if (!game.getState().isJoinable() || game.isFull() || !game.isWorldReady()) {
+                continue;
             }
+            return game;
         }
-        return false;
+        return null;
     }
 
-    private void ensureWorldLoaded(@NotNull Arena arena) {
-        String worldName = arena.getWorldName();
-        if (worldName == null) {
-            return;
+    private void prepareAndJoin(@NotNull Player player, @NotNull Arena arena,
+                                @NotNull GameModeType mode, @Nullable SurvivalObjective objective) {
+        preparing.put(player.getUniqueId(), System.currentTimeMillis());
+        plugin.lang().send(player, "game.preparing");
+
+        String shortId = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        String worldName = ("bc_" + arena.getName() + "_" + shortId).toLowerCase(Locale.ROOT);
+        // World names: keep reasonably short
+        if (worldName.length() > 48) {
+            worldName = ("bc_" + shortId).toLowerCase(Locale.ROOT);
         }
-        World world = Bukkit.getWorld(worldName);
-        if (world == null) {
-            world = Bukkit.createWorld(new WorldCreator(worldName));
-            if (world != null) {
-                arena.rebindLocationsToWorld(world.getName());
+        final String instanceId = shortId;
+        final String instanceWorld = worldName;
+
+        plugin.worldResetManager().createMatchWorld(arena, instanceWorld, world -> {
+            preparing.remove(player.getUniqueId());
+            if (!player.isOnline()) {
+                if (world != null) {
+                    plugin.worldResetManager().destroyMatchWorld(instanceWorld, () -> {
+                    });
+                }
+                return;
             }
-        }
+            if (world == null) {
+                plugin.lang().send(player, "game.instance-failed");
+                return;
+            }
+            if (getByPlayer(player) != null) {
+                plugin.worldResetManager().destroyMatchWorld(instanceWorld, () -> {
+                });
+                plugin.lang().send(player, "game.already-in");
+                return;
+            }
+            GameInstance game = new GameInstance(plugin, arena, mode, instanceId, instanceWorld, objective);
+            games.put(instanceId, game);
+            game.startTicking();
+            if (game.join(player)) {
+                playerInstance.put(player.getUniqueId(), instanceId);
+            } else {
+                games.remove(instanceId);
+                plugin.worldResetManager().destroyMatchWorld(instanceWorld, () -> {
+                });
+                plugin.lang().send(player, "game.full");
+            }
+        });
     }
 
     public boolean leave(@NotNull Player player) {
@@ -183,16 +218,29 @@ public final class GameManager {
             return false;
         }
         game.leave(player, true);
-        playerArena.remove(player.getUniqueId());
+        playerInstance.remove(player.getUniqueId());
         return true;
     }
 
     public void untrack(@NotNull Player player) {
-        playerArena.remove(player.getUniqueId());
+        playerInstance.remove(player.getUniqueId());
+    }
+
+    public void onGameFinished(@NotNull GameInstance game) {
+        String id = game.getInstanceId();
+        games.remove(id);
+        String worldName = game.getInstanceWorldName();
+        if (worldName != null) {
+            plugin.worldResetManager().destroyMatchWorld(worldName, () -> {
+                if (plugin.configs().debug()) {
+                    plugin.getLogger().info("Destroyed match world " + worldName);
+                }
+            });
+        }
     }
 
     public void onGameReset(@NotNull GameInstance game) {
-        // keep instance for reuse with restored world
+        onGameFinished(game);
     }
 
     public @NotNull Collection<GameInstance> all() {
@@ -200,11 +248,21 @@ public final class GameManager {
     }
 
     public void shutdown() {
-        for (GameInstance game : games.values()) {
-            plugin.passiveAnimals().clearAnimals(game.getArena());
+        for (GameInstance game : new ArrayList<>(games.values())) {
+            plugin.passiveAnimals().clearForGame(game);
+            World world = game.getInstanceWorld();
+            if (world != null) {
+                com.blazeschaos.world.EntityCleanup.wipeMatchEntities(plugin, world);
+            }
             game.shutdown();
+            String worldName = game.getInstanceWorldName();
+            if (worldName != null) {
+                plugin.worldResetManager().destroyMatchWorld(worldName, () -> {
+                });
+            }
         }
         games.clear();
-        playerArena.clear();
+        playerInstance.clear();
+        preparing.clear();
     }
 }

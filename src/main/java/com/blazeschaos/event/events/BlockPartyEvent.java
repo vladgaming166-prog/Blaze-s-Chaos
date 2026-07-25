@@ -39,8 +39,8 @@ public final class BlockPartyEvent extends ChaosEvent {
         } catch (IllegalArgumentException ex) {
             safeColor = DyeColor.RED;
         }
-        World world = game.getArena().getWorld();
-        Location center = game.getArena().getSpawn();
+        World world = game.getInstanceWorld();
+        Location center = game.spawnLocation();
         if (world == null || center == null) {
             return;
         }

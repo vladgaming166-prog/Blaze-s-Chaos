@@ -19,9 +19,9 @@ public final class TornadoEvent extends ChaosEvent {
     @Override
     public void start(@NotNull GameInstance game) {
         tickCounter = 0;
-        center = game.getArena().getCenter();
+        center = game.centerLocation();
         if (center == null) {
-            center = game.getArena().getSpawn();
+            center = game.spawnLocation();
         }
     }
 

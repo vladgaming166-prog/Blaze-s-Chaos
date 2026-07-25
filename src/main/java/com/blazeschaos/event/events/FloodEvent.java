@@ -27,7 +27,7 @@ public final class FloodEvent extends ChaosEvent {
         for (Player player : game.getAlivePlayers()) {
             minY = Math.min(minY, player.getLocation().getBlockY());
         }
-        World world = game.getArena().getWorld();
+        World world = game.getInstanceWorld();
         if (minY == Integer.MAX_VALUE && world != null) {
             minY = world.getMinHeight() + 5;
         }
@@ -40,8 +40,8 @@ public final class FloodEvent extends ChaosEvent {
         if (tickCounter % Math.max(5, riseInterval) != 0) {
             return;
         }
-        World world = game.getArena().getWorld();
-        Location center = game.getArena().getSpawn();
+        World world = game.getInstanceWorld();
+        Location center = game.spawnLocation();
         if (world == null || center == null) {
             return;
         }

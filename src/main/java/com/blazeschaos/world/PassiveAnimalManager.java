@@ -12,6 +12,10 @@ import org.bukkit.entity.Animals;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
@@ -20,134 +24,104 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Spawns a small number of passive animals ONLY during active matches.
- * Never runs in server lobby / waiting / starting. Clears on end / reset.
+ * Passive animals exist ONLY during {@link GameState#PLAYING} (and mid-match active states).
+ * Spawn a fixed count at match start; replace one killed animal after a delay — never waves.
  */
-public final class PassiveAnimalManager {
+public final class PassiveAnimalManager implements Listener {
 
     private final BlazesChaosPlugin plugin;
     private final NamespacedKey tagKey;
-    private final ConcurrentHashMap<String, java.util.Set<UUID>> trackedByArena = new ConcurrentHashMap<>();
-    private @Nullable BukkitTask task;
+    private final NamespacedKey gameKey;
+    /** instanceId → living animal UUIDs */
+    private final Map<String, java.util.Set<UUID>> byInstance = new ConcurrentHashMap<>();
+    private final Map<UUID, String> animalToInstance = new ConcurrentHashMap<>();
+    private @Nullable BukkitTask watchdog;
+    private boolean eventsRegistered;
 
     public PassiveAnimalManager(@NotNull BlazesChaosPlugin plugin) {
         this.plugin = plugin;
         this.tagKey = new NamespacedKey(plugin, "passive_animal");
+        this.gameKey = new NamespacedKey(plugin, "passive_game");
     }
 
     public void start() {
         stop();
-        if (!enabled()) {
-            return;
+        if (!eventsRegistered) {
+            Bukkit.getPluginManager().registerEvents(this, plugin);
+            eventsRegistered = true;
         }
-        int interval = Math.max(100, plugin.getConfig().getInt(
-                "chaos-world.passive-animals.check-interval-ticks", 200));
-        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, interval, interval);
+        // Watchdog: ensure non-active states stay at ZERO animals
+        watchdog = Bukkit.getScheduler().runTaskTimer(plugin, this::watchdogClear, 40L, 40L);
     }
 
     public void stop() {
-        if (task != null) {
-            task.cancel();
-            task = null;
+        if (watchdog != null) {
+            watchdog.cancel();
+            watchdog = null;
+        }
+        for (String id : new ArrayList<>(byInstance.keySet())) {
+            clearInstance(id);
         }
     }
 
-    private boolean enabled() {
-        return plugin.getConfig().getBoolean("chaos-world.passive-animals.enabled", true);
+    private void watchdogClear() {
+        for (GameInstance game : plugin.gameManager().all()) {
+            if (!game.getState().isActive()) {
+                clearForGame(game);
+            }
+        }
     }
 
-    private void tick() {
+    public int maxPassiveMobs() {
+        int max = plugin.getConfig().getInt("chaos-world.passive-animals.max-passive-mobs", -1);
+        if (max < 0) {
+            max = plugin.getConfig().getInt("chaos-world.passive-animals.initial-count", 10);
+        }
+        if (max < 0) {
+            max = plugin.getConfig().getInt("chaos-world.passive-animals.target-count", 10);
+        }
+        return Math.max(0, Math.min(64, max));
+    }
+
+    public int replaceDelayTicks() {
+        return Math.max(20, plugin.getConfig().getInt(
+                "chaos-world.passive-animals.replace-delay-ticks", 100));
+    }
+
+    /**
+     * Spawn the initial fixed amount when the match enters PLAYING. No more until kills.
+     */
+    public void onMatchStart(@NotNull GameInstance game) {
         if (!enabled()) {
             return;
         }
-        for (GameInstance game : plugin.gameManager().all()) {
-            GameState state = game.getState();
-            // ONLY active matches — never lobby / waiting / starting / ending
-            if (!state.isActive()) {
-                continue;
-            }
-            if (game.playerCount() <= 0) {
-                continue;
-            }
-            trySpawnOne(game);
-        }
-    }
-
-    /**
-     * Called when a match becomes PLAYING. Spawns at most one animal immediately
-     * (no wave). Further animals refill slowly via the scheduler.
-     */
-    public void onMatchStart(@NotNull GameInstance game) {
-        if (!enabled() || !game.getState().isActive()) {
+        clearForGame(game);
+        if (game.getState() != GameState.PLAYING && !game.getState().isActive()) {
             return;
         }
-        trySpawnOne(game);
-    }
-
-    /**
-     * Remove every passive animal for this arena (game end / world reset).
-     */
-    public void clearAnimals(@NotNull Arena arena) {
-        World world = arena.getWorld();
-        java.util.Set<UUID> tracked = trackedByArena.remove(arena.getName());
-        if (tracked != null) {
-            for (UUID id : tracked) {
-                Entity entity = Bukkit.getEntity(id);
-                if (entity != null && entity.isValid()) {
-                    entity.remove();
-                }
-            }
-            tracked.clear();
-        }
-        if (world == null) {
-            return;
-        }
-        // Remove any remaining tagged passive animals in this arena world
-        for (Entity entity : world.getEntitiesByClass(Animals.class)) {
-            if (entity.getPersistentDataContainer().has(tagKey, PersistentDataType.BYTE)) {
-                entity.remove();
-            }
-        }
-    }
-
-    private void trySpawnOne(@NotNull GameInstance game) {
-        Arena arena = game.getArena();
-        World world = arena.getWorld();
-        Location center = arena.getCenter() != null ? arena.getCenter() : arena.getSpawn();
+        World world = game.getInstanceWorld();
+        Location center = game.centerLocation();
         if (world == null || center == null) {
             return;
         }
-
         if (plugin.getConfig().getBoolean("chaos-world.force-animal-spawn-flags", true)) {
             world.setSpawnFlags(world.getAllowMonsters(), true);
         }
-
-        int max = maxPassiveMobs();
-        int existing = countAnimals(arena, world, center);
-        if (existing >= max) {
-            return;
-        }
-
-        // Slow refill: never spawn more than max-spawn-per-check (default 1)
-        int maxPerCheck = Math.max(1, plugin.getConfig().getInt(
-                "chaos-world.passive-animals.max-spawn-per-check", 1));
-        int missing = max - existing;
-        int toSpawn = Math.min(maxPerCheck, missing);
-        // Extra safety: never more than 2 in a single check
-        toSpawn = Math.min(toSpawn, 2);
-
+        int count = maxPassiveMobs();
         List<EntityType> types = configuredTypes();
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        int radius = Math.max(16, (int) (arena.getBorderSize() / 2.0));
-        java.util.Set<UUID> tracked = trackedByArena.computeIfAbsent(
-                arena.getName(), k -> ConcurrentHashMap.newKeySet());
+        int radius = Math.max(16, (int) (game.getArena().getBorderSize() / 2.0));
+        java.util.Set<UUID> tracked = byInstance.computeIfAbsent(
+                game.getInstanceId(), k -> ConcurrentHashMap.newKeySet());
 
-        for (int i = 0; i < toSpawn; i++) {
+        int spawned = 0;
+        for (int i = 0; i < count * 3 && spawned < count; i++) {
             Location spot = findSafeSpot(world, center, radius, random);
             if (spot == null) {
                 continue;
@@ -155,51 +129,148 @@ public final class PassiveAnimalManager {
             EntityType type = types.get(random.nextInt(types.size()));
             try {
                 Entity entity = world.spawnEntity(spot, type);
-                entity.getPersistentDataContainer().set(tagKey, PersistentDataType.BYTE, (byte) 1);
+                tag(entity, game.getInstanceId());
                 if (entity instanceof LivingEntity living) {
                     living.setRemoveWhenFarAway(false);
                 }
                 tracked.add(entity.getUniqueId());
+                animalToInstance.put(entity.getUniqueId(), game.getInstanceId());
+                spawned++;
             } catch (Exception ex) {
                 if (plugin.configs().debug()) {
-                    plugin.getLogger().warning("Failed to spawn passive animal: " + ex.getMessage());
+                    plugin.getLogger().warning("Passive spawn failed: " + ex.getMessage());
                 }
             }
         }
-        // Prune dead UUIDs
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onAnimalDeath(@NotNull EntityDeathEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (!(entity instanceof Animals)) {
+            return;
+        }
+        if (!entity.getPersistentDataContainer().has(tagKey, PersistentDataType.BYTE)) {
+            return;
+        }
+        String instanceId = entity.getPersistentDataContainer().get(gameKey, PersistentDataType.STRING);
+        if (instanceId == null) {
+            instanceId = animalToInstance.remove(entity.getUniqueId());
+        } else {
+            animalToInstance.remove(entity.getUniqueId());
+        }
+        if (instanceId == null) {
+            return;
+        }
+        java.util.Set<UUID> tracked = byInstance.get(instanceId);
+        if (tracked != null) {
+            tracked.remove(entity.getUniqueId());
+        }
+        GameInstance game = plugin.gameManager().getByInstanceId(instanceId);
+        if (game == null || !game.getState().isActive()) {
+            return;
+        }
+        // Replace ONLY ONE after delay — never a wave
+        final String id = instanceId;
+        Bukkit.getScheduler().runTaskLater(plugin, () -> tryReplaceOne(id), replaceDelayTicks());
+    }
+
+    private void tryReplaceOne(@NotNull String instanceId) {
+        if (!enabled()) {
+            return;
+        }
+        GameInstance game = plugin.gameManager().getByInstanceId(instanceId);
+        if (game == null || !game.getState().isActive()) {
+            return;
+        }
+        java.util.Set<UUID> tracked = byInstance.computeIfAbsent(instanceId, k -> ConcurrentHashMap.newKeySet());
+        prune(tracked);
+        if (tracked.size() >= maxPassiveMobs()) {
+            return; // all slots filled — spawn NOTHING
+        }
+        World world = game.getInstanceWorld();
+        Location center = game.centerLocation();
+        if (world == null || center == null) {
+            return;
+        }
+        int radius = Math.max(16, (int) (game.getArena().getBorderSize() / 2.0));
+        Location spot = findSafeSpot(world, center, radius, ThreadLocalRandom.current());
+        if (spot == null) {
+            return;
+        }
+        List<EntityType> types = configuredTypes();
+        EntityType type = types.get(ThreadLocalRandom.current().nextInt(types.size()));
+        try {
+            Entity entity = world.spawnEntity(spot, type);
+            tag(entity, instanceId);
+            if (entity instanceof LivingEntity living) {
+                living.setRemoveWhenFarAway(false);
+            }
+            tracked.add(entity.getUniqueId());
+            animalToInstance.put(entity.getUniqueId(), instanceId);
+        } catch (Exception ignored) {
+        }
+    }
+
+    public void clearForGame(@NotNull GameInstance game) {
+        clearInstance(game.getInstanceId());
+        World world = game.getInstanceWorld();
+        if (world != null) {
+            for (Entity entity : world.getEntitiesByClass(Animals.class)) {
+                if (entity.getPersistentDataContainer().has(tagKey, PersistentDataType.BYTE)) {
+                    entity.remove();
+                }
+            }
+        }
+    }
+
+    /** @deprecated use {@link #clearForGame(GameInstance)} */
+    public void clearAnimals(@NotNull Arena arena) {
+        for (GameInstance game : plugin.gameManager().all()) {
+            if (game.getArena().getName().equals(arena.getName())) {
+                clearForGame(game);
+            }
+        }
+    }
+
+    private void clearInstance(@NotNull String instanceId) {
+        java.util.Set<UUID> tracked = byInstance.remove(instanceId);
+        if (tracked == null) {
+            return;
+        }
+        for (UUID id : tracked) {
+            animalToInstance.remove(id);
+            Entity entity = Bukkit.getEntity(id);
+            if (entity != null && entity.isValid()) {
+                entity.remove();
+            }
+        }
+        tracked.clear();
+    }
+
+    private void tag(@NotNull Entity entity, @NotNull String instanceId) {
+        entity.getPersistentDataContainer().set(tagKey, PersistentDataType.BYTE, (byte) 1);
+        entity.getPersistentDataContainer().set(gameKey, PersistentDataType.STRING, instanceId);
+    }
+
+    private void prune(@NotNull java.util.Set<UUID> tracked) {
         tracked.removeIf(id -> {
             Entity e = Bukkit.getEntity(id);
-            return e == null || !e.isValid();
+            boolean dead = e == null || !e.isValid();
+            if (dead) {
+                animalToInstance.remove(id);
+            }
+            return dead;
         });
     }
 
-    private int maxPassiveMobs() {
-        int max = plugin.getConfig().getInt("chaos-world.passive-animals.max-passive-mobs", -1);
-        if (max < 0) {
-            max = plugin.getConfig().getInt("chaos-world.passive-animals.target-count", 12);
-        }
-        return Math.max(0, Math.min(64, max));
-    }
-
-    private int countAnimals(@NotNull Arena arena, @NotNull World world, @NotNull Location center) {
-        int radius = Math.max(16, (int) (arena.getBorderSize() / 2.0));
-        double radiusSq = (double) radius * radius;
-        int existing = 0;
-        for (Entity entity : world.getEntitiesByClass(Animals.class)) {
-            if (!entity.getPersistentDataContainer().has(tagKey, PersistentDataType.BYTE)) {
-                // Only count plugin-managed animals toward the cap
-                continue;
-            }
-            if (entity.getLocation().distanceSquared(center) <= radiusSq) {
-                existing++;
-            }
-        }
-        return existing;
+    private boolean enabled() {
+        return plugin.getConfig().getBoolean("chaos-world.passive-animals.enabled", true);
     }
 
     private @Nullable Location findSafeSpot(@NotNull World world, @NotNull Location center,
                                             int radius, @NotNull ThreadLocalRandom random) {
-        for (int attempt = 0; attempt < 16; attempt++) {
+        for (int attempt = 0; attempt < 20; attempt++) {
             int x = center.getBlockX() + random.nextInt(-radius, radius + 1);
             int z = center.getBlockZ() + random.nextInt(-radius, radius + 1);
             int y = world.getHighestBlockYAt(x, z);

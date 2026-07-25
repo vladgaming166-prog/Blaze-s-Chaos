@@ -327,7 +327,6 @@ public final class NpcGui implements Listener {
         }
 
         if (action.equals("join_mode") && arenaName != null && modeName != null) {
-            player.closeInventory();
             Arena arena = plugin.arenaManager().get(arenaName);
             if (arena == null) {
                 plugin.lang().send(player, "arena.not-found");
@@ -335,7 +334,13 @@ public final class NpcGui implements Listener {
             }
             try {
                 GameModeType mode = GameModeType.parse(modeName);
-                plugin.gameManager().join(player, arena, mode);
+                if (mode.isSoloSurvival()) {
+                    player.closeInventory();
+                    plugin.survivalObjectiveGui().open(player, arena);
+                } else {
+                    player.closeInventory();
+                    plugin.gameManager().join(player, arena, mode);
+                }
             } catch (IllegalArgumentException ex) {
                 plugin.lang().send(player, "modes.not-available", Map.of("mode", modeName));
             }
@@ -377,7 +382,10 @@ public final class NpcGui implements Listener {
             case "mode_solo" -> quickMode(player, GameModeType.SOLO);
             case "mode_teams", "mode_duos", "mode_trios", "mode_squads" -> quickMode(player, GameModeType.TEAMS);
             case "mode_mega" -> quickMode(player, GameModeType.MEGA);
-            case "mode_solo_survival" -> quickMode(player, GameModeType.SOLO_SURVIVAL);
+            case "mode_solo_survival" -> {
+                player.closeInventory();
+                plugin.survivalObjectiveGui().open(player, null);
+            }
             case "mode_random" -> {
                 player.closeInventory();
                 plugin.npcManager().quickJoin(player);

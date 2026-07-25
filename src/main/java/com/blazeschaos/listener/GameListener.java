@@ -139,10 +139,10 @@ public final class GameListener implements Listener {
             });
             return;
         }
-        if (game.getArena().getSpectator() != null) {
-            event.setRespawnLocation(game.getArena().getSpectator());
-        } else if (game.getArena().getSpawn() != null) {
-            event.setRespawnLocation(game.getArena().getSpawn());
+        if (game.spectatorLocation() != null) {
+            event.setRespawnLocation(game.spectatorLocation());
+        } else if (game.spawnLocation() != null) {
+            event.setRespawnLocation(game.spawnLocation());
         }
     }
 
@@ -189,7 +189,7 @@ public final class GameListener implements Listener {
             return;
         }
 
-        // Solo Survival: Chaos Shard + Victory Altar
+        // Solo Survival: optional Victory Altar use (primary win is obtain-shard / survive timer)
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
             GameInstance game = plugin.gameManager().getByPlayer(player);
             if (game != null && game.getMode().isSoloSurvival() && game.getState().isActive()) {

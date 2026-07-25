@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 public final class BloodMoonEvent extends ChaosEvent {
     public BloodMoonEvent() { super("blood-moon", "Blood Moon"); }
     @Override public void start(@NotNull GameInstance game) {
-        World world = game.getArena().getWorld();
+        World world = game.getInstanceWorld();
         if (world != null) {
             world.setTime(18000);
             world.setStorm(true);

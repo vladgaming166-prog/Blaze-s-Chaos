@@ -76,13 +76,16 @@ modes:
   victory-altar-usage: "<yellow>Usage:</yellow> <white>/bc setvictoryaltar [arena]</white> <gray>(look at a block)</gray>"
 
 solo-survival:
-  objective: "<light_purple>Solo Survival:</light_purple> <gray>Survive chaos, find the <white>Chaos Shard</white>, and use it at the Victory Altar.</gray>"
-  shard-spawned: "<gold>A Chaos Shard has appeared in the arena!</gold> <gray>Find it and bring it to the Victory Altar.</gray>"
-  need-shard: "<red>You need the Chaos Shard to claim victory here.</red>"
-  victory: "<gradient:#FF4500:#FFD700><bold>VICTORY!</bold></gradient> <gray>You completed Solo Survival.</gray>"
+  objective-survive: "<green>Objective:</green> <white>Survive %time%s</white>"
+  objective-shard: "<light_purple>Objective:</light_purple> <white>Obtain the Chaos Shard</white> <gray>(loot or craft)</gray>"
+  shard-spawned: "<gold>A Chaos Shard has appeared in the arena!</gold>"
+  need-shard: "<red>You need the Chaos Shard.</red>"
+  victory: "<gradient:#FF4500:#FFD700><bold>VICTORY!</bold></gradient> <gray>Solo Survival complete.</gray>"
 
 game:
   joined: "<green>You joined <yellow>%arena%</yellow></green> <gray>(%mode%)</gray><green>!</green>"
+  preparing: "<yellow>Preparing your private arena instance...</yellow>"
+  instance-failed: "<red>Failed to create arena instance. Check console / templates.</red>"
   left: "<yellow>You left the game.</yellow>"
   full: "<red>This game is full.</red>"
   already-in: "<red>You are already in a game.</red>"

@@ -325,6 +325,8 @@ public final class NpcManager {
         // Open GUI immediately — animation is cosmetic
         if (def.isOpenGui()) {
             NpcGui.openMain(plugin, player, def.getMode());
+        } else if (def.getMode().toGameMode().isSoloSurvival()) {
+            plugin.survivalObjectiveGui().open(player, null);
         } else {
             quickJoin(player, def.getMode().toGameMode());
         }

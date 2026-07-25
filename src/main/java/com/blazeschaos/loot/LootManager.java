@@ -2,6 +2,10 @@ package com.blazeschaos.loot;
 
 import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.arena.Arena;
+import com.blazeschaos.game.GameInstance;
+import com.blazeschaos.game.GameModeType;
+import com.blazeschaos.game.SurvivalObjective;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockState;
@@ -46,19 +50,32 @@ public final class LootManager {
     }
 
     public void fillArenaChests(@NotNull Arena arena) {
-        if (!enabled) {
+        World world = arena.getWorld();
+        Location center = arena.getCenter();
+        if (world == null || center == null) {
             return;
         }
-        World world = arena.getWorld();
-        if (world == null) {
+        fillChestsInWorld(arena, world, center, false);
+    }
+
+    public void fillInstanceChests(@NotNull GameInstance game) {
+        World world = game.getInstanceWorld();
+        Location center = game.centerLocation();
+        if (world == null || center == null) {
+            return;
+        }
+        boolean shardLoot = game.getMode() == GameModeType.SOLO_SURVIVAL
+                && game.getSurvivalObjective() == SurvivalObjective.CHAOS_SHARD;
+        fillChestsInWorld(game.getArena(), world, center, shardLoot);
+    }
+
+    private void fillChestsInWorld(@NotNull Arena arena, @NotNull World world,
+                                   @NotNull Location center, boolean shardLoot) {
+        if (!enabled) {
             return;
         }
         int filled = 0;
         int radius = (int) Math.ceil(arena.getBorderSize() / 2.0) + 16;
-        var center = arena.getCenter();
-        if (center == null) {
-            return;
-        }
         int minChunkX = (center.getBlockX() - radius) >> 4;
         int maxChunkX = (center.getBlockX() + radius) >> 4;
         int minChunkZ = (center.getBlockZ() - radius) >> 4;
@@ -66,33 +83,43 @@ public final class LootManager {
         for (int cx = minChunkX; cx <= maxChunkX; cx++) {
             for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
                 if (!world.isChunkLoaded(cx, cz)) {
-                    continue;
+                    world.getChunkAt(cx, cz); // load for match start
                 }
                 for (BlockState state : world.getChunkAt(cx, cz).getTileEntities()) {
                     if (state instanceof Chest chest) {
-                        fillChest(chest.getBlockInventory());
+                        fillChest(chest.getBlockInventory(), shardLoot);
                         filled++;
                     }
                 }
             }
         }
-        plugin.getLogger().info("Filled " + filled + " chests in arena " + arena.getName()
+        plugin.getLogger().info("Filled " + filled + " chests in " + world.getName()
                 + " (rarity=" + plugin.lootRarityManager().get().name().toLowerCase(Locale.ROOT) + ")");
     }
 
     public void fillChest(@NotNull Inventory inventory) {
+        fillChest(inventory, false);
+    }
+
+    public void fillChest(@NotNull Inventory inventory, boolean allowShard) {
         inventory.clear();
         int min = plugin.lootRarityManager().itemsMin();
         int max = Math.max(min, plugin.lootRarityManager().itemsMax());
         int count = ThreadLocalRandom.current().nextInt(min, max + 1);
         List<ItemStack> pool = buildPool();
         if (pool.isEmpty()) {
+            if (allowShard) {
+                plugin.survivalObjective().maybeAddShardToLoot(inventory);
+            }
             return;
         }
         for (int i = 0; i < count; i++) {
             ItemStack pick = pool.get(ThreadLocalRandom.current().nextInt(pool.size())).clone();
             int slot = ThreadLocalRandom.current().nextInt(inventory.getSize());
             inventory.setItem(slot, pick);
+        }
+        if (allowShard) {
+            plugin.survivalObjective().maybeAddShardToLoot(inventory);
         }
     }
 

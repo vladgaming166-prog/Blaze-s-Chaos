@@ -76,13 +76,16 @@ modes:
   victory-altar-usage: "<yellow>Utilizare:</yellow> <white>/bc setvictoryaltar [arena]</white>"
 
 solo-survival:
-  objective: "<light_purple>Solo Survival:</light_purple> <gray>Supraviețuiește, găsește <white>Chaos Shard</white> și folosește-l la Altar.</gray>"
+  objective-survive: "<green>Obiectiv:</green> <white>Supraviețuiește %time%s</white>"
+  objective-shard: "<light_purple>Obiectiv:</light_purple> <white>Obține Chaos Shard</white>"
   shard-spawned: "<gold>Un Chaos Shard a apărut în arenă!</gold>"
-  need-shard: "<red>Ai nevoie de Chaos Shard pentru a câștiga aici.</red>"
-  victory: "<gradient:#FF4500:#FFD700><bold>VICTORIE!</bold></gradient> <gray>Ai terminat Solo Survival.</gray>"
+  need-shard: "<red>Ai nevoie de Chaos Shard.</red>"
+  victory: "<gradient:#FF4500:#FFD700><bold>VICTORIE!</bold></gradient> <gray>Solo Survival complet.</gray>"
 
 game:
   joined: "<green>Te-ai alăturat arenei <yellow>%arena%</yellow></green> <gray>(%mode%)</gray><green>!</green>"
+  preparing: "<yellow>Se pregătește instanța arenei...</yellow>"
+  instance-failed: "<red>Nu s-a putut crea instanța arenei.</red>"
   left: "<yellow>Ai părăsit jocul.</yellow>"
   full: "<red>Jocul este plin.</red>"
   already-in: "<red>Ești deja într-un joc.</red>"

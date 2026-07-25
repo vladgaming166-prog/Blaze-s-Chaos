@@ -268,6 +268,10 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
                 return;
             }
         }
+        if (mode.isSoloSurvival()) {
+            plugin.survivalObjectiveGui().open(player, arena);
+            return;
+        }
         plugin.gameManager().join(player, arena, mode);
     }
 

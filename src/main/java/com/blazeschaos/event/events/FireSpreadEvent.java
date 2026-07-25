@@ -21,8 +21,8 @@ public final class FireSpreadEvent extends ChaosEvent {
     @Override
     public void start(@NotNull GameInstance game) {
         tickCounter = 0;
-        if (game.getArena().getWorld() != null) {
-            game.getArena().getWorld().setGameRule(org.bukkit.GameRule.DO_FIRE_TICK, true);
+        if (game.getInstanceWorld() != null) {
+            game.getInstanceWorld().setGameRule(org.bukkit.GameRule.DO_FIRE_TICK, true);
         }
     }
 

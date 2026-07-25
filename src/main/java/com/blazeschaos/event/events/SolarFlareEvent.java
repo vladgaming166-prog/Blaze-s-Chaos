@@ -14,8 +14,8 @@ public final class SolarFlareEvent extends ChaosEvent {
             player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, getDurationSeconds() * 20, 0, false, false, true));
             player.setFireTicks(60);
         }
-        if (game.getArena().getWorld() != null) {
-            game.getArena().getWorld().setTime(6000);
+        if (game.getInstanceWorld() != null) {
+            game.getInstanceWorld().setTime(6000);
         }
     }
     @Override public void tick(@NotNull GameInstance game, int tick) {

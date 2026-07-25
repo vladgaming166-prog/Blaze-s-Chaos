@@ -4,6 +4,8 @@ import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.arena.Arena;
 import com.blazeschaos.event.ChaosEvent;
 import com.blazeschaos.util.ColorUtil;
+import com.blazeschaos.util.StoredLocation;
+import com.blazeschaos.world.EntityCleanup;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
@@ -38,6 +40,9 @@ public final class GameInstance {
     private final BlazesChaosPlugin plugin;
     private final Arena arena;
     private final GameModeType mode;
+    private final String instanceId;
+    private final String instanceWorldName;
+    private final @Nullable SurvivalObjective survivalObjective;
     private final Set<UUID> players = ConcurrentHashMap.newKeySet();
     private final Set<UUID> alive = ConcurrentHashMap.newKeySet();
     private final Set<UUID> spectators = ConcurrentHashMap.newKeySet();
@@ -55,19 +60,74 @@ public final class GameInstance {
     private int endingTicks;
     private int graceTicksRemaining;
     private boolean chaosShardSpawned;
+    private boolean finished;
     private @Nullable BukkitTask task;
     private @Nullable UUID winner;
 
-    public GameInstance(@NotNull BlazesChaosPlugin plugin, @NotNull Arena arena) {
-        this(plugin, arena, GameModeType.SOLO);
-    }
-
-    public GameInstance(@NotNull BlazesChaosPlugin plugin, @NotNull Arena arena, @NotNull GameModeType mode) {
+    public GameInstance(@NotNull BlazesChaosPlugin plugin, @NotNull Arena arena, @NotNull GameModeType mode,
+                        @NotNull String instanceId, @NotNull String instanceWorldName,
+                        @Nullable SurvivalObjective survivalObjective) {
         this.plugin = plugin;
         this.arena = arena;
         this.mode = mode;
+        this.instanceId = instanceId;
+        this.instanceWorldName = instanceWorldName;
+        this.survivalObjective = survivalObjective;
         this.countdown = arena.getCountdownSeconds();
         resetChaosTimer();
+    }
+
+    public @NotNull String getInstanceId() {
+        return instanceId;
+    }
+
+    public @NotNull String getInstanceWorldName() {
+        return instanceWorldName;
+    }
+
+    public boolean isWorldReady() {
+        return Bukkit.getWorld(instanceWorldName) != null;
+    }
+
+    public @Nullable World getInstanceWorld() {
+        return Bukkit.getWorld(instanceWorldName);
+    }
+
+    public @Nullable SurvivalObjective getSurvivalObjective() {
+        return survivalObjective;
+    }
+
+    public @Nullable Location lobbyLocation() {
+        return resolve(arena.getLobbyStored() != null ? arena.getLobbyStored() : arena.getSpawnStored());
+    }
+
+    public @Nullable Location spawnLocation() {
+        return resolve(arena.getSpawnStored());
+    }
+
+    public @Nullable Location spectatorLocation() {
+        StoredLocation spec = arena.getSpectatorStored();
+        return resolve(spec != null ? spec : arena.getSpawnStored());
+    }
+
+    public @Nullable Location centerLocation() {
+        StoredLocation center = arena.getCenterStored();
+        return resolve(center != null ? center : arena.getSpawnStored());
+    }
+
+    public @Nullable Location victoryAltarLocation() {
+        return resolve(arena.getVictoryAltarStored());
+    }
+
+    private @Nullable Location resolve(@Nullable StoredLocation stored) {
+        if (stored == null) {
+            return null;
+        }
+        World world = getInstanceWorld();
+        if (world == null) {
+            return null;
+        }
+        return stored.withWorld(instanceWorldName).toLocation();
     }
 
     public @NotNull GameModeType getMode() {
@@ -75,25 +135,25 @@ public final class GameInstance {
     }
 
     public int effectiveMinPlayers() {
+        if (mode.isSoloSurvival()) {
+            return 1;
+        }
         String path = "modes.mode-settings." + mode.name() + ".min-players";
         int configured = plugin.getConfig().getInt(path, -1);
         if (configured > 0) {
             return configured;
         }
-        if (mode.isSoloSurvival()) {
-            return 1;
-        }
         return arena.getMinPlayers();
     }
 
     public int effectiveMaxPlayers() {
+        if (mode.isSoloSurvival()) {
+            return 1;
+        }
         String path = "modes.mode-settings." + mode.name() + ".max-players";
         int configured = plugin.getConfig().getInt(path, -1);
         if (configured > 0) {
             return configured;
-        }
-        if (mode.isSoloSurvival()) {
-            return 1;
         }
         if (mode == GameModeType.MEGA) {
             return Math.max(arena.getMaxPlayers(), 48);
@@ -263,7 +323,13 @@ public final class GameInstance {
         }
         player.setGameMode(GameMode.ADVENTURE);
         resetPlayerVitals(player);
-        Location lobby = arena.getLobby() != null ? arena.getLobby() : arena.getSpawn();
+        // Waiting lobby must have ZERO mobs
+        plugin.passiveAnimals().clearForGame(this);
+        World instanceWorld = getInstanceWorld();
+        if (instanceWorld != null) {
+            EntityCleanup.wipeMatchEntities(plugin, instanceWorld);
+        }
+        Location lobby = lobbyLocation();
         if (lobby != null) {
             safeTeleport(player, lobby);
         }
@@ -275,7 +341,12 @@ public final class GameInstance {
                 "mode", mode.display()
         ));
         showBossBar(player, plugin.lang().raw("bossbar.waiting"), BossBar.Color.YELLOW);
-        if (players.size() >= effectiveMinPlayers() && (state == GameState.WAITING || state == GameState.LOBBY)) {
+        // Solo Survival: min 1 / max 1 — start immediately
+        if (mode.isSoloSurvival() && players.size() >= 1
+                && (state == GameState.WAITING || state == GameState.LOBBY || state == GameState.STARTING)) {
+            Bukkit.getScheduler().runTask(plugin, this::startGame);
+        } else if (players.size() >= effectiveMinPlayers()
+                && (state == GameState.WAITING || state == GameState.LOBBY)) {
             beginCountdown();
         } else if (state == GameState.LOBBY) {
             state = GameState.WAITING;
@@ -356,6 +427,26 @@ public final class GameInstance {
             checkWinCondition();
         } else if (state == GameState.STARTING && players.size() < effectiveMinPlayers()) {
             cancelCountdown();
+        }
+        // Empty waiting instance → tear down temporary world
+        if (players.isEmpty() && (state == GameState.WAITING || state == GameState.LOBBY
+                || state == GameState.STARTING)) {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!players.isEmpty() || finished) {
+                    return;
+                }
+                finished = true;
+                if (task != null) {
+                    task.cancel();
+                    task = null;
+                }
+                plugin.passiveAnimals().clearForGame(this);
+                World w = getInstanceWorld();
+                if (w != null) {
+                    EntityCleanup.wipeMatchEntities(plugin, w);
+                }
+                plugin.gameManager().onGameFinished(this);
+            });
         }
     }
 
@@ -452,6 +543,9 @@ public final class GameInstance {
     }
 
     private void startGame() {
+        if (state.isActive() || state == GameState.ENDING || state == GameState.RESETTING || finished) {
+            return;
+        }
         state = GameState.PLAYING;
         gameTicks = 0;
         resetChaosTimer();
@@ -466,13 +560,16 @@ public final class GameInstance {
         graceProtected.clear();
         graceProtected.addAll(players);
         setupBorder();
+        World world = getInstanceWorld();
+        if (world != null) {
+            EntityCleanup.wipeMatchEntities(plugin, world);
+        }
         if (plugin.lootManager().isEnabled()) {
-            plugin.lootManager().fillArenaChests(arena);
+            plugin.lootManager().fillInstanceChests(this);
         }
         chaosShardSpawned = false;
-        // Slow passive animal refill starts only after the match is active
         plugin.passiveAnimals().onMatchStart(this);
-        Location spawn = arena.getSpawn();
+        Location spawn = spawnLocation();
         for (Player player : getPlayers()) {
             player.getInventory().clear();
             player.setGameMode(GameMode.SURVIVAL);
@@ -483,13 +580,23 @@ public final class GameInstance {
             }
             plugin.lang().send(player, "game.started");
             if (mode.isSoloSurvival()) {
-                plugin.lang().send(player, "solo-survival.objective");
+                if (survivalObjective == SurvivalObjective.SURVIVE) {
+                    int seconds = plugin.getConfig().getInt("solo-survival.survive-seconds", 1200);
+                    plugin.lang().send(player, "solo-survival.objective-survive",
+                            Map.of("time", String.valueOf(seconds)));
+                } else {
+                    plugin.lang().send(player, "solo-survival.objective-shard");
+                }
+            }
+            String subtitle = "<gray>Survive the chaos</gray>";
+            if (mode.isSoloSurvival()) {
+                subtitle = survivalObjective == SurvivalObjective.SURVIVE
+                        ? "<green>Survive the timer</green>"
+                        : "<light_purple>Obtain the Chaos Shard</light_purple>";
             }
             player.showTitle(Title.title(
                     ColorUtil.parse("<gradient:#FF4500:#FFD700><bold>CHAOS BEGINS!</bold></gradient>"),
-                    ColorUtil.parse(mode.isSoloSurvival()
-                            ? "<light_purple>Find the Chaos Shard</light_purple>"
-                            : "<gray>Survive the chaos</gray>"),
+                    ColorUtil.parse(subtitle),
                     Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(400))
             ));
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.2f);
@@ -539,8 +646,8 @@ public final class GameInstance {
     }
 
     private void setupBorder() {
-        World world = arena.getWorld();
-        Location center = arena.getCenter();
+        World world = getInstanceWorld();
+        Location center = centerLocation();
         if (world == null || center == null) {
             return;
         }
@@ -553,12 +660,11 @@ public final class GameInstance {
     }
 
     private int effectiveDeathHeight() {
-        Location spawn = arena.getSpawn();
+        Location spawn = spawnLocation();
         int configured = arena.getDeathHeight();
         if (spawn == null) {
             return configured;
         }
-        // Prevent misconfigured death height near spawn from instantly killing everyone
         int maxAllowed = spawn.getBlockY() - 5;
         if (configured >= maxAllowed) {
             return Math.min(configured, spawn.getBlockY() - 20);
@@ -586,15 +692,30 @@ public final class GameInstance {
             beginDeathmatch();
         }
 
-        if (mode.isSoloSurvival() && !chaosShardSpawned) {
+        // Solo Survival — SURVIVE timer win
+        if (mode.isSoloSurvival() && survivalObjective == SurvivalObjective.SURVIVE && !alive.isEmpty()) {
+            int seconds = plugin.getConfig().getInt("solo-survival.survive-seconds", 1200);
+            if (getGameSeconds() >= Math.max(1, seconds)) {
+                Player winnerPlayer = getAlivePlayers().isEmpty() ? null : getAlivePlayers().getFirst();
+                if (winnerPlayer != null) {
+                    completeSurvivalVictory(winnerPlayer);
+                    return;
+                }
+            }
+        }
+
+        // Chaos Shard objective: optional world drop (loot/craft also grant win on obtain)
+        if (mode.isSoloSurvival()
+                && survivalObjective == SurvivalObjective.CHAOS_SHARD
+                && !chaosShardSpawned
+                && plugin.getConfig().getBoolean("solo-survival.shard-world-drop", true)) {
             int shardAfter = plugin.getConfig().getInt("solo-survival.shard-spawn-after-seconds", 180);
-            if (getGameSeconds() >= Math.max(30, shardAfter)) {
+            if (getGameSeconds() >= Math.max(10, shardAfter)) {
                 chaosShardSpawned = true;
                 plugin.survivalObjective().spawnShardInWorld(this);
             }
         }
 
-        // Survival coin tick every minute
         if (gameTicks > 0 && gameTicks % (20 * 60) == 0) {
             int reward = plugin.coinsManager().survivalPerMinute();
             for (Player player : getAlivePlayers()) {
@@ -703,7 +824,7 @@ public final class GameInstance {
 
     private void beginDeathmatch() {
         state = GameState.DEATHMATCH;
-        World world = arena.getWorld();
+        World world = getInstanceWorld();
         if (world != null) {
             double target = plugin.configs().config().getDouble("settings.deathmatch-border-size", 50);
             long seconds = (long) Math.max(10, (world.getWorldBorder().getSize() - target)
@@ -750,7 +871,7 @@ public final class GameInstance {
         player.setGameMode(GameMode.SPECTATOR);
         player.setHealth(player.getAttribute(Attribute.MAX_HEALTH) != null
                 ? player.getAttribute(Attribute.MAX_HEALTH).getValue() : 20.0);
-        Location spec = arena.getSpectator() != null ? arena.getSpectator() : arena.getSpawn();
+        Location spec = spectatorLocation();
         if (spec != null) {
             player.teleport(spec);
         }
@@ -810,12 +931,16 @@ public final class GameInstance {
     }
 
     private void endGame(@Nullable UUID winnerId) {
-        if (state == GameState.ENDING || state == GameState.RESETTING) {
+        if (state == GameState.ENDING || state == GameState.RESETTING || finished) {
             return;
         }
         endAllChaosEvents();
         clearTrackedEntities();
-        plugin.passiveAnimals().clearAnimals(arena);
+        plugin.passiveAnimals().clearForGame(this);
+        World world = getInstanceWorld();
+        if (world != null) {
+            EntityCleanup.wipeMatchEntities(plugin, world);
+        }
         state = GameState.ENDING;
         winner = winnerId;
         endingTicks = plugin.configs().config().getInt("settings.ending-seconds", 10) * 20;
@@ -867,32 +992,27 @@ public final class GameInstance {
         inventoryBackup.clear();
         graceProtected.clear();
         joinTicks.clear();
-        World world = arena.getWorld();
+        World world = getInstanceWorld();
         if (world != null) {
             world.getWorldBorder().reset();
         }
-        // Always clear passive animals before / during reset
-        plugin.passiveAnimals().clearAnimals(arena);
+        plugin.passiveAnimals().clearForGame(this);
+        World instanceWorld = getInstanceWorld();
+        if (instanceWorld != null) {
+            EntityCleanup.wipeMatchEntities(plugin, instanceWorld);
+        }
         Runnable finish = () -> {
-            plugin.passiveAnimals().clearAnimals(arena);
-            state = GameState.WAITING;
-            gameTicks = 0;
-            graceTicksRemaining = 0;
-            chaosShardSpawned = false;
-            resetChaosTimer();
+            finished = true;
+            plugin.passiveAnimals().clearForGame(this);
             if (task != null) {
                 task.cancel();
                 task = null;
             }
-            plugin.gameManager().onGameReset(this);
+            // Destroy temporary instance world (unload + delete)
+            plugin.gameManager().onGameFinished(this);
         };
         int delay = plugin.configs().worldReset().getInt("reset-delay-ticks", 40);
-        if (arena.isAutoReset()) {
-            Bukkit.getScheduler().runTaskLater(plugin, () ->
-                    plugin.worldResetManager().resetArenaWorld(arena, finish), delay);
-        } else {
-            Bukkit.getScheduler().runTaskLater(plugin, finish, delay);
-        }
+        Bukkit.getScheduler().runTaskLater(plugin, finish, delay);
     }
 
     private void restoreInventory(@NotNull Player player) {
@@ -968,6 +1088,11 @@ public final class GameInstance {
         }
         endAllChaosEvents();
         clearTrackedEntities();
+        plugin.passiveAnimals().clearForGame(this);
+        World world = getInstanceWorld();
+        if (world != null) {
+            EntityCleanup.wipeMatchEntities(plugin, world);
+        }
         for (Player player : getPlayers()) {
             hideBossBar(player);
             fullyRemovePlayer(player, false);

@@ -111,19 +111,16 @@ lobby-protection:
 # ==================================================
 # CHAOS / ARENA WORLDS
 # ==================================================
-# Passive animals ONLY spawn during active matches (never lobby / waiting / starting).
+# Passive animals ONLY while PLAYING / mid-match. ZERO in lobby/waiting/starting/ending/reset.
 chaos-world:
   force-animal-spawn-flags: true
   passive-animals:
     enabled: true
-    # How often to slowly refill animals (ticks). Keep this high to avoid waves.
-    check-interval-ticks: 200
-    # Hard cap — stop spawning when reached
-    max-passive-mobs: 12
-    # Legacy alias (used only if max-passive-mobs is missing)
-    target-count: 12
-    # Max animals created per check (keep at 1 for slow natural refill)
-    max-spawn-per-check: 1
+    # Exact count spawned when the match starts (PLAYING)
+    initial-count: 10
+    max-passive-mobs: 10
+    # Delay before replacing ONE killed animal (ticks)
+    replace-delay-ticks: 100
     types:
       - COW
       - PIG
@@ -159,22 +156,36 @@ modes:
 # ==================================================
 # SOLO SURVIVAL
 # ==================================================
-# One player vs chaos. Win by finding the Chaos Shard and using it at the Victory Altar.
+# One player. Instant start. Pick objective in GUI: Survive OR Chaos Shard.
 solo-survival:
   enabled: true
-  shard-spawn-after-seconds: 180
+  # Objective 1 — Survive
+  survive-seconds: 1200
+  # Objective 2 — Chaos Shard (win instantly on obtain)
+  shard-world-drop: true
+  shard-spawn-after-seconds: 120
   shard-item:
     material: AMETHYST_SHARD
     name: "<light_purple><bold>Chaos Shard</bold></light_purple>"
     lore:
-      - "<gray>Survive the chaos.</gray>"
-      - "<yellow>Use at the Victory Altar to win.</yellow>"
+      - "<gray>The heart of chaos.</gray>"
+      - "<yellow>Obtain this to win Solo Survival.</yellow>"
     custom-model-data: 0
-    # Optional ItemsAdder namespaced id (e.g. namespace:chaos_shard)
     itemsadder-id: ""
+  loot:
+    enabled: true
+    chest-chance: 0.18
+  crafting:
+    enabled: true
+    shape:
+      - "GGG"
+      - "GAG"
+      - "GGG"
+    ingredients:
+      G: GOLD_INGOT
+      A: AMETHYST_SHARD
   victory-altar:
     material: LODESTONE
-    # If false and an arena victory-altar location is set, only that block works
     accept-material-anywhere: false
 
 lobby-items:

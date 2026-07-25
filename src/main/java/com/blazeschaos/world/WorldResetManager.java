@@ -8,6 +8,7 @@ import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -21,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 
 public final class WorldResetManager {
@@ -31,6 +33,101 @@ public final class WorldResetManager {
     public WorldResetManager(@NotNull BlazesChaosPlugin plugin) {
         this.plugin = plugin;
         reloadSkip();
+    }
+
+    public @NotNull Path templatePath(@NotNull Arena arena) {
+        Path templates = plugin.getDataFolder().toPath()
+                .resolve(plugin.configs().worldReset().getString("template-folder", "templates"));
+        return templates.resolve(arena.getName());
+    }
+
+    /**
+     * Creates a unique temporary world copy for one match instance.
+     * Callback runs on the main thread with the loaded world (or null on failure).
+     */
+    public void createMatchWorld(@NotNull Arena arena, @NotNull String instanceWorldName,
+                                 @NotNull Consumer<@Nullable World> callback) {
+        ensureTemplate(arena);
+        Path templatePath = templatePath(arena);
+        if (!Files.isDirectory(templatePath)) {
+            // Fallback: use live arena world as template source once
+            String sourceName = arena.getWorldName();
+            if (sourceName != null) {
+                Path source = Bukkit.getWorldContainer().toPath().resolve(sourceName);
+                if (Files.isDirectory(source)) {
+                    try {
+                        Files.createDirectories(templatePath.getParent());
+                        copyDirectory(source, templatePath);
+                    } catch (IOException ex) {
+                        plugin.getLogger().log(Level.SEVERE, "Failed to seed template for " + arena.getName(), ex);
+                        Bukkit.getScheduler().runTask(plugin, () -> callback.accept(null));
+                        return;
+                    }
+                }
+            }
+        }
+        if (!Files.isDirectory(templatePath)) {
+            plugin.getLogger().warning("No template for arena " + arena.getName()
+                    + " — cannot create match instance.");
+            Bukkit.getScheduler().runTask(plugin, () -> callback.accept(null));
+            return;
+        }
+
+        Path target = Bukkit.getWorldContainer().toPath().resolve(instanceWorldName);
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                deleteDirectory(target);
+                copyDirectory(templatePath, target);
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    // Avoid uid collision
+                    try {
+                        Files.deleteIfExists(target.resolve("uid.dat"));
+                        Files.deleteIfExists(target.resolve("session.lock"));
+                    } catch (IOException ignored) {
+                    }
+                    WorldCreator creator = new WorldCreator(instanceWorldName);
+                    World loaded = Bukkit.createWorld(creator);
+                    if (loaded != null) {
+                        loaded.setKeepSpawnInMemory(false);
+                        EntityCleanup.wipeMatchEntities(plugin, loaded);
+                    }
+                    callback.accept(loaded);
+                });
+            } catch (IOException exception) {
+                plugin.getLogger().log(Level.SEVERE, "Failed to create match world " + instanceWorldName, exception);
+                Bukkit.getScheduler().runTask(plugin, () -> callback.accept(null));
+            }
+        });
+    }
+
+    /**
+     * Unloads and deletes a temporary match world. Safe if already gone.
+     */
+    public void destroyMatchWorld(@NotNull String instanceWorldName, @NotNull Runnable onComplete) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            World world = Bukkit.getWorld(instanceWorldName);
+            Location fallback = plugin.lobbyManager().getLobbyLocation();
+            if (fallback == null && !Bukkit.getWorlds().isEmpty()) {
+                fallback = Bukkit.getWorlds().getFirst().getSpawnLocation();
+            }
+            if (world != null) {
+                EntityCleanup.wipeMatchEntities(plugin, world);
+                for (Player player : new ArrayList<>(world.getPlayers())) {
+                    if (fallback != null) {
+                        player.teleport(fallback);
+                    }
+                }
+                Bukkit.unloadWorld(world, false);
+            }
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                try {
+                    deleteDirectory(Bukkit.getWorldContainer().toPath().resolve(instanceWorldName));
+                } catch (IOException exception) {
+                    plugin.getLogger().log(Level.WARNING, "Failed to delete match world " + instanceWorldName, exception);
+                }
+                Bukkit.getScheduler().runTask(plugin, onComplete);
+            });
+        });
     }
 
     public void reloadSkip() {

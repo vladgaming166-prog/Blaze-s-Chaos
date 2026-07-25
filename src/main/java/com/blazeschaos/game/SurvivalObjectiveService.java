@@ -1,10 +1,10 @@
 package com.blazeschaos.game;
 
 import com.blazeschaos.BlazesChaosPlugin;
-import com.blazeschaos.arena.Arena;
 import com.blazeschaos.util.ColorUtil;
 import com.blazeschaos.util.ItemsAdderHook;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -12,7 +12,15 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
@@ -24,16 +32,65 @@ import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Solo Survival objective: Chaos Shard + Victory Altar / Victory Block.
+ * Solo Survival Chaos Shard: loot, craft, world drop, obtain = instant win.
  */
-public final class SurvivalObjectiveService {
+public final class SurvivalObjectiveService implements Listener {
 
     private final BlazesChaosPlugin plugin;
     private final NamespacedKey shardKey;
+    private final NamespacedKey recipeKey;
+    private boolean recipeRegistered;
 
     public SurvivalObjectiveService(@NotNull BlazesChaosPlugin plugin) {
         this.plugin = plugin;
         this.shardKey = new NamespacedKey(plugin, "chaos_shard");
+        this.recipeKey = new NamespacedKey(plugin, "chaos_shard_recipe");
+    }
+
+    public void register() {
+        Bukkit.getPluginManager().registerEvents(this, plugin);
+        registerRecipe();
+    }
+
+    public void registerRecipe() {
+        if (!plugin.getConfig().getBoolean("solo-survival.crafting.enabled", true)) {
+            return;
+        }
+        if (recipeRegistered) {
+            try {
+                Bukkit.removeRecipe(recipeKey);
+            } catch (Throwable ignored) {
+            }
+        }
+        ItemStack result = createChaosShard();
+        ShapedRecipe recipe = new ShapedRecipe(recipeKey, result);
+        List<String> shape = plugin.getConfig().getStringList("solo-survival.crafting.shape");
+        if (shape.isEmpty()) {
+            shape = List.of("GGG", "GAG", "GGG");
+        }
+        recipe.shape(shape.toArray(new String[0]));
+        var ingredients = plugin.getConfig().getConfigurationSection("solo-survival.crafting.ingredients");
+        if (ingredients == null) {
+            recipe.setIngredient('G', Material.GOLD_INGOT);
+            recipe.setIngredient('A', Material.AMETHYST_SHARD);
+        } else {
+            for (String key : ingredients.getKeys(false)) {
+                if (key.isEmpty()) {
+                    continue;
+                }
+                char c = key.charAt(0);
+                Material mat = Material.matchMaterial(ingredients.getString(key, "AIR"));
+                if (mat != null && mat != Material.AIR) {
+                    recipe.setIngredient(c, mat);
+                }
+            }
+        }
+        try {
+            Bukkit.addRecipe(recipe);
+            recipeRegistered = true;
+        } catch (Exception ex) {
+            plugin.getLogger().warning("Could not register Chaos Shard recipe: " + ex.getMessage());
+        }
     }
 
     public @NotNull NamespacedKey shardKey() {
@@ -62,8 +119,8 @@ public final class SurvivalObjectiveService {
             List<String> loreCfg = plugin.getConfig().getStringList("solo-survival.shard-item.lore");
             if (loreCfg.isEmpty()) {
                 loreCfg = List.of(
-                        "<gray>Survive the chaos.</gray>",
-                        "<yellow>Use at the Victory Altar to win.</yellow>"
+                        "<gray>The heart of chaos.</gray>",
+                        "<yellow>Obtain this to win Solo Survival.</yellow>"
                 );
             }
             List<Component> lore = new ArrayList<>();
@@ -81,14 +138,26 @@ public final class SurvivalObjectiveService {
         return stack;
     }
 
+    /** Chance 0.0–1.0 to insert a Chaos Shard into a filled chest. */
+    public void maybeAddShardToLoot(@NotNull org.bukkit.inventory.Inventory inventory) {
+        if (!plugin.getConfig().getBoolean("solo-survival.loot.enabled", true)) {
+            return;
+        }
+        double chance = plugin.getConfig().getDouble("solo-survival.loot.chest-chance", 0.15);
+        if (ThreadLocalRandom.current().nextDouble() > Math.max(0.0, Math.min(1.0, chance))) {
+            return;
+        }
+        int slot = ThreadLocalRandom.current().nextInt(inventory.getSize());
+        inventory.setItem(slot, createChaosShard());
+    }
+
     public void spawnShardInWorld(@NotNull GameInstance game) {
-        Arena arena = game.getArena();
-        World world = arena.getWorld();
-        Location center = arena.getCenter() != null ? arena.getCenter() : arena.getSpawn();
+        World world = game.getInstanceWorld();
+        Location center = game.centerLocation();
         if (world == null || center == null) {
             return;
         }
-        int radius = Math.max(8, (int) (arena.getBorderSize() / 3.0));
+        int radius = Math.max(8, (int) (game.getArena().getBorderSize() / 3.0));
         ThreadLocalRandom random = ThreadLocalRandom.current();
         Location spot = null;
         for (int attempt = 0; attempt < 24; attempt++) {
@@ -113,8 +182,8 @@ public final class SurvivalObjectiveService {
         }
     }
 
-    public boolean isVictoryBlock(@NotNull Block block, @NotNull Arena arena) {
-        Location altar = arena.getVictoryAltar();
+    public boolean isVictoryBlock(@NotNull Block block, @NotNull GameInstance game) {
+        Location altar = game.victoryAltarLocation();
         if (altar != null && altar.getWorld() != null
                 && altar.getWorld().equals(block.getWorld())
                 && altar.getBlockX() == block.getX()
@@ -124,7 +193,6 @@ public final class SurvivalObjectiveService {
         }
         if (!plugin.getConfig().getBoolean("solo-survival.victory-altar.accept-material-anywhere", false)
                 && altar != null) {
-            // Prefer configured location when set
             return false;
         }
         String matName = plugin.getConfig().getString("solo-survival.victory-altar.material", "LODESTONE");
@@ -132,14 +200,85 @@ public final class SurvivalObjectiveService {
         return mat != null && block.getType() == mat;
     }
 
+    /** Instant win the moment the player obtains a Chaos Shard (CHAOS_SHARD objective). */
+    public void onShardObtained(@NotNull Player player, @NotNull GameInstance game) {
+        if (!game.getMode().isSoloSurvival()) {
+            return;
+        }
+        if (game.getSurvivalObjective() != SurvivalObjective.CHAOS_SHARD) {
+            return;
+        }
+        if (!game.getState().isActive() || !game.isAlive(player.getUniqueId())) {
+            return;
+        }
+        game.completeSurvivalVictory(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPickup(@NotNull EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (!isChaosShard(event.getItem().getItemStack())) {
+            return;
+        }
+        GameInstance game = plugin.gameManager().getByPlayer(player);
+        if (game != null) {
+            Bukkit.getScheduler().runTask(plugin, () -> onShardObtained(player, game));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onCraft(@NotNull CraftItemEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+        if (!isChaosShard(event.getCurrentItem()) && !isChaosShard(event.getRecipe().getResult())) {
+            return;
+        }
+        GameInstance game = plugin.gameManager().getByPlayer(player);
+        if (game != null) {
+            Bukkit.getScheduler().runTask(plugin, () -> onShardObtained(player, game));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onInvClick(@NotNull InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+        ItemStack current = event.getCurrentItem();
+        if (!isChaosShard(current)) {
+            return;
+        }
+        GameInstance game = plugin.gameManager().getByPlayer(player);
+        if (game != null) {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (hasShard(player)) {
+                    onShardObtained(player, game);
+                }
+            });
+        }
+    }
+
+    private boolean hasShard(@NotNull Player player) {
+        for (ItemStack stack : player.getInventory().getContents()) {
+            if (isChaosShard(stack)) {
+                return true;
+            }
+        }
+        return isChaosShard(player.getInventory().getItemInOffHand());
+    }
+
     public boolean tryComplete(@NotNull Player player, @NotNull GameInstance game, @NotNull Block block) {
+        // Legacy altar path still works, but obtain-on-pickup is primary for CHAOS_SHARD
         if (!game.getMode().isSoloSurvival() || !game.getState().isActive()) {
             return false;
         }
         if (!game.isAlive(player.getUniqueId())) {
             return false;
         }
-        if (!isVictoryBlock(block, game.getArena())) {
+        if (!isVictoryBlock(block, game)) {
             return false;
         }
         ItemStack hand = player.getInventory().getItemInMainHand();
@@ -148,9 +287,8 @@ public final class SurvivalObjectiveService {
         }
         if (!isChaosShard(hand)) {
             plugin.lang().send(player, "solo-survival.need-shard");
-            return true; // consumed click feedback
+            return true;
         }
-        // Consume one shard
         hand.setAmount(hand.getAmount() - 1);
         game.completeSurvivalVictory(player);
         return true;

@@ -19,6 +19,7 @@ import com.blazeschaos.loot.LootRarityManager;
 import com.blazeschaos.npc.NpcListener;
 import com.blazeschaos.npc.NpcManager;
 import com.blazeschaos.npc.gui.NpcGui;
+import com.blazeschaos.npc.gui.SurvivalObjectiveGui;
 import com.blazeschaos.placeholder.BlazeChaosAnimationExpansion;
 import com.blazeschaos.placeholder.BlazeChaosExpansion;
 import com.blazeschaos.scoreboard.AnimationManager;
@@ -62,6 +63,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private BlazeChaosAnimationExpansion animationExpansion;
     private NpcManager npcManager;
     private NpcGui npcGui;
+    private SurvivalObjectiveGui survivalObjectiveGui;
     private com.blazeschaos.npc.NpcCommandHandler npcCommands;
 
     @Override
@@ -95,6 +97,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         this.setupModeManager = new SetupModeManager(this);
         this.spawnConfirmListener = new SpawnConfirmListener(this);
         this.npcGui = new NpcGui(this);
+        this.survivalObjectiveGui = new SurvivalObjectiveGui(this);
         this.npcManager = new NpcManager(this);
         this.npcCommands = new com.blazeschaos.npc.NpcCommandHandler(this);
 
@@ -114,6 +117,8 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(spawnConfirmListener, this);
         Bukkit.getPluginManager().registerEvents(new NpcListener(this), this);
         Bukkit.getPluginManager().registerEvents(npcGui, this);
+        Bukkit.getPluginManager().registerEvents(survivalObjectiveGui, this);
+        survivalObjectiveService.register();
 
         animationManager.start();
         scoreboardManager.start();
@@ -168,6 +173,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         scoreboardManager.start();
         tablistManager.start();
         passiveAnimalManager.start();
+        survivalObjectiveService.registerRecipe();
         hookPlaceholderAPI();
     }
 
@@ -294,6 +300,10 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
     public @NotNull NpcGui npcGui() {
         return npcGui;
+    }
+
+    public @NotNull SurvivalObjectiveGui survivalObjectiveGui() {
+        return survivalObjectiveGui;
     }
 
     public @NotNull com.blazeschaos.npc.NpcCommandHandler npcCommands() {

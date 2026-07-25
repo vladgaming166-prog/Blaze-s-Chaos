@@ -21,9 +21,9 @@ public final class WaterTornadoEvent extends ChaosEvent {
     @Override
     public void start(@NotNull GameInstance game) {
         tickCounter = 0;
-        center = game.getArena().getCenter();
+        center = game.centerLocation();
         if (center == null) {
-            center = game.getArena().getSpawn();
+            center = game.spawnLocation();
         }
         if (center != null && center.getWorld() != null) {
             center.getWorld().playSound(center, Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 1.2f, 0.6f);

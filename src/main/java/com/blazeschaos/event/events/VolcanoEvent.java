@@ -16,8 +16,8 @@ public final class VolcanoEvent extends ChaosEvent {
     public VolcanoEvent() { super("volcano", "Volcano"); }
     @Override public void start(@NotNull GameInstance game) {
         tickCounter = 0;
-        center = game.getArena().getCenter();
-        if (center == null) center = game.getArena().getSpawn();
+        center = game.centerLocation();
+        if (center == null) center = game.spawnLocation();
     }
     @Override public void tick(@NotNull GameInstance game, int tick) {
         if (center == null || center.getWorld() == null) return;
