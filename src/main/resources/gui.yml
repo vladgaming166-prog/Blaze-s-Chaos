@@ -1,0 +1,92 @@
+setup:
+  title: "<gradient:#FF4500:#FFD700><bold>Arena Setup</bold></gradient>"
+  size: 54
+  border-material: ORANGE_STAINED_GLASS_PANE
+  border-name: " "
+  animation:
+    enabled: true
+    materials:
+      - ORANGE_STAINED_GLASS_PANE
+      - YELLOW_STAINED_GLASS_PANE
+      - RED_STAINED_GLASS_PANE
+    interval-ticks: 10
+
+  items:
+    lobby:
+      slot: 10
+      material: CLOCK
+      name: "<yellow>Set Lobby</yellow>"
+      lore:
+        - "<gray>Click to set lobby at your location</gray>"
+    spawn:
+      slot: 12
+      material: EMERALD
+      name: "<green>Set Spawn</green>"
+      lore:
+        - "<gray>Click to set player spawn</gray>"
+    spectator:
+      slot: 14
+      material: ENDER_EYE
+      name: "<aqua>Set Spectator</aqua>"
+      lore:
+        - "<gray>Click to set spectator spawn</gray>"
+    world:
+      slot: 16
+      material: GRASS_BLOCK
+      name: "<green>Bind World</green>"
+      lore:
+        - "<gray>Bind current world to this arena</gray>"
+        - "<gray>Current: <white>%world%</white>"
+    min-players:
+      slot: 28
+      material: IRON_NUGGET
+      name: "<yellow>Min Players: <white>%min%</white></yellow>"
+      lore:
+        - "<gray>Left-click +1 | Right-click -1</gray>"
+    max-players:
+      slot: 30
+      material: GOLD_NUGGET
+      name: "<gold>Max Players: <white>%max%</white></gold>"
+      lore:
+        - "<gray>Left-click +1 | Right-click -1</gray>"
+    border:
+      slot: 32
+      material: BARRIER
+      name: "<red>Border Size: <white>%border%</white></red>"
+      lore:
+        - "<gray>Left-click +10 | Right-click -10</gray>"
+    border-speed:
+      slot: 34
+      material: FEATHER
+      name: "<white>Border Speed: <aqua>%speed%</aqua></white>"
+      lore:
+        - "<gray>Left-click +0.5 | Right-click -0.5</gray>"
+    border-damage:
+      slot: 37
+      material: REDSTONE
+      name: "<red>Border Damage: <white>%damage%</white></red>"
+      lore:
+        - "<gray>Left-click +0.5 | Right-click -0.5</gray>"
+    death-height:
+      slot: 39
+      material: BEDROCK
+      name: "<dark_gray>Death Height: <white>%deathheight%</white></dark_gray>"
+      lore:
+        - "<gray>Left-click +5 | Right-click -5</gray>"
+    save:
+      slot: 48
+      material: WRITABLE_BOOK
+      name: "<green>Save</green>"
+      lore:
+        - "<gray>Save arena configuration</gray>"
+    finish:
+      slot: 50
+      material: NETHER_STAR
+      name: "<gradient:#FF4500:#FFD700><bold>Finish Setup</bold></gradient>"
+      lore:
+        - "<gray>Mark arena as ready</gray>"
+
+join-menu:
+  title: "<gradient:#FF4500:#FFD700><bold>Select Arena</bold></gradient>"
+  size: 27
+  border-material: GRAY_STAINED_GLASS_PANE

@@ -1,0 +1,312 @@
+prefix: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> "
+
+general:
+  no-permission: "<red>You don't have permission to do that.</red>"
+  player-only: "<red>Only players can use this command.</red>"
+  reload-success: "<green>Configuration reloaded successfully.</green>"
+  unknown-command: "<red>Unknown subcommand. Use <yellow>/bc help</yellow>.</red>"
+  version: "<yellow>Blaze's Chaos</yellow> <gray>v%version%</gray>"
+  cancelled: "<yellow>Cancelled.</yellow>"
+  invalid-number: "<red>Please enter a valid number.</red>"
+  invalid-input: "<red>Invalid input.</red>"
+
+lobby:
+  teleported: "<green>Teleported to the lobby.</green>"
+  set: "<green>Global lobby location set.</green>"
+  not-set: "<red>Lobby location is not set.</red>"
+  spawn-prompt: "<gold>Make this location the server spawn?</gold>"
+  spawn-prompt-hint: "<gray>Type</gray> <green>true</green> <gray>or</gray> <red>false</red> <gray>in chat.</gray>"
+  spawn-prompt-timeout: "<yellow>Server spawn prompt timed out. Lobby was still saved.</yellow>"
+  spawn-enabled: "<green>Server spawn enabled.</green> <gray>Players will spawn here on join and respawn.</gray>"
+  spawn-disabled: "<yellow>Server spawn left unchanged.</yellow> <gray>Lobby location is still set.</gray>"
+
+arena:
+  created: "<green>Arena <yellow>%arena%</yellow> created. You are now in Setup Mode.</green>"
+  deleted: "<green>Arena <yellow>%arena%</yellow> deleted.</green>"
+  not-found: "<red>Arena not found.</red>"
+  already-exists: "<red>An arena with that name already exists.</red>"
+  not-setup: "<red>This arena is not fully set up yet. Missing: <yellow>%missing%</yellow></red>"
+  saved: "<green>Arena <yellow>%arena%</yellow> saved and ready!</green>"
+  saved-incomplete: "<yellow>Arena saved, but still missing: <red>%missing%</red></yellow>"
+  setup-finished: "<green>Arena <yellow>%arena%</yellow> is ready to play!</green>"
+  in-use: "<red>That arena is currently in use.</red>"
+  list-header: "<gold>Arenas:</gold>"
+  list-entry: "<gray>- <yellow>%arena%</yellow> <dark_gray>(%state%)</dark_gray> <aqua>%players%/%max%</aqua>"
+  selected: "<green>Selected arena: <yellow>%arena%</yellow></green>"
+  none-available: "<red>No arenas available. Create one with the Nether Star.</red>"
+  cycle: "<aqua>Arena: <yellow>%arena%</yellow> <gray>(%index%/%total%)</gray></aqua>"
+  info-header: "<gold>Arena Info: <yellow>%arena%</yellow></gold>"
+  info-line: "<gray>%key%: <white>%value%</white></gray>"
+  setting-updated: "<green>%setting%</green> <gray>set to</gray> <yellow>%value%</yellow>"
+  prompt-name: "<yellow>Type the arena name in chat</yellow> <gray>(or type <white>cancel</white>)</gray>"
+  prompt-display-name: "<yellow>Type the display name in chat</yellow> <gray>(or <white>cancel</white>)</gray>"
+  prompt-min-players: "<yellow>Type minimum players in chat</yellow>"
+  prompt-max-players: "<yellow>Type maximum players in chat</yellow>"
+  prompt-countdown: "<yellow>Type countdown seconds in chat</yellow>"
+  prompt-deathmatch: "<yellow>Type deathmatch time (seconds) in chat</yellow>"
+  prompt-border-size: "<yellow>Type border size in chat</yellow>"
+  prompt-border-speed: "<yellow>Type border speed in chat</yellow>"
+  prompt-border-damage: "<yellow>Type border damage in chat</yellow>"
+  prompt-respawn-delay: "<yellow>Type respawn delay (ticks) in chat</yellow>"
+  prompt-settings: "<aqua>Click Paper again to cycle settings, or type a value in chat.</aqua>"
+  lobby-set: "<green>Lobby spawn set.</green>"
+  spawn-set: "<green>Game spawn set.</green>"
+  spectator-set: "<green>Spectator spawn set.</green>"
+  center-set: "<green>Arena center set.</green>"
+  death-height-set: "<green>Death height set to <yellow>%value%</yellow>.</green>"
+  world-bound: "<green>World bound to <yellow>%world%</yellow>.</green>"
+  auto-reset-on: "<green>Auto reset enabled.</green>"
+  auto-reset-off: "<yellow>Auto reset disabled.</yellow>"
+  loot-hint: "<gray>Loot chests: place chests in the arena world. Contents are preserved by world reset templates.</gray>"
+  border-configured: "<green>Border size <yellow>%size%</yellow>, speed <yellow>%speed%</yellow>, damage <yellow>%damage%</yellow></green>"
+
+setup:
+  entered: "<green>Entered Setup Mode</green> <gray>for</gray> <yellow>%arena%</yellow>"
+  entered-select: "<green>Entered Setup Mode.</green> <gray>Use the Compass to select an arena or Nether Star to create one.</gray>"
+  exited: "<yellow>Exited Setup Mode.</yellow>"
+  no-arena: "<red>Select or create an arena first.</red>"
+  items-given: "<gray>Setup items placed in your hotbar.</gray>"
+  cancel: "<yellow>Setup cancelled.</yellow>"
+
+modes:
+  enabled-global: "<green>Multi-mode enabled for all arenas.</green> <gray>One map can host Solo / Teams / Mega / Solo Survival.</gray>"
+  enabled-arena: "<green>Multi-mode enabled for <yellow>%arena%</yellow>.</green>"
+  not-available: "<red>Mode <yellow>%mode%</yellow> is not available on this map.</red>"
+  victory-altar-set: "<green>Victory Altar set for <yellow>%arena%</yellow>.</green>"
+  victory-altar-usage: "<yellow>Usage:</yellow> <white>/bc setvictoryaltar [arena]</white> <gray>(look at a block)</gray>"
+
+solo-survival:
+  objective-survive: "<green>Objective:</green> <white>Survive %time%s</white>"
+  objective-shard: "<light_purple>Objective:</light_purple> <white>Obtain the Chaos Shard</white> <gray>(loot or craft)</gray>"
+  shard-spawned: "<gold>A Chaos Shard has appeared in the arena!</gold>"
+  shard-mined: "<light_purple>A Chaos Shard dropped from the ore!</light_purple>"
+  need-shard: "<red>You need the Chaos Shard.</red>"
+  victory: "<gradient:#FF4500:#FFD700><bold>VICTORY!</bold></gradient> <gray>Solo Survival complete.</gray>"
+  win-time-usage: "<yellow>Usage:</yellow> <white>/bc solosurvivalwintime <seconds></white> <gray>(current: %time%s)</gray>"
+  win-time-set: "<green>Solo Survival win time set to <yellow>%time%s</yellow>.</green> <gray>New matches use this value.</gray>"
+
+troll:
+  must-be-in-match: "<red>You must be inside an active Blaze's Chaos match.</red>"
+  usage: "<yellow>Usage:</yellow> <white>/bc troll <event> <duration></white> <gray>or</gray> <white>/bc troll stop</white>"
+  started: "<green>Troll event <yellow>%event%</yellow> forced for <aqua>%time%s</aqua>.</green>"
+  stopped: "<yellow>All troll events cancelled.</yellow> <gray>Normal chaos scheduler resumed.</gray>"
+  unknown-event: "<red>Unknown troll event:</red> <yellow>%event%</yellow>"
+
+game:
+  joined: "<green>You joined <yellow>%arena%</yellow></green> <gray>(%mode%)</gray><green>!</green>"
+  preparing: "<yellow>Preparing your private arena instance...</yellow>"
+  instance-failed: "<red>Failed to create arena instance. Check console / templates.</red>"
+  left: "<yellow>You left the game.</yellow>"
+  full: "<red>This game is full.</red>"
+  already-in: "<red>You are already in a game.</red>"
+  not-in: "<red>You are not in a game.</red>"
+  starting: "<gold>Game starting in <yellow>%time%</yellow> seconds!</gold>"
+  started: "<gradient:#FF4500:#FFD700><bold>CHAOS BEGINS!</bold></gradient>"
+  eliminated: "<red>%player%</red> <gray>was eliminated! <yellow>%alive%</yellow> remain.</gray>"
+  winner: "<gold><bold>%player%</bold></gold> <yellow>wins Blaze's Chaos!</yellow>"
+  no-winner: "<yellow>No winner — the chaos consumed everyone.</yellow>"
+  force-started: "<green>Game force-started.</green>"
+  stopped: "<red>Game stopped by an admin.</red>"
+  deathmatch: "<dark_red><bold>DEATHMATCH!</bold></dark_red> <red>The border is collapsing!</red>"
+  death-lobby-soon: "<gray>Returning to lobby in <yellow>%time%</yellow>s...</gray>"
+  sent-to-lobby: "<green>You were sent to the lobby.</green>"
+  countdown-cancelled: "<yellow>Countdown cancelled — not enough players.</yellow>"
+  no-arenas: "<red>No playable arenas found. Ask an admin to finish setup.</red>"
+
+event:
+  starting: "<gradient:#FF4500:#FFD700><bold>CHAOS EVENT:</bold></gradient> <yellow>%event%</yellow>"
+  ending: "<gray>Chaos event <yellow>%event%</yellow> has ended.</gray>"
+  next: "<aqua>Next event in <yellow>%time%</yellow>s</aqua>"
+  forced: "<green>Forced next chaos event.</green>"
+
+admin:
+  debug-on: "<green>Debug mode enabled.</green>"
+  debug-off: "<yellow>Debug mode disabled.</yellow>"
+  info: "<gold>Arena:</gold> <yellow>%arena%</yellow> <gray>|</gray> <gold>State:</gold> <yellow>%state%</yellow> <gray>|</gray> <gold>Players:</gold> <yellow>%players%</yellow> <gray>|</gray> <gold>Event:</gold> <yellow>%event%</yellow>"
+
+world:
+  resetting: "<yellow>Resetting arena world...</yellow>"
+  reset-complete: "<green>Arena world restored.</green>"
+  reset-failed: "<red>World reset failed. Check console.</red>"
+
+setup-items:
+  select-arena:
+    name: "<aqua>Select Arena</aqua>"
+    lore:
+      - "<gray>Right-click to cycle arenas</gray>"
+  create-arena:
+    name: "<gradient:#FF4500:#FFD700>Create New Arena</gradient>"
+    lore:
+      - "<gray>Right-click, then type a name in chat</gray>"
+  save-arena:
+    name: "<green>Save Arena</green>"
+    lore:
+      - "<gray>Save and mark ready if complete</gray>"
+  cancel:
+    name: "<red>Cancel Setup</red>"
+    lore:
+      - "<gray>Exit setup mode</gray>"
+  set-lobby:
+    name: "<yellow>Set Lobby</yellow>"
+    lore:
+      - "<gray>Right-click to set lobby spawn</gray>"
+  set-spawn:
+    name: "<green>Set Game Spawn</green>"
+    lore:
+      - "<gray>Right-click to set game spawn</gray>"
+  set-spectator:
+    name: "<light_purple>Set Spectator Spawn</light_purple>"
+    lore:
+      - "<gray>Right-click to set spectator spawn</gray>"
+  set-center:
+    name: "<gold>Set Center</gold>"
+    lore:
+      - "<gray>Right-click to set border center</gray>"
+  set-death-height:
+    name: "<red>Set Death Height</red>"
+    lore:
+      - "<gray>Right-click to use your Y level</gray>"
+  configure-border:
+    name: "<aqua>Configure Border</aqua>"
+    lore:
+      - "<gray>Left: size+10 | Right: size-10</gray>"
+      - "<gray>Shift-Left: speed+0.5 | Shift-Right: damage+0.5</gray>"
+  configure-loot:
+    name: "<gold>Configure Loot</gold>"
+    lore:
+      - "<gray>Info about arena loot chests</gray>"
+  arena-info:
+    name: "<white>Arena Information</white>"
+    lore:
+      - "<gray>Right-click to view arena details</gray>"
+  arena-settings:
+    name: "<yellow>Arena Settings</yellow>"
+    lore:
+      - "<gray>Right-click to cycle & edit settings</gray>"
+
+help:
+  - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos Commands</bold></gradient>"
+  - "<yellow>/bc join [arena] [mode]</yellow> <gray>- Join a game</gray>"
+  - "<yellow>/bc leave</yellow> <gray>- Leave your game</gray>"
+  - "<yellow>/bc lobby</yellow> <gray>- Go to lobby</gray>"
+  - "<yellow>/bc list</yellow> <gray>- List arenas</gray>"
+  - "<yellow>/bc info</yellow> <gray>- Game info</gray>"
+  - "<yellow>/bc version</yellow> <gray>- Plugin version</gray>"
+  - "<gray>---</gray>"
+  - "<yellow>/bc setup</yellow> <gray>- Enter arena setup mode</gray>"
+  - "<yellow>/bc deletearena <name></yellow> <gray>- Delete arena</gray>"
+  - "<yellow>/bc setlobby</yellow> <gray>- Set global lobby</gray>"
+  - "<yellow>/bc setvictoryaltar [arena]</yellow> <gray>- Set Solo Survival altar</gray>"
+  - "<yellow>/bc enablemultimodesforsinglemap [arena]</yellow> <gray>- Multi-mode maps</gray>"
+  - "<yellow>/bc forcestart</yellow> <gray>- Force start</gray>"
+  - "<yellow>/bc stop</yellow> <gray>- Stop game</gray>"
+  - "<yellow>/bc next</yellow> <gray>- Force next event</gray>"
+  - "<yellow>/bc troll <event> <duration></yellow> <gray>- Force a troll event</gray>"
+  - "<yellow>/bc troll stop</yellow> <gray>- Cancel troll events</gray>"
+  - "<yellow>/bc solosurvivalwintime <seconds></yellow> <gray>- Solo Survival win timer</gray>"
+  - "<yellow>/bc reload</yellow> <gray>- Reload configs</gray>"
+  - "<yellow>/bc debug</yellow> <gray>- Toggle debug</gray>"
+  - "<yellow>/bc shop</yellow> <gray>- Open coin shop</gray>"
+  - "<yellow>/bc coins</yellow> <gray>- View coin balance</gray>"
+  - "<yellow>/bc language <en|ro></yellow> <gray>- Change language</gray>"
+  - "<yellow>/bc eventsdifficulty <mode></yellow> <gray>- Set chaos difficulty</gray>"
+  - "<yellow>/bc chestlootrarity <rarity></yellow> <gray>- Set chest loot rarity</gray>"
+  - "<yellow>/bc enablerandomchestloot</yellow> <gray>- Toggle chest loot</gray>"
+  - "<yellow>/bc npc</yellow> <gray>- Premium NPC system</gray>"
+
+coins:
+  balance: "<gold>Coins:</gold> <yellow>%balance%</yellow>"
+  win: "<green>+%amount% coins</green> <gray>(win)</gray> <dark_gray>[%balance%]</dark_gray>"
+  kill: "<green>+%amount% coins</green> <gray>(kill)</gray> <dark_gray>[%balance%]</dark_gray>"
+  participation: "<green>+%amount% coins</green> <gray>(participation)</gray> <dark_gray>[%balance%]</dark_gray>"
+  survival: "<green>+%amount% coins</green> <gray>(survival)</gray> <dark_gray>[%balance%]</dark_gray>"
+
+shop:
+  purchased: "<green>Purchased <yellow>%item%</yellow> for <gold>%cost%</gold> coins!</green>"
+  selected: "<aqua>Selected <yellow>%item%</yellow>.</aqua>"
+  unequipped: "<yellow>Unequipped <white>%item%</white>.</yellow>"
+  not-enough: "<red>Not enough coins!</red> <gray>(need %cost%, have %balance%)</gray>"
+
+browser:
+  header: "<gold>==== Game Browser ====</gold>"
+  entry: "<yellow>%arena%</yellow> <gray>|</gray> <aqua>%state%</aqua> <gray>|</gray> <white>%players%/%max%</white>"
+  empty: "<red>No arenas found.</red>"
+  footer: "<gray>Use Quick Join or /bc join <arena></gray>"
+
+info:
+  lines:
+    - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"
+    - "<gray>Survive random chaos events. Last player wins.</gray>"
+    - "<yellow>/bc join</yellow> <gray>- join a game</gray>"
+    - "<yellow>/bc shop</yellow> <gray>- open the shop</gray>"
+    - "<yellow>/bc coins</yellow> <gray>- check balance</gray>"
+    - "<gold>Your coins:</gold> <yellow>%coins%</yellow>"
+
+bossbar:
+  waiting: "<yellow>Waiting for players...</yellow>"
+  starting: "<green>Starting in %time%s</green>"
+  playing: "<red>Survive the chaos!</red>"
+  event: "<gold>%event%</gold> <gray>| next %next%s</gray>"
+  next-event: "<aqua>Next chaos in %next%s</aqua>"
+  deathmatch: "<dark_red>DEATHMATCH</dark_red>"
+  spectator: "<gray>Spectating...</gray>"
+  ending: "<gold>Winner: %winner%</gold>"
+  ending-none: "<gray>Game over</gray>"
+
+actionbar:
+  starting: "<gold>Starting in %time%s</gold>"
+
+language:
+  changed: "<green>Language set to <yellow>%language%</yellow>.</green>"
+  invalid: "<red>Use: /bc language english|romanian</red>"
+
+loot:
+  enabled: "<green>Random chest loot enabled.</green>"
+  disabled: "<yellow>Random chest loot disabled.</yellow>"
+  rarity-current: "<gold>Chest loot rarity:</gold> <yellow>%rarity%</yellow>"
+  rarity-usage: "<gray>Usage:</gray> <yellow>/bc chestlootrarity <common|uncommon|normal|mythic|legendary|extreme></yellow>"
+  rarity-changed: "<green>Chest loot rarity set to <yellow>%rarity%</yellow>.</green>"
+
+lobby-items:
+  leave-game:
+    name: "<red>Leave Game</red>"
+    lore:
+      - "<gray>Right-click to leave</gray>"
+
+difficulty:
+  current: "<gold>Event difficulty:</gold> <yellow>%difficulty%</yellow>"
+  usage: "<gray>Usage:</gray> <yellow>/bc eventsdifficulty <easy|normal|hard|hardcore|extreme|impossible></yellow>"
+  changed: "<green>Event difficulty set to <yellow>%difficulty%</yellow>.</green>"
+
+npc:
+  created: "<green>NPC <yellow>%id%</yellow> created</green> <gray>(%mode%)</gray>"
+  removed: "<yellow>NPC <white>%id%</white> removed.</yellow>"
+  selected: "<aqua>Selected NPC:</aqua> <yellow>%id%</yellow>"
+  moved: "<green>Moved NPC <yellow>%id%</yellow> to your location.</green>"
+  skin-set: "<green>NPC skin set to <yellow>%skin%</yellow>.</green>"
+  animation-set: "<green>NPC animation set to <yellow>%animation%</yellow>.</green>"
+  hologram-header: "<gold>Hologram lines for <yellow>%id%</yellow>:</gold>"
+  hologram-added: "<green>Hologram line added.</green>"
+  hologram-removed: "<yellow>Hologram line removed.</yellow>"
+  hologram-cleared: "<yellow>Hologram cleared.</yellow>"
+  hologram-reset: "<green>Hologram reset to defaults.</green>"
+  reloaded: "<green>NPCs reloaded.</green>"
+  none-selected: "<red>No NPC selected. Stand near one and use /bc npc edit</red>"
+  none-nearby: "<red>No NPC nearby.</red>"
+  double-click: "<gray>Double-click the map to join.</gray>"
+  info: "<gold>NPC</gold> <yellow>%id%</yellow> <gray>|</gray> <aqua>%mode%</aqua> <gray>|</gray> <white>%animation%</white> <gray>|</gray> <gray>%skin%</gray>"
+  usage-create: "<gray>Usage:</gray> <yellow>/bc npc create <all|solo|teams|mega|solo_survival|duos|trios|squads|random></yellow>"
+  usage-skin: "<gray>Usage:</gray> <yellow>/bc npc skin player <name></yellow> <gray>or</gray> <yellow>/bc npc skin url <url></yellow>"
+  usage-hologram: "<gray>Usage:</gray> <yellow>/bc npc hologram <add|remove|clear|reset></yellow>"
+  usage-animation: "<gray>Usage:</gray> <yellow>/bc npc animation [idle|wave|spin|look_around|jump|celebrate|random|walk_in_place]</yellow>"
+  help:
+    - "<yellow>/bc npc create <mode></yellow> <gray>- Create an NPC</gray>"
+    - "<yellow>/bc npc edit</yellow> <gray>- Select nearest NPC</gray>"
+    - "<yellow>/bc npc move</yellow> <gray>- Move selected NPC</gray>"
+    - "<yellow>/bc npc remove</yellow> <gray>- Remove selected NPC</gray>"
+    - "<yellow>/bc npc skin player|url ...</yellow> <gray>- Set skin</gray>"
+    - "<yellow>/bc npc hologram</yellow> <gray>- Edit hologram</gray>"
+    - "<yellow>/bc npc animation</yellow> <gray>- Cycle/set animation</gray>"
+    - "<yellow>/bc npc gui</yellow> <gray>- Open premium GUI</gray>"
+    - "<yellow>/bc npc info</yellow> <gray>- NPC info</gray>"
+    - "<yellow>/bc npc reload</yellow> <gray>- Reload NPCs</gray>"

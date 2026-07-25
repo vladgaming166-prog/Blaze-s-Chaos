@@ -1,0 +1,333 @@
+# Blaze's Chaos - Main Configuration
+# Existing values are never overwritten on update — new keys are migrated automatically.
+
+language: en
+# language: ro
+
+settings:
+  prefix: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient> <gray>»</gray> "
+  min-players: 2
+  max-players: 24
+  countdown-seconds: 30
+  chaos-interval-seconds: 60
+  deathmatch-after-seconds: 600
+  deathmatch-border-size: 50
+  ending-seconds: 10
+  spawn-grace-seconds: 5
+  death-lobby-delay-seconds: 5
+  allow-rejoin: false
+  spectator-on-death: true
+  clear-inventory-on-join: true
+  give-kit-on-start: false
+  join-item:
+    enabled: true
+    slot: 0
+    material: BLAZE_POWDER
+    name: "<gradient:#FF4500:#FFD700>Join Blaze's Chaos</gradient>"
+    lore:
+      - "<gray>Right-click to join!</gray>"
+  leave-item:
+    enabled: true
+    slot: 8
+    material: RED_BED
+    name: "<red>Leave Game</red>"
+    lore:
+      - "<gray>Right-click to leave</gray>"
+
+coins:
+  win: 50
+  kill: 5
+  participation: 10
+  survival-per-minute: 2
+
+rewards:
+  win-money: 100.0
+  kill-money: 5.0
+  participation-money: 10.0
+
+debug: false
+
+# ==================================================
+# GLOBAL LOBBY
+# ==================================================
+# Set with /bc setlobby — you will be asked:
+# "Make this location the server spawn?" → true / false
+lobby:
+  location: {}
+  npc: {}
+  # When true (answered via setlobby prompt), this is the server spawn
+  use-as-server-spawn: false
+  server-spawn: {}
+  teleport-on-first-join: true
+  teleport-on-reconnect: true
+  # If true, do not force-teleport players who already changed world via another plugin
+  respect-other-teleports: false
+  protect-default-world: false
+
+# ==================================================
+# MAIN LOBBY PROTECTION
+# ==================================================
+# Applies inside the configured lobby world.
+# Bypassed by: OP, blazechaos.admin, and (optionally) blazechaos.build
+lobby-protection:
+  enabled: true
+  build-bypass: true
+  block-break: true
+  block-place: true
+  item-drop: true
+  item-pickup: true
+  move-lobby-items: true
+  swap-items: true
+  inventory-interact: false
+  crafting: true
+  crafting-table: true
+  ignite-tnt: true
+  flint-and-steel: true
+  empty-buckets: true
+  fill-buckets: true
+  lava-buckets: true
+  water-buckets: true
+  item-frames: true
+  armor-stands: true
+  trample-farmland: true
+  redstone-interact: true
+  spawn-eggs: true
+  mob-spawning: true
+  damage-entities: true
+  pvp: true
+  hunger: true
+  hunger-damage: true
+  fall-damage: true
+  fire-damage: true
+  cactus-damage: true
+  berry-damage: true
+  suffocation-damage: true
+  drown-damage: true
+  void-damage: true
+  all-damage: true
+  explosions: true
+  allow-natural-fire: false
+
+# ==================================================
+# CHAOS / ARENA WORLDS
+# ==================================================
+# Passive animals ONLY while PLAYING / mid-match. ZERO in lobby/waiting/starting/ending/reset.
+chaos-world:
+  force-animal-spawn-flags: true
+  passive-animals:
+    enabled: true
+    # Exact count spawned when the match starts (PLAYING)
+    initial-count: 10
+    max-passive-mobs: 10
+    # Delay before replacing ONE killed animal (ticks)
+    replace-delay-ticks: 100
+    types:
+      - COW
+      - PIG
+      - SHEEP
+      - CHICKEN
+      - RABBIT
+
+# ==================================================
+# MULTI MODE (one map → many modes)
+# ==================================================
+# Enable with /bc enablemultimodesforsinglemap [arena]
+modes:
+  allow-multiple-modes: false
+  available-modes:
+    - SOLO
+    - TEAMS
+    - MEGA
+    - SOLO_SURVIVAL
+  mode-settings:
+    SOLO:
+      min-players: 2
+      max-players: 24
+    TEAMS:
+      min-players: 4
+      max-players: 24
+    MEGA:
+      min-players: 8
+      max-players: 48
+    SOLO_SURVIVAL:
+      min-players: 1
+      max-players: 1
+
+# ==================================================
+# SOLO SURVIVAL
+# ==================================================
+# One player. Join → countdown → start → chaos → objective → victory.
+# Never uses Solo last-player-alive / force-start win conditions.
+solo-survival:
+  enabled: true
+  # Objective 1 — Survive (win only when this timer reaches zero)
+  # /bc solosurvivalwintime <seconds> updates this live.
+  win-time-seconds: 1200
+  # Legacy alias (read if win-time-seconds is missing)
+  survive-seconds: 1200
+  # Objective 2 — Chaos Shard (win only when the player obtains it)
+  shard-world-drop: true
+  shard-spawn-after-seconds: 120
+  shard-item:
+    material: AMETHYST_SHARD
+    name: "<light_purple><bold>Chaos Shard</bold></light_purple>"
+    lore:
+      - "<gray>The heart of chaos.</gray>"
+      - "<yellow>Obtain this to win Solo Survival.</yellow>"
+    custom-model-data: 0
+    itemsadder-id: ""
+  shard:
+    obtain:
+      crafting: true
+      mining: true
+      loot-chests: true
+    mining:
+      # 0.03% chance when breaking listed ores
+      chance: 0.0003
+      ores:
+        - COAL_ORE
+        - DEEPSLATE_COAL_ORE
+        - IRON_ORE
+        - DEEPSLATE_IRON_ORE
+        - GOLD_ORE
+        - DEEPSLATE_GOLD_ORE
+        - NETHER_GOLD_ORE
+        - DIAMOND_ORE
+        - DEEPSLATE_DIAMOND_ORE
+        - EMERALD_ORE
+        - DEEPSLATE_EMERALD_ORE
+        - REDSTONE_ORE
+        - DEEPSLATE_REDSTONE_ORE
+        - LAPIS_ORE
+        - DEEPSLATE_LAPIS_ORE
+        - ANCIENT_DEBRIS
+    loot:
+      # Very rare in natural loot chests / structures
+      chance: 0.008
+  loot:
+    enabled: true
+    chest-chance: 0.008
+  # Vanilla crafting table recipe (ItemsAdder supported for the result item)
+  # Pattern: Iron | Coal | Iron / Coal | Egg | Coal / Iron | Coal | Iron
+  crafting:
+    enabled: true
+    shape:
+      - "ICI"
+      - "CEC"
+      - "ICI"
+    ingredients:
+      I: IRON_INGOT
+      C: COAL
+      E: EGG
+  victory-altar:
+    material: LODESTONE
+    accept-material-anywhere: false
+
+# Cosmetics (particle trails)
+cosmetics:
+  trails:
+    enabled: true
+    particle-amount: 2
+    spacing: 0.35
+    speed: 0.02
+    tick-interval: 2
+
+lobby-items:
+  enabled: true
+  browser:
+    slot: 0
+    material: COMPASS
+    name: "<aqua>Game Browser</aqua>"
+    lore:
+      - "<gray>View active and waiting games</gray>"
+  quick-join:
+    slot: 1
+    material: NETHER_STAR
+    name: "<gradient:#FF4500:#FFD700>Quick Join</gradient>"
+    lore:
+      - "<gray>Join the best available game</gray>"
+  info:
+    slot: 4
+    material: BOOK
+    name: "<yellow>Information</yellow>"
+    lore:
+      - "<gray>Rules, commands and updates</gray>"
+  shop:
+    slot: 7
+    material: EMERALD
+    name: "<green>Shop</green>"
+    lore:
+      - "<gray>Spend coins on cosmetics</gray>"
+  leave:
+    slot: 8
+    material: RED_BED
+    name: "<red>Leave / Lobby</red>"
+    lore:
+      - "<gray>Return to lobby</gray>"
+
+# Chaos event difficulty: easy, normal, hard, hardcore, extreme, impossible
+# Change with /bc eventsdifficulty <mode>
+events-difficulty: normal
+
+# Per-difficulty multipliers (frequency higher = events more often)
+difficulty:
+  easy:
+    frequency-multiplier: 0.7
+    intensity-multiplier: 0.7
+    damage-multiplier: 0.75
+    rise-speed-multiplier: 0.7
+    meteor-multiplier: 0.7
+    lightning-multiplier: 0.7
+    mob-multiplier: 0.7
+    explosion-multiplier: 0.7
+    knockback-multiplier: 0.8
+  normal:
+    frequency-multiplier: 1.0
+    intensity-multiplier: 1.0
+    damage-multiplier: 1.0
+    rise-speed-multiplier: 1.0
+    meteor-multiplier: 1.0
+    lightning-multiplier: 1.0
+    mob-multiplier: 1.0
+    explosion-multiplier: 1.0
+    knockback-multiplier: 1.0
+  hard:
+    frequency-multiplier: 1.35
+    intensity-multiplier: 1.4
+    damage-multiplier: 1.35
+    rise-speed-multiplier: 1.4
+    meteor-multiplier: 1.4
+    lightning-multiplier: 1.4
+    mob-multiplier: 1.5
+    explosion-multiplier: 1.35
+    knockback-multiplier: 1.3
+  hardcore:
+    frequency-multiplier: 1.7
+    intensity-multiplier: 1.8
+    damage-multiplier: 1.75
+    rise-speed-multiplier: 1.8
+    meteor-multiplier: 1.8
+    lightning-multiplier: 1.8
+    mob-multiplier: 2.0
+    explosion-multiplier: 1.7
+    knockback-multiplier: 1.6
+  extreme:
+    frequency-multiplier: 2.2
+    intensity-multiplier: 2.4
+    damage-multiplier: 2.25
+    rise-speed-multiplier: 2.3
+    meteor-multiplier: 2.4
+    lightning-multiplier: 2.4
+    mob-multiplier: 2.6
+    explosion-multiplier: 2.2
+    knockback-multiplier: 2.0
+  impossible:
+    frequency-multiplier: 3.0
+    intensity-multiplier: 3.2
+    damage-multiplier: 3.0
+    rise-speed-multiplier: 3.0
+    meteor-multiplier: 3.2
+    lightning-multiplier: 3.2
+    mob-multiplier: 3.5
+    explosion-multiplier: 3.0
+    knockback-multiplier: 2.5

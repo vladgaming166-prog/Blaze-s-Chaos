@@ -1,0 +1,14 @@
+# Blaze's Chaos NPC configuration
+# Create NPCs with: /bc npc create <solo|duos|trios|squads|random>
+config-version: 1
+
+settings:
+  look-range: 48
+  despawn-range: 64
+  default-animation: look_around
+
+# NPCs are stored below after creation
+npcs: {}
+
+# Per-player favorite arenas (uuid -> list of arena names)
+favorites: {}

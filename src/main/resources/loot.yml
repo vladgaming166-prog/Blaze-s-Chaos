@@ -1,0 +1,108 @@
+# Chest loot configuration
+# Toggle with /bc enablerandomchestloot
+enabled: false
+rarity: normal
+
+# Fallback pool if a rarity section is missing
+items-per-chest:
+  min: 4
+  max: 8
+
+pool:
+  stone_sword: { material: STONE_SWORD, weight: 8, amount-min: 1, amount-max: 1 }
+  bread: { material: BREAD, weight: 12, amount-min: 4, amount-max: 12 }
+  cobble: { material: COBBLESTONE, weight: 10, amount-min: 16, amount-max: 48 }
+
+rarities:
+  common:
+    items-per-chest: { min: 3, max: 5 }
+    pool:
+      wooden_sword: { material: WOODEN_SWORD, weight: 10, amount-min: 1, amount-max: 1 }
+      stone_sword: { material: STONE_SWORD, weight: 4, amount-min: 1, amount-max: 1 }
+      bread: { material: BREAD, weight: 14, amount-min: 4, amount-max: 10 }
+      apple: { material: APPLE, weight: 10, amount-min: 2, amount-max: 6 }
+      cobble: { material: COBBLESTONE, weight: 12, amount-min: 16, amount-max: 32 }
+      planks: { material: OAK_PLANKS, weight: 12, amount-min: 16, amount-max: 32 }
+      stick: { material: STICK, weight: 8, amount-min: 8, amount-max: 16 }
+      torch: { material: TORCH, weight: 10, amount-min: 8, amount-max: 16 }
+  uncommon:
+    items-per-chest: { min: 4, max: 6 }
+    pool:
+      stone_sword: { material: STONE_SWORD, weight: 10, amount-min: 1, amount-max: 1 }
+      iron_sword: { material: IRON_SWORD, weight: 3, amount-min: 1, amount-max: 1 }
+      bow: { material: BOW, weight: 5, amount-min: 1, amount-max: 1 }
+      arrows: { material: ARROW, weight: 10, amount-min: 8, amount-max: 16 }
+      bread: { material: BREAD, weight: 12, amount-min: 6, amount-max: 12 }
+      cooked_beef: { material: COOKED_BEEF, weight: 6, amount-min: 2, amount-max: 4 }
+      cobble: { material: COBBLESTONE, weight: 10, amount-min: 24, amount-max: 48 }
+      leather_chest: { material: LEATHER_CHESTPLATE, weight: 5, amount-min: 1, amount-max: 1 }
+      torch: { material: TORCH, weight: 10, amount-min: 12, amount-max: 24 }
+  normal:
+    items-per-chest: { min: 4, max: 8 }
+    pool:
+      stone_sword: { material: STONE_SWORD, weight: 8, amount-min: 1, amount-max: 1 }
+      iron_sword: { material: IRON_SWORD, weight: 5, amount-min: 1, amount-max: 1 }
+      bow: { material: BOW, weight: 6, amount-min: 1, amount-max: 1 }
+      arrows: { material: ARROW, weight: 10, amount-min: 8, amount-max: 16 }
+      bread: { material: BREAD, weight: 10, amount-min: 4, amount-max: 12 }
+      cooked_beef: { material: COOKED_BEEF, weight: 8, amount-min: 2, amount-max: 6 }
+      golden_apple: { material: GOLDEN_APPLE, weight: 2, amount-min: 1, amount-max: 1 }
+      water_bucket: { material: WATER_BUCKET, weight: 5, amount-min: 1, amount-max: 1 }
+      cobble: { material: COBBLESTONE, weight: 10, amount-min: 16, amount-max: 48 }
+      planks: { material: OAK_PLANKS, weight: 10, amount-min: 16, amount-max: 48 }
+      iron_pickaxe: { material: IRON_PICKAXE, weight: 5, amount-min: 1, amount-max: 1 }
+      shield: { material: SHIELD, weight: 4, amount-min: 1, amount-max: 1 }
+      torch: { material: TORCH, weight: 10, amount-min: 8, amount-max: 24 }
+  mythic:
+    items-per-chest: { min: 5, max: 9 }
+    pool:
+      iron_sword: { material: IRON_SWORD, weight: 8, amount-min: 1, amount-max: 1 }
+      diamond_sword: { material: DIAMOND_SWORD, weight: 2, amount-min: 1, amount-max: 1 }
+      bow: { material: BOW, weight: 7, amount-min: 1, amount-max: 1 }
+      arrows: { material: ARROW, weight: 10, amount-min: 16, amount-max: 32 }
+      golden_apple: { material: GOLDEN_APPLE, weight: 5, amount-min: 1, amount-max: 2 }
+      cooked_beef: { material: COOKED_BEEF, weight: 8, amount-min: 4, amount-max: 8 }
+      iron_chest: { material: IRON_CHESTPLATE, weight: 4, amount-min: 1, amount-max: 1 }
+      iron_legs: { material: IRON_LEGGINGS, weight: 4, amount-min: 1, amount-max: 1 }
+      shield: { material: SHIELD, weight: 5, amount-min: 1, amount-max: 1 }
+      ender_pearl: { material: ENDER_PEARL, weight: 3, amount-min: 1, amount-max: 2 }
+  legendary:
+    items-per-chest: { min: 6, max: 10 }
+    pool:
+      diamond_sword:
+        material: DIAMOND_SWORD
+        weight: 6
+        amount-min: 1
+        amount-max: 1
+        enchants: { SHARPNESS: 3, UNBREAKING: 2 }
+      diamond_pickaxe: { material: DIAMOND_PICKAXE, weight: 4, amount-min: 1, amount-max: 1 }
+      bow:
+        material: BOW
+        weight: 6
+        amount-min: 1
+        amount-max: 1
+        enchants: { POWER: 3, PUNCH: 1 }
+      arrows: { material: ARROW, weight: 10, amount-min: 24, amount-max: 48 }
+      golden_apple: { material: GOLDEN_APPLE, weight: 7, amount-min: 1, amount-max: 3 }
+      diamond_chest: { material: DIAMOND_CHESTPLATE, weight: 3, amount-min: 1, amount-max: 1 }
+      diamond_boots: { material: DIAMOND_BOOTS, weight: 3, amount-min: 1, amount-max: 1 }
+      ender_pearl: { material: ENDER_PEARL, weight: 5, amount-min: 2, amount-max: 4 }
+      shield: { material: SHIELD, weight: 5, amount-min: 1, amount-max: 1 }
+  extreme:
+    items-per-chest: { min: 7, max: 12 }
+    pool:
+      diamond_sword:
+        material: DIAMOND_SWORD
+        weight: 8
+        amount-min: 1
+        amount-max: 1
+        enchants: { SHARPNESS: 5, FIRE_ASPECT: 2, UNBREAKING: 3 }
+      netherite_scrap: { material: NETHERITE_SCRAP, weight: 2, amount-min: 1, amount-max: 1 }
+      enchanted_golden_apple: { material: ENCHANTED_GOLDEN_APPLE, weight: 1, amount-min: 1, amount-max: 1 }
+      golden_apple: { material: GOLDEN_APPLE, weight: 8, amount-min: 2, amount-max: 4 }
+      diamond_chest: { material: DIAMOND_CHESTPLATE, weight: 5, amount-min: 1, amount-max: 1 }
+      diamond_legs: { material: DIAMOND_LEGGINGS, weight: 5, amount-min: 1, amount-max: 1 }
+      diamond_helm: { material: DIAMOND_HELMET, weight: 5, amount-min: 1, amount-max: 1 }
+      diamond_boots: { material: DIAMOND_BOOTS, weight: 5, amount-min: 1, amount-max: 1 }
+      ender_pearl: { material: ENDER_PEARL, weight: 6, amount-min: 4, amount-max: 8 }
+      totem: { material: TOTEM_OF_UNDYING, weight: 1, amount-min: 1, amount-max: 1 }

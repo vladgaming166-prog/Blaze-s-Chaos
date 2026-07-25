@@ -1,0 +1,151 @@
+config-version: 2
+title: "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos Shop</bold></gradient>"
+size: 54
+balance-slot: 49
+
+items:
+  trail_flame:
+    slot: 10
+    material: BLAZE_POWDER
+    name: "<gold>Flame Trail</gold>"
+    category: trail
+    particle: FLAME
+    cost: 150
+    lore:
+      - "<gray>Leave flames behind you.</gray>"
+  trail_heart:
+    slot: 11
+    material: RED_DYE
+    name: "<red>Heart Trail</red>"
+    category: trail
+    particle: HEART
+    cost: 150
+    lore:
+      - "<gray>Leave hearts behind you.</gray>"
+  trail_rainbow:
+    slot: 12
+    material: SPECTRAL_ARROW
+    name: "<gradient:#FF0000:#00FF00:#0000FF>Rainbow Trail</gradient>"
+    category: trail
+    particle: DUST
+    dust: true
+    cost: 250
+    lore:
+      - "<gray>A shifting rainbow dust trail.</gray>"
+  trail_cloud:
+    slot: 13
+    material: WHITE_DYE
+    name: "<white>Cloud Trail</white>"
+    category: trail
+    particle: CLOUD
+    cost: 150
+    lore:
+      - "<gray>Soft clouds follow your steps.</gray>"
+  trail_snow:
+    slot: 14
+    material: SNOWBALL
+    name: "<aqua>Snow Trail</aqua>"
+    category: trail
+    particle: SNOWFLAKE
+    cost: 150
+    lore:
+      - "<gray>Falling snowflakes behind you.</gray>"
+  trail_soul:
+    slot: 15
+    material: SOUL_LANTERN
+    name: "<dark_aqua>Soul Trail</dark_aqua>"
+    category: trail
+    particle: SOUL
+    cost: 200
+    lore:
+      - "<gray>Eerie soul flames trail behind.</gray>"
+  trail_electric:
+    slot: 16
+    material: LIGHTNING_ROD
+    name: "<yellow>Electric Trail</yellow>"
+    category: trail
+    particle: ELECTRIC_SPARK
+    cost: 200
+    lore:
+      - "<gray>Crackling sparks with every step.</gray>"
+  trail_lava:
+    slot: 19
+    material: MAGMA_CREAM
+    name: "<red>Lava Trail</red>"
+    category: trail
+    particle: LAVA
+    cost: 200
+    lore:
+      - "<gray>Molten pops trail behind you.</gray>"
+  trail_water:
+    slot: 20
+    material: WATER_BUCKET
+    name: "<blue>Water Trail</blue>"
+    category: trail
+    particle: DRIPPING_WATER
+    cost: 150
+    lore:
+      - "<gray>Cool water drips in your wake.</gray>"
+  trail_magic:
+    slot: 21
+    material: AMETHYST_SHARD
+    name: "<light_purple>Magic Trail</light_purple>"
+    category: trail
+    particle: WITCH
+    cost: 220
+    lore:
+      - "<gray>Witchy magic swirls behind you.</gray>"
+  trail_end:
+    slot: 22
+    material: ENDER_PEARL
+    name: "<dark_purple>End Trail</dark_purple>"
+    category: trail
+    particle: PORTAL
+    cost: 220
+    lore:
+      - "<gray>Ender portal particles trail you.</gray>"
+  trail_cherry:
+    slot: 23
+    material: CHERRY_LEAVES
+    name: "<light_purple>Cherry Trail</light_purple>"
+    category: trail
+    particle: CHERRY_LEAVES
+    cost: 180
+    lore:
+      - "<gray>Cherry blossoms drift behind you.</gray>"
+  trail_leaf:
+    slot: 24
+    material: OAK_LEAVES
+    name: "<green>Leaf Trail</green>"
+    category: trail
+    particle: FALLING_SPORE_BLOSSOM
+    cost: 150
+    lore:
+      - "<gray>Soft leaves fall in your path.</gray>"
+  trail_critical:
+    slot: 28
+    material: IRON_SWORD
+    name: "<gray>Critical Trail</gray>"
+    category: trail
+    particle: CRIT
+    cost: 180
+    lore:
+      - "<gray>Critical hit sparks trail you.</gray>"
+  trail_totem:
+    slot: 29
+    material: TOTEM_OF_UNDYING
+    name: "<green>Totem Trail</green>"
+    category: trail
+    particle: TOTEM_OF_UNDYING
+    cost: 300
+    lore:
+      - "<gray>Totem sparkles follow your steps.</gray>"
+  trail_dragon:
+    slot: 30
+    material: DRAGON_BREATH
+    name: "<dark_purple>Dragon Breath Trail</dark_purple>"
+    category: trail
+    particle: DRAGON_BREATH
+    cost: 350
+    lore:
+      - "<gray>Dragon breath swirls behind you.</gray>"

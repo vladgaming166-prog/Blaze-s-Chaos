@@ -1,0 +1,51 @@
+name: BlazesChaos
+version: ${project.version}
+main: com.blazeschaos.BlazesChaosPlugin
+api-version: '1.21'
+authors: [Blaze]
+description: Survival chaos minigame - last player standing amid random chaos events
+website: https://github.com/blazeschaos
+softdepend: [PlaceholderAPI, Vault, Citizens, ItemsAdder]
+commands:
+  bc:
+    description: Main Blaze's Chaos command
+    usage: /bc <subcommand>
+    aliases: [bchaos, blazechaos]
+    permission: blazechaos.use
+permissions:
+  blazechaos.use:
+    description: Access basic Blaze's Chaos commands
+    default: true
+  blazechaos.play:
+    description: Join and play games
+    default: true
+  blazechaos.admin:
+    description: Full admin access
+    default: op
+  blazechaos.setup:
+    description: Arena setup access
+    default: op
+  blazechaos.reload:
+    description: Reload plugin configuration
+    default: op
+  blazechaos.forcestart:
+    description: Force start a game
+    default: op
+  blazechaos.stop:
+    description: Stop a running game
+    default: op
+  blazechaos.debug:
+    description: Debug mode
+    default: op
+  blazechaos.build:
+    description: Bypass lobby world protection
+    default: op
+  blazechaos.language:
+    description: Change plugin language
+    default: true
+  blazechaos.next:
+    description: Force next chaos event
+    default: op
+  blazechaos.npc:
+    description: Manage Blaze's Chaos NPCs
+    default: op
