@@ -118,10 +118,19 @@ public final class GameManager {
             ));
             return false;
         }
-        GameModeType resolved = multiModeEnabled(target) ? mode : GameModeType.SOLO;
-        if (multiModeEnabled(target) && !modesFor(target).contains(resolved)) {
-            plugin.lang().send(player, "modes.not-available", Map.of("mode", resolved.display()));
-            return false;
+        // Solo Survival is its own mode and must NEVER be coerced to Solo.
+        // Coercing to Solo reuses last-player-alive victory (1 player = instant win).
+        GameModeType resolved;
+        if (mode.isSoloSurvival()) {
+            resolved = GameModeType.SOLO_SURVIVAL;
+        } else if (multiModeEnabled(target)) {
+            resolved = mode;
+            if (!modesFor(target).contains(resolved)) {
+                plugin.lang().send(player, "modes.not-available", Map.of("mode", resolved.display()));
+                return false;
+            }
+        } else {
+            resolved = GameModeType.SOLO;
         }
 
         SurvivalObjective obj = objective;

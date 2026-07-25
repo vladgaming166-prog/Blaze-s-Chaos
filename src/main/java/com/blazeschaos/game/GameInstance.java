@@ -61,6 +61,8 @@ public final class GameInstance {
     private int graceTicksRemaining;
     private boolean chaosShardSpawned;
     private boolean finished;
+    /** Set only by completeSurvivalVictory — blocks accidental Solo Survival wins. */
+    private boolean survivalVictoryAuthorized;
     private @Nullable BukkitTask task;
     private @Nullable UUID winner;
 
@@ -341,11 +343,12 @@ public final class GameInstance {
                 "mode", mode.display()
         ));
         showBossBar(player, plugin.lang().raw("bossbar.waiting"), BossBar.Color.YELLOW);
-        // Solo Survival: min 1 / max 1 — start immediately
+        // Solo Survival: min 1 / max 1 — countdown, then start (never instant victory)
         if (mode.isSoloSurvival() && players.size() >= 1
-                && (state == GameState.WAITING || state == GameState.LOBBY || state == GameState.STARTING)) {
-            Bukkit.getScheduler().runTask(plugin, this::startGame);
-        } else if (players.size() >= effectiveMinPlayers()
+                && (state == GameState.WAITING || state == GameState.LOBBY)) {
+            beginCountdown();
+        } else if (!mode.isSoloSurvival()
+                && players.size() >= effectiveMinPlayers()
                 && (state == GameState.WAITING || state == GameState.LOBBY)) {
             beginCountdown();
         } else if (state == GameState.LOBBY) {
@@ -450,8 +453,19 @@ public final class GameInstance {
         }
     }
 
+    /**
+     * Admin force-start: skips the countdown only.
+     * Must never declare victory or reuse last-player-alive logic.
+     */
     public void forceStart() {
-        if (players.isEmpty()) {
+        if (players.isEmpty() || finished) {
+            return;
+        }
+        if (state != GameState.WAITING && state != GameState.LOBBY && state != GameState.STARTING) {
+            return;
+        }
+        // Solo Survival always allows a single player; other modes keep their min.
+        if (!mode.isSoloSurvival() && players.size() < effectiveMinPlayers()) {
             return;
         }
         startGame();
@@ -906,12 +920,17 @@ public final class GameInstance {
         if (!state.isActive()) {
             return;
         }
-        if (alive.isEmpty()) {
-            endGame(null);
+        // Solo Survival has a completely separate win path:
+        // SURVIVE → timer in tickPlaying / CHAOS_SHARD → obtain shard.
+        // Never win from last-player-alive, empty enemies, force-start, or game start.
+        if (mode.isSoloSurvival()) {
+            if (alive.isEmpty()) {
+                endGame(null); // player died / left — loss, not victory
+            }
             return;
         }
-        // Solo Survival: win only via Chaos Shard + Victory Altar
-        if (mode.isSoloSurvival()) {
+        if (alive.isEmpty()) {
+            endGame(null);
             return;
         }
         if (alive.size() == 1) {
@@ -919,6 +938,9 @@ public final class GameInstance {
         }
     }
 
+    /**
+     * Solo Survival victory — only called after survive timer OR Chaos Shard obtain.
+     */
     public void completeSurvivalVictory(@NotNull Player player) {
         if (!mode.isSoloSurvival() || !state.isActive()) {
             return;
@@ -927,6 +949,7 @@ public final class GameInstance {
             return;
         }
         plugin.lang().send(player, "solo-survival.victory");
+        survivalVictoryAuthorized = true;
         endGame(player.getUniqueId());
     }
 
@@ -934,6 +957,11 @@ public final class GameInstance {
         if (state == GameState.ENDING || state == GameState.RESETTING || finished) {
             return;
         }
+        // Hard guard: Solo Survival must never award a win from Solo/Teams last-alive paths.
+        if (mode.isSoloSurvival() && winnerId != null && !survivalVictoryAuthorized) {
+            winnerId = null;
+        }
+        survivalVictoryAuthorized = false;
         endAllChaosEvents();
         clearTrackedEntities();
         plugin.passiveAnimals().clearForGame(this);

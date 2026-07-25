@@ -156,12 +156,13 @@ modes:
 # ==================================================
 # SOLO SURVIVAL
 # ==================================================
-# One player. Instant start. Pick objective in GUI: Survive OR Chaos Shard.
+# One player. Join → countdown → start → chaos → objective → victory.
+# Never uses Solo last-player-alive / force-start win conditions.
 solo-survival:
   enabled: true
-  # Objective 1 — Survive
+  # Objective 1 — Survive (win only when this timer reaches zero)
   survive-seconds: 1200
-  # Objective 2 — Chaos Shard (win instantly on obtain)
+  # Objective 2 — Chaos Shard (win only when the player obtains it)
   shard-world-drop: true
   shard-spawn-after-seconds: 120
   shard-item:
