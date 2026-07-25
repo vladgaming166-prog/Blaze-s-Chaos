@@ -68,8 +68,21 @@ setup:
   items-given: "<gray>Setup items placed in your hotbar.</gray>"
   cancel: "<yellow>Setup cancelled.</yellow>"
 
+modes:
+  enabled-global: "<green>Multi-mode enabled for all arenas.</green> <gray>One map can host Solo / Teams / Mega / Solo Survival.</gray>"
+  enabled-arena: "<green>Multi-mode enabled for <yellow>%arena%</yellow>.</green>"
+  not-available: "<red>Mode <yellow>%mode%</yellow> is not available on this map.</red>"
+  victory-altar-set: "<green>Victory Altar set for <yellow>%arena%</yellow>.</green>"
+  victory-altar-usage: "<yellow>Usage:</yellow> <white>/bc setvictoryaltar [arena]</white> <gray>(look at a block)</gray>"
+
+solo-survival:
+  objective: "<light_purple>Solo Survival:</light_purple> <gray>Survive chaos, find the <white>Chaos Shard</white>, and use it at the Victory Altar.</gray>"
+  shard-spawned: "<gold>A Chaos Shard has appeared in the arena!</gold> <gray>Find it and bring it to the Victory Altar.</gray>"
+  need-shard: "<red>You need the Chaos Shard to claim victory here.</red>"
+  victory: "<gradient:#FF4500:#FFD700><bold>VICTORY!</bold></gradient> <gray>You completed Solo Survival.</gray>"
+
 game:
-  joined: "<green>You joined <yellow>%arena%</yellow>!</green>"
+  joined: "<green>You joined <yellow>%arena%</yellow></green> <gray>(%mode%)</gray><green>!</green>"
   left: "<yellow>You left the game.</yellow>"
   full: "<red>This game is full.</red>"
   already-in: "<red>You are already in a game.</red>"
@@ -160,7 +173,7 @@ setup-items:
 
 help:
   - "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos Commands</bold></gradient>"
-  - "<yellow>/bc join [arena]</yellow> <gray>- Join a game</gray>"
+  - "<yellow>/bc join [arena] [mode]</yellow> <gray>- Join a game</gray>"
   - "<yellow>/bc leave</yellow> <gray>- Leave your game</gray>"
   - "<yellow>/bc lobby</yellow> <gray>- Go to lobby</gray>"
   - "<yellow>/bc list</yellow> <gray>- List arenas</gray>"
@@ -170,6 +183,8 @@ help:
   - "<yellow>/bc setup</yellow> <gray>- Enter arena setup mode</gray>"
   - "<yellow>/bc deletearena <name></yellow> <gray>- Delete arena</gray>"
   - "<yellow>/bc setlobby</yellow> <gray>- Set global lobby</gray>"
+  - "<yellow>/bc setvictoryaltar [arena]</yellow> <gray>- Set Solo Survival altar</gray>"
+  - "<yellow>/bc enablemultimodesforsinglemap [arena]</yellow> <gray>- Multi-mode maps</gray>"
   - "<yellow>/bc forcestart</yellow> <gray>- Force start</gray>"
   - "<yellow>/bc stop</yellow> <gray>- Stop game</gray>"
   - "<yellow>/bc next</yellow> <gray>- Force next event</gray>"

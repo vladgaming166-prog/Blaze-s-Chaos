@@ -73,6 +73,8 @@ public final class WorldResetManager {
     }
 
     public void resetArenaWorld(@NotNull Arena arena, @NotNull Runnable onComplete) {
+        // Entity leak prevention — strip plugin passive animals before unload
+        plugin.passiveAnimals().clearAnimals(arena);
         if (!plugin.configs().worldReset().getBoolean("enabled", true)) {
             onComplete.run();
             return;

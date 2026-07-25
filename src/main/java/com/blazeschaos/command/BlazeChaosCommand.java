@@ -3,6 +3,7 @@ package com.blazeschaos.command;
 import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.arena.Arena;
 import com.blazeschaos.game.GameInstance;
+import com.blazeschaos.game.GameModeType;
 import com.blazeschaos.util.ColorUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -56,6 +57,8 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             case "enablerandomchestloot" -> handleLootToggle(sender);
             case "eventsdifficulty", "difficulty" -> handleDifficulty(sender, args);
             case "chestlootrarity", "lootrarity" -> handleLootRarity(sender, args);
+            case "enablemultimodesforsinglemap" -> handleEnableMultiModes(sender, args);
+            case "setvictoryaltar" -> handleSetVictoryAltar(sender, args);
             case "npc" -> plugin.npcCommands().handle(sender, args);
             case "version" -> plugin.lang().send(sender, "general.version",
                     Map.of("version", plugin.getPluginMeta().getVersion()));
@@ -63,6 +66,86 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             default -> plugin.lang().send(sender, "general.unknown-command");
         }
         return true;
+    }
+
+    private void handleEnableMultiModes(@NotNull CommandSender sender, @NotNull String[] args) {
+        if (!sender.hasPermission("blazechaos.admin") && !sender.hasPermission("blazechaos.setup")) {
+            plugin.lang().send(sender, "general.no-permission");
+            return;
+        }
+        if (args.length >= 2) {
+            Arena arena = plugin.arenaManager().get(args[1]);
+            if (arena == null) {
+                plugin.lang().send(sender, "arena.not-found");
+                return;
+            }
+            arena.setAllowMultipleModes(true);
+            if (arena.getAvailableModes().size() <= 1) {
+                arena.setAvailableModes(List.of(
+                        GameModeType.SOLO, GameModeType.TEAMS, GameModeType.MEGA, GameModeType.SOLO_SURVIVAL
+                ));
+            }
+            plugin.arenaManager().saveArena(arena);
+            plugin.getConfig().set("modes.allow-multiple-modes", true);
+            plugin.saveConfig();
+            plugin.lang().send(sender, "modes.enabled-arena", Map.of("arena", arena.getDisplayName()));
+            return;
+        }
+        plugin.getConfig().set("modes.allow-multiple-modes", true);
+        plugin.saveConfig();
+        for (Arena arena : plugin.arenaManager().all()) {
+            arena.setAllowMultipleModes(true);
+            if (arena.getAvailableModes().size() <= 1) {
+                arena.setAvailableModes(List.of(
+                        GameModeType.SOLO, GameModeType.TEAMS, GameModeType.MEGA, GameModeType.SOLO_SURVIVAL
+                ));
+            }
+            plugin.arenaManager().saveArena(arena);
+        }
+        plugin.lang().send(sender, "modes.enabled-global");
+    }
+
+    private void handleSetVictoryAltar(@NotNull CommandSender sender, @NotNull String[] args) {
+        if (!(sender instanceof Player player)) {
+            plugin.lang().send(sender, "general.player-only");
+            return;
+        }
+        if (!player.hasPermission("blazechaos.admin") && !player.hasPermission("blazechaos.setup")) {
+            plugin.lang().send(player, "general.no-permission");
+            return;
+        }
+        Arena arena = null;
+        if (args.length >= 2) {
+            arena = plugin.arenaManager().get(args[1]);
+        } else if (plugin.setupMode().isInSetup(player)) {
+            // use selected setup arena if present via join location world match
+            for (Arena candidate : plugin.arenaManager().all()) {
+                if (candidate.getWorldName() != null
+                        && candidate.getWorldName().equals(player.getWorld().getName())) {
+                    arena = candidate;
+                    break;
+                }
+            }
+        }
+        if (arena == null) {
+            GameInstance game = plugin.gameManager().getByPlayer(player);
+            if (game != null) {
+                arena = game.getArena();
+            }
+        }
+        if (arena == null && args.length < 2) {
+            plugin.lang().send(player, "modes.victory-altar-usage");
+            return;
+        }
+        if (arena == null) {
+            plugin.lang().send(player, "arena.not-found");
+            return;
+        }
+        var target = player.getTargetBlockExact(6);
+        org.bukkit.Location loc = target != null ? target.getLocation() : player.getLocation();
+        arena.setVictoryAltar(loc);
+        plugin.arenaManager().saveArena(arena);
+        plugin.lang().send(player, "modes.victory-altar-set", Map.of("arena", arena.getDisplayName()));
     }
 
     private void handleDifficulty(@NotNull CommandSender sender, @NotNull String[] args) {
@@ -169,6 +252,7 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             return;
         }
         Arena arena = null;
+        GameModeType mode = GameModeType.SOLO;
         if (args.length >= 2) {
             arena = plugin.arenaManager().get(args[1]);
             if (arena == null) {
@@ -176,7 +260,15 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
                 return;
             }
         }
-        plugin.gameManager().join(player, arena);
+        if (args.length >= 3) {
+            try {
+                mode = GameModeType.parse(args[2]);
+            } catch (IllegalArgumentException ex) {
+                plugin.lang().send(player, "modes.not-available", Map.of("mode", args[2]));
+                return;
+            }
+        }
+        plugin.gameManager().join(player, arena, mode);
     }
 
     private void handleLeave(@NotNull CommandSender sender) {
@@ -369,7 +461,8 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
                     "help", "join", "leave", "lobby", "setlobby", "list", "deletearena",
                     "setup", "reload", "forcestart", "stop", "next", "debug", "info", "version",
                     "coins", "balance", "shop", "language", "enablerandomchestloot",
-                    "eventsdifficulty", "chestlootrarity", "npc"
+                    "eventsdifficulty", "chestlootrarity", "npc",
+                    "enablemultimodesforsinglemap", "setvictoryaltar"
             ));
         }
         if (args.length >= 2 && args[0].equalsIgnoreCase("npc")) {
@@ -377,7 +470,8 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2) {
             String sub = args[0].toLowerCase(Locale.ROOT);
-            if (sub.equals("join") || sub.equals("setup") || sub.equals("deletearena")) {
+            if (sub.equals("join") || sub.equals("setup") || sub.equals("deletearena")
+                    || sub.equals("enablemultimodesforsinglemap") || sub.equals("setvictoryaltar")) {
                 return filter(args[1], plugin.arenaManager().all().stream().map(Arena::getName).collect(Collectors.toList()));
             }
             if (sub.equals("language") || sub.equals("lang")) {
@@ -389,6 +483,9 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             if (sub.equals("chestlootrarity") || sub.equals("lootrarity")) {
                 return filter(args[1], Arrays.asList("common", "uncommon", "normal", "mythic", "legendary", "extreme"));
             }
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("join")) {
+            return filter(args[2], Arrays.asList("solo", "teams", "mega", "solo_survival"));
         }
         return List.of();
     }

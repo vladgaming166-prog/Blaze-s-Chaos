@@ -103,8 +103,8 @@ public final class PlaceholderService {
                 .replace("%blazeschaos_time%", game == null ? "0" : String.valueOf(resolveTime(game)))
                 .replace("%blazechaos_map%", game == null ? "-" : game.getArena().getDisplayName())
                 .replace("%blazeschaos_map%", game == null ? "-" : game.getArena().getDisplayName())
-                .replace("%blazechaos_mode%", game == null ? "Lobby" : "Solo")
-                .replace("%blazeschaos_mode%", game == null ? "Lobby" : "Solo")
+                .replace("%blazechaos_mode%", game == null ? "Lobby" : game.getMode().display())
+                .replace("%blazeschaos_mode%", game == null ? "Lobby" : game.getMode().display())
                 .replace("%blazechaos_state%", game == null ? "Lobby" : game.getState().display())
                 .replace("%blazeschaos_state%", game == null ? "Lobby" : game.getState().display())
                 .replace("%server_online%", String.valueOf(Bukkit.getOnlinePlayers().size()));

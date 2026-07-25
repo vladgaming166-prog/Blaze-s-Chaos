@@ -205,6 +205,13 @@ public final class SetupModeManager implements Listener {
             arena.bindWorld(player.getWorld());
             plugin.arenaManager().saveArena(arena);
             plugin.lang().send(player, "arena.center-set");
+            // Shift + set-center also sets the Solo Survival Victory Altar
+            if (shift) {
+                var target = player.getTargetBlockExact(6);
+                arena.setVictoryAltar(target != null ? target.getLocation() : player.getLocation());
+                plugin.arenaManager().saveArena(arena);
+                plugin.lang().send(player, "modes.victory-altar-set", Map.of("arena", arena.getDisplayName()));
+            }
         } else if (matches(item, "set-death-height")) {
             int y = player.getLocation().getBlockY();
             arena.setDeathHeight(y);

@@ -326,18 +326,22 @@ public final class NpcManager {
         if (def.isOpenGui()) {
             NpcGui.openMain(plugin, player, def.getMode());
         } else {
-            quickJoin(player);
+            quickJoin(player, def.getMode().toGameMode());
         }
         instance.playClickAnimation();
     }
 
     public void quickJoin(@NotNull Player player) {
+        quickJoin(player, com.blazeschaos.game.GameModeType.SOLO);
+    }
+
+    public void quickJoin(@NotNull Player player, @NotNull com.blazeschaos.game.GameModeType mode) {
         Arena arena = findBestArena();
         if (arena == null) {
             plugin.lang().send(player, "game.no-arenas");
             return;
         }
-        plugin.gameManager().join(player, arena);
+        plugin.gameManager().join(player, arena, mode);
     }
 
     public @Nullable Arena findBestArena() {

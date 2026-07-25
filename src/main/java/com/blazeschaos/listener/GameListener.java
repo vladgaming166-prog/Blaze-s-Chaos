@@ -185,11 +185,23 @@ public final class GameListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        ItemStack item = event.getItem();
-        if (item == null) {
+        if (plugin.setupMode().isInSetup(player)) {
             return;
         }
-        if (plugin.setupMode().isInSetup(player)) {
+
+        // Solo Survival: Chaos Shard + Victory Altar
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
+            GameInstance game = plugin.gameManager().getByPlayer(player);
+            if (game != null && game.getMode().isSoloSurvival() && game.getState().isActive()) {
+                if (plugin.survivalObjective().tryComplete(player, game, event.getClickedBlock())) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
+
+        ItemStack item = event.getItem();
+        if (item == null) {
             return;
         }
         String lobbyId = plugin.lobbyManager().lobbyItemId(item);

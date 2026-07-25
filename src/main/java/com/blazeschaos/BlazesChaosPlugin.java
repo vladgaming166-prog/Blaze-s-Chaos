@@ -8,6 +8,7 @@ import com.blazeschaos.database.DatabaseManager;
 import com.blazeschaos.event.ChaosEventManager;
 import com.blazeschaos.event.EventDifficultyManager;
 import com.blazeschaos.game.GameManager;
+import com.blazeschaos.game.SurvivalObjectiveService;
 import com.blazeschaos.lang.LanguageManager;
 import com.blazeschaos.listener.GameListener;
 import com.blazeschaos.listener.LobbyProtectionListener;
@@ -55,6 +56,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
     private LootRarityManager lootRarityManager;
     private PlaceholderService placeholderService;
     private PassiveAnimalManager passiveAnimalManager;
+    private SurvivalObjectiveService survivalObjectiveService;
     private SpawnConfirmListener spawnConfirmListener;
     private BlazeChaosExpansion placeholderExpansion;
     private BlazeChaosAnimationExpansion animationExpansion;
@@ -88,6 +90,7 @@ public final class BlazesChaosPlugin extends JavaPlugin {
         this.scoreboardManager = new ScoreboardManager(this);
         this.tablistManager = new TablistManager(this);
         this.passiveAnimalManager = new PassiveAnimalManager(this);
+        this.survivalObjectiveService = new SurvivalObjectiveService(this);
         this.gameManager = new GameManager(this);
         this.setupModeManager = new SetupModeManager(this);
         this.spawnConfirmListener = new SpawnConfirmListener(this);
@@ -275,6 +278,10 @@ public final class BlazesChaosPlugin extends JavaPlugin {
 
     public @NotNull PassiveAnimalManager passiveAnimals() {
         return passiveAnimalManager;
+    }
+
+    public @NotNull SurvivalObjectiveService survivalObjective() {
+        return survivalObjectiveService;
     }
 
     public @NotNull SpawnConfirmListener spawnConfirm() {

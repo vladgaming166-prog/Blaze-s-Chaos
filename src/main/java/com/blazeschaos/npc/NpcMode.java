@@ -1,5 +1,6 @@
 package com.blazeschaos.npc;
 
+import com.blazeschaos.game.GameModeType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Locale;
@@ -9,10 +10,28 @@ public enum NpcMode {
     DUOS,
     TRIOS,
     SQUADS,
-    RANDOM;
+    RANDOM,
+    TEAMS,
+    MEGA,
+    SOLO_SURVIVAL;
 
     public static @NotNull NpcMode parse(@NotNull String raw) {
-        return valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        String key = raw.trim().toUpperCase(Locale.ROOT).replace('-', '_');
+        return switch (key) {
+            case "SOLOSURVIVAL", "SURVIVAL" -> SOLO_SURVIVAL;
+            case "TEAM" -> TEAMS;
+            default -> valueOf(key);
+        };
+    }
+
+    public @NotNull GameModeType toGameMode() {
+        return switch (this) {
+            case SOLO -> GameModeType.SOLO;
+            case DUOS, TRIOS, SQUADS, TEAMS -> GameModeType.TEAMS;
+            case MEGA -> GameModeType.MEGA;
+            case SOLO_SURVIVAL -> GameModeType.SOLO_SURVIVAL;
+            case RANDOM -> GameModeType.SOLO;
+        };
     }
 
     public @NotNull String display() {
@@ -22,6 +41,9 @@ public enum NpcMode {
             case TRIOS -> "Trios";
             case SQUADS -> "Squads";
             case RANDOM -> "Random Queue";
+            case TEAMS -> "Teams";
+            case MEGA -> "Mega";
+            case SOLO_SURVIVAL -> "Solo Survival";
         };
     }
 
@@ -32,6 +54,9 @@ public enum NpcMode {
             case TRIOS -> "<yellow>Trios</yellow>";
             case SQUADS -> "<light_purple>Squads</light_purple>";
             case RANDOM -> "<gold>Random Queue</gold>";
+            case TEAMS -> "<green>Teams</green>";
+            case MEGA -> "<gold>Mega</gold>";
+            case SOLO_SURVIVAL -> "<light_purple>Solo Survival</light_purple>";
         };
     }
 }

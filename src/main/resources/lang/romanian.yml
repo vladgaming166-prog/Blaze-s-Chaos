@@ -68,8 +68,21 @@ setup:
   items-given: "<gray>Itemele de setup au fost puse în hotbar.</gray>"
   cancel: "<yellow>Setup anulat.</yellow>"
 
+modes:
+  enabled-global: "<green>Multi-mode activat pentru toate arenele.</green>"
+  enabled-arena: "<green>Multi-mode activat pentru <yellow>%arena%</yellow>.</green>"
+  not-available: "<red>Modul <yellow>%mode%</yellow> nu este disponibil pe această hartă.</red>"
+  victory-altar-set: "<green>Altarul Victoriei setat pentru <yellow>%arena%</yellow>.</green>"
+  victory-altar-usage: "<yellow>Utilizare:</yellow> <white>/bc setvictoryaltar [arena]</white>"
+
+solo-survival:
+  objective: "<light_purple>Solo Survival:</light_purple> <gray>Supraviețuiește, găsește <white>Chaos Shard</white> și folosește-l la Altar.</gray>"
+  shard-spawned: "<gold>Un Chaos Shard a apărut în arenă!</gold>"
+  need-shard: "<red>Ai nevoie de Chaos Shard pentru a câștiga aici.</red>"
+  victory: "<gradient:#FF4500:#FFD700><bold>VICTORIE!</bold></gradient> <gray>Ai terminat Solo Survival.</gray>"
+
 game:
-  joined: "<green>Te-ai alăturat arenei <yellow>%arena%</yellow>!</green>"
+  joined: "<green>Te-ai alăturat arenei <yellow>%arena%</yellow></green> <gray>(%mode%)</gray><green>!</green>"
   left: "<yellow>Ai părăsit jocul.</yellow>"
   full: "<red>Jocul este plin.</red>"
   already-in: "<red>Ești deja într-un joc.</red>"

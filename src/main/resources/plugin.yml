@@ -5,7 +5,7 @@ api-version: '1.21'
 authors: [Blaze]
 description: Survival chaos minigame - last player standing amid random chaos events
 website: https://github.com/blazeschaos
-softdepend: [PlaceholderAPI, Vault, Citizens]
+softdepend: [PlaceholderAPI, Vault, Citizens, ItemsAdder]
 commands:
   bc:
     description: Main Blaze's Chaos command

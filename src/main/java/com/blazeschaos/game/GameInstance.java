@@ -37,6 +37,7 @@ public final class GameInstance {
 
     private final BlazesChaosPlugin plugin;
     private final Arena arena;
+    private final GameModeType mode;
     private final Set<UUID> players = ConcurrentHashMap.newKeySet();
     private final Set<UUID> alive = ConcurrentHashMap.newKeySet();
     private final Set<UUID> spectators = ConcurrentHashMap.newKeySet();
@@ -53,14 +54,51 @@ public final class GameInstance {
     private int chaosTicksRemaining;
     private int endingTicks;
     private int graceTicksRemaining;
+    private boolean chaosShardSpawned;
     private @Nullable BukkitTask task;
     private @Nullable UUID winner;
 
     public GameInstance(@NotNull BlazesChaosPlugin plugin, @NotNull Arena arena) {
+        this(plugin, arena, GameModeType.SOLO);
+    }
+
+    public GameInstance(@NotNull BlazesChaosPlugin plugin, @NotNull Arena arena, @NotNull GameModeType mode) {
         this.plugin = plugin;
         this.arena = arena;
+        this.mode = mode;
         this.countdown = arena.getCountdownSeconds();
         resetChaosTimer();
+    }
+
+    public @NotNull GameModeType getMode() {
+        return mode;
+    }
+
+    public int effectiveMinPlayers() {
+        String path = "modes.mode-settings." + mode.name() + ".min-players";
+        int configured = plugin.getConfig().getInt(path, -1);
+        if (configured > 0) {
+            return configured;
+        }
+        if (mode.isSoloSurvival()) {
+            return 1;
+        }
+        return arena.getMinPlayers();
+    }
+
+    public int effectiveMaxPlayers() {
+        String path = "modes.mode-settings." + mode.name() + ".max-players";
+        int configured = plugin.getConfig().getInt(path, -1);
+        if (configured > 0) {
+            return configured;
+        }
+        if (mode.isSoloSurvival()) {
+            return 1;
+        }
+        if (mode == GameModeType.MEGA) {
+            return Math.max(arena.getMaxPlayers(), 48);
+        }
+        return arena.getMaxPlayers();
     }
 
     public int getCountdownSecondsLeft() {
@@ -141,7 +179,7 @@ public final class GameInstance {
     }
 
     public boolean isFull() {
-        return players.size() >= arena.getMaxPlayers();
+        return players.size() >= effectiveMaxPlayers();
     }
 
     public boolean contains(@NotNull UUID uuid) {
@@ -232,9 +270,12 @@ public final class GameInstance {
         plugin.lobbyManager().giveLeaveItem(player);
         plugin.scoreboardManager().apply(player, this);
         plugin.tablistManager().apply(player);
-        plugin.lang().send(player, "game.joined", Map.of("arena", arena.getDisplayName()));
+        plugin.lang().send(player, "game.joined", Map.of(
+                "arena", arena.getDisplayName(),
+                "mode", mode.display()
+        ));
         showBossBar(player, plugin.lang().raw("bossbar.waiting"), BossBar.Color.YELLOW);
-        if (players.size() >= arena.getMinPlayers() && (state == GameState.WAITING || state == GameState.LOBBY)) {
+        if (players.size() >= effectiveMinPlayers() && (state == GameState.WAITING || state == GameState.LOBBY)) {
             beginCountdown();
         } else if (state == GameState.LOBBY) {
             state = GameState.WAITING;
@@ -280,7 +321,7 @@ public final class GameInstance {
             bossBars.remove(uuid);
             if (state.isActive() && wasAlive) {
                 checkWinCondition();
-            } else if (state == GameState.STARTING && players.size() < arena.getMinPlayers()) {
+            } else if (state == GameState.STARTING && players.size() < effectiveMinPlayers()) {
                 cancelCountdown();
             }
             return;
@@ -313,7 +354,7 @@ public final class GameInstance {
         }
         if (state.isActive() && wasAlive) {
             checkWinCondition();
-        } else if (state == GameState.STARTING && players.size() < arena.getMinPlayers()) {
+        } else if (state == GameState.STARTING && players.size() < effectiveMinPlayers()) {
             cancelCountdown();
         }
     }
@@ -388,7 +429,7 @@ public final class GameInstance {
     }
 
     private void tickStarting() {
-        if (players.size() < arena.getMinPlayers()) {
+        if (players.size() < effectiveMinPlayers()) {
             cancelCountdown();
             return;
         }
@@ -428,7 +469,9 @@ public final class GameInstance {
         if (plugin.lootManager().isEnabled()) {
             plugin.lootManager().fillArenaChests(arena);
         }
-        plugin.passiveAnimals().ensureAnimals(arena);
+        chaosShardSpawned = false;
+        // Slow passive animal refill starts only after the match is active
+        plugin.passiveAnimals().onMatchStart(this);
         Location spawn = arena.getSpawn();
         for (Player player : getPlayers()) {
             player.getInventory().clear();
@@ -439,9 +482,14 @@ public final class GameInstance {
                 safeTeleport(player, dest);
             }
             plugin.lang().send(player, "game.started");
+            if (mode.isSoloSurvival()) {
+                plugin.lang().send(player, "solo-survival.objective");
+            }
             player.showTitle(Title.title(
                     ColorUtil.parse("<gradient:#FF4500:#FFD700><bold>CHAOS BEGINS!</bold></gradient>"),
-                    ColorUtil.parse("<gray>Survive the chaos</gray>"),
+                    ColorUtil.parse(mode.isSoloSurvival()
+                            ? "<light_purple>Find the Chaos Shard</light_purple>"
+                            : "<gray>Survive the chaos</gray>"),
                     Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(400))
             ));
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.2f);
@@ -536,6 +584,14 @@ public final class GameInstance {
         int deathmatchAfter = arena.getDeathmatchAfterSeconds();
         if (state != GameState.DEATHMATCH && getGameSeconds() >= deathmatchAfter) {
             beginDeathmatch();
+        }
+
+        if (mode.isSoloSurvival() && !chaosShardSpawned) {
+            int shardAfter = plugin.getConfig().getInt("solo-survival.shard-spawn-after-seconds", 180);
+            if (getGameSeconds() >= Math.max(30, shardAfter)) {
+                chaosShardSpawned = true;
+                plugin.survivalObjective().spawnShardInWorld(this);
+            }
         }
 
         // Survival coin tick every minute
@@ -733,9 +789,24 @@ public final class GameInstance {
             endGame(null);
             return;
         }
+        // Solo Survival: win only via Chaos Shard + Victory Altar
+        if (mode.isSoloSurvival()) {
+            return;
+        }
         if (alive.size() == 1) {
             endGame(alive.iterator().next());
         }
+    }
+
+    public void completeSurvivalVictory(@NotNull Player player) {
+        if (!mode.isSoloSurvival() || !state.isActive()) {
+            return;
+        }
+        if (!alive.contains(player.getUniqueId())) {
+            return;
+        }
+        plugin.lang().send(player, "solo-survival.victory");
+        endGame(player.getUniqueId());
     }
 
     private void endGame(@Nullable UUID winnerId) {
@@ -744,6 +815,7 @@ public final class GameInstance {
         }
         endAllChaosEvents();
         clearTrackedEntities();
+        plugin.passiveAnimals().clearAnimals(arena);
         state = GameState.ENDING;
         winner = winnerId;
         endingTicks = plugin.configs().config().getInt("settings.ending-seconds", 10) * 20;
@@ -799,10 +871,14 @@ public final class GameInstance {
         if (world != null) {
             world.getWorldBorder().reset();
         }
+        // Always clear passive animals before / during reset
+        plugin.passiveAnimals().clearAnimals(arena);
         Runnable finish = () -> {
+            plugin.passiveAnimals().clearAnimals(arena);
             state = GameState.WAITING;
             gameTicks = 0;
             graceTicksRemaining = 0;
+            chaosShardSpawned = false;
             resetChaosTimer();
             if (task != null) {
                 task.cancel();

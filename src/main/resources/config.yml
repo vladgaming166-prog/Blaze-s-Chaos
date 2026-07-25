@@ -111,21 +111,71 @@ lobby-protection:
 # ==================================================
 # CHAOS / ARENA WORLDS
 # ==================================================
-# Arena worlds behave like survival for food: passive animals are kept available.
+# Passive animals ONLY spawn during active matches (never lobby / waiting / starting).
 chaos-world:
   force-animal-spawn-flags: true
   passive-animals:
     enabled: true
-    # How often to check and top-up animals (ticks)
+    # How often to slowly refill animals (ticks). Keep this high to avoid waves.
     check-interval-ticks: 200
+    # Hard cap — stop spawning when reached
+    max-passive-mobs: 12
+    # Legacy alias (used only if max-passive-mobs is missing)
     target-count: 12
-    max-spawn-per-check: 4
+    # Max animals created per check (keep at 1 for slow natural refill)
+    max-spawn-per-check: 1
     types:
       - COW
       - PIG
       - SHEEP
       - CHICKEN
       - RABBIT
+
+# ==================================================
+# MULTI MODE (one map → many modes)
+# ==================================================
+# Enable with /bc enablemultimodesforsinglemap [arena]
+modes:
+  allow-multiple-modes: false
+  available-modes:
+    - SOLO
+    - TEAMS
+    - MEGA
+    - SOLO_SURVIVAL
+  mode-settings:
+    SOLO:
+      min-players: 2
+      max-players: 24
+    TEAMS:
+      min-players: 4
+      max-players: 24
+    MEGA:
+      min-players: 8
+      max-players: 48
+    SOLO_SURVIVAL:
+      min-players: 1
+      max-players: 1
+
+# ==================================================
+# SOLO SURVIVAL
+# ==================================================
+# One player vs chaos. Win by finding the Chaos Shard and using it at the Victory Altar.
+solo-survival:
+  enabled: true
+  shard-spawn-after-seconds: 180
+  shard-item:
+    material: AMETHYST_SHARD
+    name: "<light_purple><bold>Chaos Shard</bold></light_purple>"
+    lore:
+      - "<gray>Survive the chaos.</gray>"
+      - "<yellow>Use at the Victory Altar to win.</yellow>"
+    custom-model-data: 0
+    # Optional ItemsAdder namespaced id (e.g. namespace:chaos_shard)
+    itemsadder-id: ""
+  victory-altar:
+    material: LODESTONE
+    # If false and an arena victory-altar location is set, only that block works
+    accept-material-anywhere: false
 
 lobby-items:
   enabled: true

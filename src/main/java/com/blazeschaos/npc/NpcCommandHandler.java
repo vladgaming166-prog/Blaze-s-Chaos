@@ -347,7 +347,8 @@ public final class NpcCommandHandler {
         }
         if (args.length == 3) {
             return switch (args[1].toLowerCase(Locale.ROOT)) {
-                case "create" -> filter(args[2], List.of("solo", "duos", "trios", "squads", "random"));
+                case "create" -> filter(args[2], List.of(
+                        "solo", "teams", "mega", "solo_survival", "duos", "trios", "squads", "random"));
                 case "skin" -> filter(args[2], List.of("player", "url"));
                 case "hologram" -> filter(args[2], List.of("add", "remove", "clear", "reset"));
                 case "animation" -> filter(args[2], Arrays.stream(NpcAnimationType.values())

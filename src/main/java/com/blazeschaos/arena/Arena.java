@@ -1,5 +1,6 @@
 package com.blazeschaos.arena;
 
+import com.blazeschaos.game.GameModeType;
 import com.blazeschaos.util.StoredLocation;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -23,6 +24,7 @@ public final class Arena {
     private @Nullable StoredLocation spawn;
     private @Nullable StoredLocation spectator;
     private @Nullable StoredLocation center;
+    private @Nullable StoredLocation victoryAltar;
     private @Nullable String worldName;
     private @Nullable String templateWorldName;
     private int minPlayers = 2;
@@ -37,6 +39,8 @@ public final class Arena {
     private boolean autoReset = true;
     private boolean enabled = true;
     private boolean setupComplete;
+    private boolean allowMultipleModes;
+    private final List<GameModeType> availableModes = new ArrayList<>();
 
     public Arena(@NotNull String name) {
         this.name = name.toLowerCase(Locale.ROOT);
@@ -119,6 +123,55 @@ public final class Arena {
         if (location != null && location.getWorld() != null && worldName == null) {
             worldName = location.getWorld().getName();
         }
+    }
+
+    public @Nullable StoredLocation getVictoryAltarStored() {
+        return victoryAltar;
+    }
+
+    public @Nullable Location getVictoryAltar() {
+        return victoryAltar == null ? null : victoryAltar.toLocation();
+    }
+
+    public void setVictoryAltar(@Nullable Location location) {
+        this.victoryAltar = StoredLocation.from(location);
+        if (location != null && location.getWorld() != null && worldName == null) {
+            worldName = location.getWorld().getName();
+        }
+    }
+
+    public boolean isAllowMultipleModes() {
+        return allowMultipleModes;
+    }
+
+    public void setAllowMultipleModes(boolean allowMultipleModes) {
+        this.allowMultipleModes = allowMultipleModes;
+    }
+
+    public @NotNull List<GameModeType> getAvailableModes() {
+        if (availableModes.isEmpty()) {
+            return List.of(GameModeType.SOLO);
+        }
+        return List.copyOf(availableModes);
+    }
+
+    public void setAvailableModes(@NotNull List<GameModeType> modes) {
+        availableModes.clear();
+        for (GameModeType mode : modes) {
+            if (!availableModes.contains(mode)) {
+                availableModes.add(mode);
+            }
+        }
+        if (availableModes.isEmpty()) {
+            availableModes.add(GameModeType.SOLO);
+        }
+    }
+
+    public boolean supportsMode(@NotNull GameModeType mode) {
+        if (!allowMultipleModes) {
+            return mode == GameModeType.SOLO || availableModes.isEmpty() || availableModes.contains(mode);
+        }
+        return getAvailableModes().contains(mode);
     }
 
     public @Nullable String getWorldName() {
@@ -262,6 +315,9 @@ public final class Arena {
         if (center != null) {
             center = center.withWorld(newWorldName);
         }
+        if (victoryAltar != null) {
+            victoryAltar = victoryAltar.withWorld(newWorldName);
+        }
     }
 
     /**
@@ -320,6 +376,7 @@ public final class Arena {
         map.put("spawn", spawn == null ? Map.of() : spawn.serialize());
         map.put("spectator", spectator == null ? Map.of() : spectator.serialize());
         map.put("center", center == null ? Map.of() : center.serialize());
+        map.put("victory-altar", victoryAltar == null ? Map.of() : victoryAltar.serialize());
         map.put("world", worldName);
         map.put("template-world", templateWorldName);
         map.put("min-players", minPlayers);
@@ -334,6 +391,12 @@ public final class Arena {
         map.put("auto-reset", autoReset);
         map.put("enabled", enabled);
         map.put("setup-complete", setupComplete);
+        map.put("allow-multiple-modes", allowMultipleModes);
+        List<String> modeNames = new ArrayList<>();
+        for (GameModeType mode : getAvailableModes()) {
+            modeNames.add(mode.name());
+        }
+        map.put("available-modes", modeNames);
         return map;
     }
 
@@ -344,6 +407,7 @@ public final class Arena {
         arena.spawn = StoredLocation.deserialize(section.getConfigurationSection("spawn"));
         arena.spectator = StoredLocation.deserialize(section.getConfigurationSection("spectator"));
         arena.center = StoredLocation.deserialize(section.getConfigurationSection("center"));
+        arena.victoryAltar = StoredLocation.deserialize(section.getConfigurationSection("victory-altar"));
         arena.setWorldName(section.getString("world"));
         if (arena.worldName == null && arena.spawn != null) {
             arena.worldName = arena.spawn.worldName();
@@ -361,6 +425,14 @@ public final class Arena {
         arena.setAutoReset(section.getBoolean("auto-reset", true));
         arena.setEnabled(section.getBoolean("enabled", true));
         arena.setSetupComplete(section.getBoolean("setup-complete", false));
+        arena.setAllowMultipleModes(section.getBoolean("allow-multiple-modes", false));
+        List<String> modes = section.getStringList("available-modes");
+        if (modes.isEmpty()) {
+            arena.setAvailableModes(List.of(GameModeType.SOLO, GameModeType.TEAMS,
+                    GameModeType.MEGA, GameModeType.SOLO_SURVIVAL));
+        } else {
+            arena.setAvailableModes(GameModeType.parseList(modes));
+        }
         // Heal ready state for arenas that already have all required points
         if (!arena.missingRequirements().isEmpty()) {
             arena.setupComplete = false;
