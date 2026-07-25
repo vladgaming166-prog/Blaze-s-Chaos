@@ -229,6 +229,8 @@ public final class NpcManager {
         String id = uniqueId(mode);
         NpcDefinition def = new NpcDefinition(id);
         def.setMode(mode);
+        // Mode-specific NPCs instant-join; ALL uses Choose Mode GUI (open-gui unused for ALL).
+        def.setOpenGui(false);
         def.setLocation(player.getLocation());
         def.setHologramLines(NpcDefinition.defaultHologram(mode));
         def.setAnimation(NpcAnimationType.LOOK_AROUND);
@@ -322,13 +324,20 @@ public final class NpcManager {
             plugin.lang().send(player, "general.no-permission");
             return;
         }
-        // Open GUI immediately — animation is cosmetic
-        if (def.isOpenGui()) {
-            NpcGui.openMain(plugin, player, def.getMode());
-        } else if (def.getMode().toGameMode().isSoloSurvival()) {
+        NpcMode mode = def.getMode();
+        // ALL → Choose Mode GUI only (never instant join)
+        if (mode.isAll()) {
+            plugin.npcGui().showChooseMode(player);
+        } else if (def.isOpenGui()) {
+            // Legacy open-gui:true keeps the full browser menu
+            NpcGui.openMain(plugin, player, mode);
+        } else if (mode == NpcMode.SOLO_SURVIVAL || mode.toGameMode().isSoloSurvival()) {
             plugin.survivalObjectiveGui().open(player, null);
+        } else if (mode == NpcMode.RANDOM) {
+            quickJoinRandom(player);
         } else {
-            quickJoin(player, def.getMode().toGameMode());
+            // Mode-specific NPCs: instant join
+            quickJoin(player, mode.toGameMode());
         }
         instance.playClickAnimation();
     }
@@ -344,6 +353,42 @@ public final class NpcManager {
             return;
         }
         plugin.gameManager().join(player, arena, mode);
+    }
+
+    /** Randomly selects one enabled mode and joins (or opens Solo Survival objective GUI). */
+    public void quickJoinRandom(@NotNull Player player) {
+        java.util.List<com.blazeschaos.game.GameModeType> modes = enabledPlayModes();
+        if (modes.isEmpty()) {
+            plugin.lang().send(player, "game.no-arenas");
+            return;
+        }
+        com.blazeschaos.game.GameModeType picked =
+                modes.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(modes.size()));
+        if (picked.isSoloSurvival()) {
+            plugin.survivalObjectiveGui().open(player, null);
+            return;
+        }
+        quickJoin(player, picked);
+    }
+
+    public @NotNull java.util.List<com.blazeschaos.game.GameModeType> enabledPlayModes() {
+        java.util.List<String> configured = plugin.getConfig().getStringList("modes.available-modes");
+        java.util.List<com.blazeschaos.game.GameModeType> defaults = java.util.List.of(
+                com.blazeschaos.game.GameModeType.SOLO,
+                com.blazeschaos.game.GameModeType.TEAMS,
+                com.blazeschaos.game.GameModeType.MEGA,
+                com.blazeschaos.game.GameModeType.SOLO_SURVIVAL
+        );
+        if (configured.isEmpty()) {
+            return defaults;
+        }
+        java.util.List<com.blazeschaos.game.GameModeType> out = new java.util.ArrayList<>();
+        for (com.blazeschaos.game.GameModeType mode : com.blazeschaos.game.GameModeType.parseList(configured)) {
+            if (defaults.contains(mode) && !out.contains(mode)) {
+                out.add(mode);
+            }
+        }
+        return out.isEmpty() ? defaults : out;
     }
 
     public @Nullable Arena findBestArena() {

@@ -184,9 +184,29 @@ public final class ConfigManager {
                     }
                 }
             }
+            // Migrate legacy gold/amethyst Chaos Shard recipe → Iron/Coal/Egg pattern
+            List<String> shape = config.getStringList("solo-survival.crafting.shape");
+            String ingredientG = config.getString("solo-survival.crafting.ingredients.G", "");
+            String ingredientA = config.getString("solo-survival.crafting.ingredients.A", "");
+            boolean legacyRecipe = shape.equals(List.of("GGG", "GAG", "GGG"))
+                    || (ingredientG.equalsIgnoreCase("GOLD_INGOT")
+                    && ingredientA.equalsIgnoreCase("AMETHYST_SHARD"));
+            if (legacyRecipe) {
+                config.set("solo-survival.crafting.shape", List.of("ICI", "CEC", "ICI"));
+                config.set("solo-survival.crafting.ingredients", null);
+                config.set("solo-survival.crafting.ingredients.I", "IRON_INGOT");
+                config.set("solo-survival.crafting.ingredients.C", "COAL");
+                config.set("solo-survival.crafting.ingredients.E", "EGG");
+                changed = true;
+            }
+            if (!config.contains("solo-survival.win-time-seconds")) {
+                int legacy = config.getInt("solo-survival.survive-seconds", 1200);
+                config.set("solo-survival.win-time-seconds", Math.max(1, legacy));
+                changed = true;
+            }
             if (changed) {
                 plugin.saveConfig();
-                plugin.getLogger().info("Restored config.yml branding to pre-redesign gradients (f6744fc).");
+                plugin.getLogger().info("Migrated config.yml defaults (branding / Solo Survival).");
             }
         } catch (IOException exception) {
             plugin.getLogger().log(Level.WARNING, "Failed to migrate config.yml", exception);

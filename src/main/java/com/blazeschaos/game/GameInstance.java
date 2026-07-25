@@ -63,6 +63,8 @@ public final class GameInstance {
     private boolean finished;
     /** Set only by completeSurvivalVictory — blocks accidental Solo Survival wins. */
     private boolean survivalVictoryAuthorized;
+    /** When true, the normal chaos interval scheduler is paused (troll events active). */
+    private boolean chaosSchedulerPaused;
     private @Nullable BukkitTask task;
     private @Nullable UUID winner;
 
@@ -595,7 +597,7 @@ public final class GameInstance {
             plugin.lang().send(player, "game.started");
             if (mode.isSoloSurvival()) {
                 if (survivalObjective == SurvivalObjective.SURVIVE) {
-                    int seconds = plugin.getConfig().getInt("solo-survival.survive-seconds", 1200);
+                    int seconds = plugin.survivalObjective().winTimeSeconds();
                     plugin.lang().send(player, "solo-survival.objective-survive",
                             Map.of("time", String.valueOf(seconds)));
                 } else {
@@ -706,9 +708,9 @@ public final class GameInstance {
             beginDeathmatch();
         }
 
-        // Solo Survival — SURVIVE timer win
+        // Solo Survival — SURVIVE timer win (configurable win-time-seconds)
         if (mode.isSoloSurvival() && survivalObjective == SurvivalObjective.SURVIVE && !alive.isEmpty()) {
-            int seconds = plugin.getConfig().getInt("solo-survival.survive-seconds", 1200);
+            int seconds = plugin.survivalObjective().winTimeSeconds();
             if (getGameSeconds() >= Math.max(1, seconds)) {
                 Player winnerPlayer = getAlivePlayers().isEmpty() ? null : getAlivePlayers().getFirst();
                 if (winnerPlayer != null) {
@@ -766,10 +768,18 @@ public final class GameInstance {
                 iterator.remove();
             }
         }
+        if (chaosSchedulerPaused && !hasTrollEvents()) {
+            chaosSchedulerPaused = false;
+            resetChaosTimer();
+        }
         if (activeEvents.isEmpty() && state == GameState.CHAOS_EVENT) {
-            state = state == GameState.DEATHMATCH ? GameState.DEATHMATCH : GameState.PLAYING;
+            state = GameState.PLAYING;
         }
 
+        // Troll events pause the normal chaos scheduler until they finish /bc troll stop
+        if (chaosSchedulerPaused) {
+            return;
+        }
         chaosTicksRemaining--;
         if (chaosTicksRemaining <= 0) {
             startChaosWave(false);
@@ -814,7 +824,7 @@ public final class GameInstance {
         int scaledDuration = plugin.difficultyManager().scaledDuration(event.getDurationSeconds());
         int durationTicks = Math.max(20, scaledDuration * 20);
         int delayTicks = Math.max(0, event.getStartDelaySeconds()) * 20;
-        activeEvents.add(new ActiveChaos(event, durationTicks, delayTicks));
+        activeEvents.add(new ActiveChaos(event, durationTicks, delayTicks, false));
         if (state != GameState.DEATHMATCH) {
             state = GameState.CHAOS_EVENT;
         }
@@ -828,12 +838,67 @@ public final class GameInstance {
         }
     }
 
+    /**
+     * Admin troll: force a chaos event for an exact duration and pause the normal scheduler.
+     */
+    public void startTrollEvent(@NotNull ChaosEvent event, int durationSeconds) {
+        if (!state.isActive()) {
+            return;
+        }
+        int durationTicks = Math.max(20, Math.max(1, durationSeconds) * 20);
+        chaosSchedulerPaused = true;
+        activeEvents.add(new ActiveChaos(event, durationTicks, 0, true));
+        if (state != GameState.DEATHMATCH) {
+            state = GameState.CHAOS_EVENT;
+        }
+        event.start(this);
+        plugin.eventManager().announce(this, event);
+        if (plugin.configs().debug()) {
+            plugin.getLogger().info("Troll event " + event.getId() + " for " + durationSeconds
+                    + "s in " + arena.getName());
+        }
+    }
+
+    /** Cancel all troll events and resume the normal chaos scheduler. */
+    public void stopTrollEvents() {
+        Iterator<ActiveChaos> iterator = activeEvents.iterator();
+        while (iterator.hasNext()) {
+            ActiveChaos active = iterator.next();
+            if (!active.troll) {
+                continue;
+            }
+            active.event().end(this);
+            active.event().markEnded();
+            String display = plugin.configs().events().getString("display-names." + active.event().getId(),
+                    active.event().getDefaultDisplayName());
+            for (Player player : getPlayers()) {
+                plugin.lang().send(player, "event.ending", Map.of("event", ColorUtil.strip(display)));
+            }
+            iterator.remove();
+        }
+        chaosSchedulerPaused = false;
+        if (activeEvents.isEmpty() && state == GameState.CHAOS_EVENT) {
+            state = GameState.PLAYING;
+        }
+        resetChaosTimer();
+    }
+
+    private boolean hasTrollEvents() {
+        for (ActiveChaos active : activeEvents) {
+            if (active.troll) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void endAllChaosEvents() {
         for (ActiveChaos active : new ArrayList<>(activeEvents)) {
             active.event().end(this);
             active.event().markEnded();
         }
         activeEvents.clear();
+        chaosSchedulerPaused = false;
     }
 
     private void beginDeathmatch() {
@@ -1134,11 +1199,13 @@ public final class GameInstance {
         private final ChaosEvent event;
         private int ticksLeft;
         private int startDelayTicks;
+        private final boolean troll;
 
-        private ActiveChaos(@NotNull ChaosEvent event, int ticksLeft, int startDelayTicks) {
+        private ActiveChaos(@NotNull ChaosEvent event, int ticksLeft, int startDelayTicks, boolean troll) {
             this.event = event;
             this.ticksLeft = ticksLeft;
             this.startDelayTicks = startDelayTicks;
+            this.troll = troll;
         }
 
         private ChaosEvent event() {

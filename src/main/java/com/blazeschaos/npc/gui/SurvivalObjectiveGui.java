@@ -49,7 +49,7 @@ public final class SurvivalObjectiveGui implements Listener {
             inventory.setItem(i, pane);
         }
 
-        int surviveSeconds = plugin.getConfig().getInt("solo-survival.survive-seconds", 1200);
+        int surviveSeconds = plugin.survivalObjective().winTimeSeconds();
         inventory.setItem(11, tag(new ItemBuilder(Material.CLOCK)
                 .name("<green><bold>Survive</bold></green>")
                 .lore(List.of(

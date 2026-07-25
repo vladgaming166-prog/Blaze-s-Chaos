@@ -50,6 +50,48 @@ public final class NpcGui implements Listener {
         plugin.npcGui().showMain(player, preferred);
     }
 
+    /**
+     * Single Choose Mode GUI for ALL NPCs — Solo / Teams / Mega / Solo Survival / Random / Back.
+     */
+    public void showChooseMode(@NotNull Player player) {
+        ChooseModeHolder holder = new ChooseModeHolder();
+        Inventory inventory = Bukkit.createInventory(holder, 27,
+                ColorUtil.parse("<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>"));
+        holder.bind(inventory);
+        fillBorderSmall(inventory);
+
+        inventory.setItem(4, new ItemBuilder(Material.PAPER)
+                .name("<white><bold>Choose Mode</bold></white>")
+                .lore(List.of("<gray>Select a game mode to join</gray>"))
+                .build());
+
+        inventory.setItem(10, chooseModeItem(NpcMode.SOLO, Material.IRON_SWORD));
+        inventory.setItem(11, chooseModeItem(NpcMode.TEAMS, Material.GOLDEN_SWORD));
+        inventory.setItem(12, chooseModeItem(NpcMode.MEGA, Material.DIAMOND_SWORD));
+        inventory.setItem(13, chooseModeItem(NpcMode.SOLO_SURVIVAL, Material.AMETHYST_SHARD));
+        inventory.setItem(14, chooseModeItem(NpcMode.RANDOM, Material.NETHER_STAR));
+
+        inventory.setItem(22, actionItem("choose_back", Material.ARROW, "<red>Back</red>",
+                List.of("<gray>Close this menu</gray>")));
+
+        player.openInventory(inventory);
+    }
+
+    private @NotNull ItemStack chooseModeItem(@NotNull NpcMode mode, @NotNull Material material) {
+        List<String> lore = List.of(
+                "<gray>Mode: " + mode.colorName(),
+                "",
+                mode == NpcMode.RANDOM
+                        ? "<yellow>Click for a random mode</yellow>"
+                        : "<yellow>Click to join</yellow>"
+        );
+        ItemStack item = new ItemBuilder(material)
+                .name(mode.colorName())
+                .lore(lore)
+                .build();
+        return tag(item, "choose_" + mode.name().toLowerCase(Locale.ROOT), null, mode.name());
+    }
+
     public void showMain(@NotNull Player player, @NotNull NpcMode preferred) {
         MainHolder holder = new MainHolder(preferred);
         Inventory inventory = Bukkit.createInventory(holder, 54,
@@ -293,7 +335,8 @@ public final class NpcGui implements Listener {
     @EventHandler
     public void onClick(@NotNull InventoryClickEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
-        if (!(holder instanceof MainHolder) && !(holder instanceof MapsHolder) && !(holder instanceof ModeHolder)) {
+        if (!(holder instanceof MainHolder) && !(holder instanceof MapsHolder)
+                && !(holder instanceof ModeHolder) && !(holder instanceof ChooseModeHolder)) {
             return;
         }
         event.setCancelled(true);
@@ -310,6 +353,11 @@ public final class NpcGui implements Listener {
         }
         String arenaName = current.getItemMeta().getPersistentDataContainer().get(arenaKey, PersistentDataType.STRING);
         String modeName = current.getItemMeta().getPersistentDataContainer().get(modeKey, PersistentDataType.STRING);
+
+        if (holder instanceof ChooseModeHolder) {
+            handleChooseModeClick(player, action);
+            return;
+        }
 
         if (action.equals("open_modes") && arenaName != null) {
             if (event.isShiftClick()) {
@@ -388,7 +436,7 @@ public final class NpcGui implements Listener {
             }
             case "mode_random" -> {
                 player.closeInventory();
-                plugin.npcManager().quickJoin(player);
+                plugin.npcManager().quickJoinRandom(player);
             }
             case "shop" -> {
                 player.closeInventory();
@@ -410,6 +458,26 @@ public final class NpcGui implements Listener {
             return;
         }
         plugin.gameManager().join(player, arena, mode);
+    }
+
+    private void handleChooseModeClick(@NotNull Player player, @NotNull String action) {
+        switch (action) {
+            case "choose_back" -> player.closeInventory();
+            case "choose_solo" -> quickMode(player, GameModeType.SOLO);
+            case "choose_teams", "choose_duos", "choose_trios", "choose_squads" ->
+                    quickMode(player, GameModeType.TEAMS);
+            case "choose_mega" -> quickMode(player, GameModeType.MEGA);
+            case "choose_solo_survival" -> {
+                player.closeInventory();
+                plugin.survivalObjectiveGui().open(player, null);
+            }
+            case "choose_random" -> {
+                player.closeInventory();
+                plugin.npcManager().quickJoinRandom(player);
+            }
+            default -> {
+            }
+        }
     }
 
     public void clearPlayer(@NotNull Player player) {
@@ -470,6 +538,22 @@ public final class NpcGui implements Listener {
         public @NotNull String arenaName() {
             return arenaName;
         }
+
+        public void bind(@NotNull Inventory inventory) {
+            this.inventory = inventory;
+        }
+
+        @Override
+        public @NotNull Inventory getInventory() {
+            if (inventory != null) {
+                return inventory;
+            }
+            return Bukkit.createInventory(this, 27);
+        }
+    }
+
+    public static final class ChooseModeHolder implements InventoryHolder {
+        private @Nullable Inventory inventory;
 
         public void bind(@NotNull Inventory inventory) {
             this.inventory = inventory;

@@ -52,8 +52,34 @@ public final class SurvivalObjectiveService implements Listener {
         registerRecipe();
     }
 
+    /**
+     * Solo Survival win timer (seconds). Prefers {@code win-time-seconds},
+     * falls back to legacy {@code survive-seconds}.
+     */
+    public int winTimeSeconds() {
+        int win = plugin.getConfig().getInt("solo-survival.win-time-seconds", -1);
+        if (win > 0) {
+            return win;
+        }
+        return Math.max(1, plugin.getConfig().getInt("solo-survival.survive-seconds", 1200));
+    }
+
+    public void setWinTimeSeconds(int seconds) {
+        int value = Math.max(1, seconds);
+        plugin.getConfig().set("solo-survival.win-time-seconds", value);
+        plugin.getConfig().set("solo-survival.survive-seconds", value);
+        plugin.saveConfig();
+    }
+
     public void registerRecipe() {
         if (!plugin.getConfig().getBoolean("solo-survival.crafting.enabled", true)) {
+            if (recipeRegistered) {
+                try {
+                    Bukkit.removeRecipe(recipeKey);
+                } catch (Throwable ignored) {
+                }
+                recipeRegistered = false;
+            }
             return;
         }
         if (recipeRegistered) {
@@ -66,13 +92,15 @@ public final class SurvivalObjectiveService implements Listener {
         ShapedRecipe recipe = new ShapedRecipe(recipeKey, result);
         List<String> shape = plugin.getConfig().getStringList("solo-survival.crafting.shape");
         if (shape.isEmpty()) {
-            shape = List.of("GGG", "GAG", "GGG");
+            // Iron|Coal|Iron / Coal|Egg|Coal / Iron|Coal|Iron
+            shape = List.of("ICI", "CEC", "ICI");
         }
         recipe.shape(shape.toArray(new String[0]));
         var ingredients = plugin.getConfig().getConfigurationSection("solo-survival.crafting.ingredients");
         if (ingredients == null) {
-            recipe.setIngredient('G', Material.GOLD_INGOT);
-            recipe.setIngredient('A', Material.AMETHYST_SHARD);
+            recipe.setIngredient('I', Material.IRON_INGOT);
+            recipe.setIngredient('C', Material.COAL);
+            recipe.setIngredient('E', Material.EGG);
         } else {
             for (String key : ingredients.getKeys(false)) {
                 if (key.isEmpty()) {

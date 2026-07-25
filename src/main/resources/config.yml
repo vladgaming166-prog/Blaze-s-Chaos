@@ -161,6 +161,9 @@ modes:
 solo-survival:
   enabled: true
   # Objective 1 — Survive (win only when this timer reaches zero)
+  # /bc solosurvivalwintime <seconds> updates this live.
+  win-time-seconds: 1200
+  # Legacy alias (read if win-time-seconds is missing)
   survive-seconds: 1200
   # Objective 2 — Chaos Shard (win only when the player obtains it)
   shard-world-drop: true
@@ -176,15 +179,18 @@ solo-survival:
   loot:
     enabled: true
     chest-chance: 0.18
+  # Vanilla crafting table recipe (ItemsAdder supported for the result item)
+  # Pattern: Iron | Coal | Iron / Coal | Egg | Coal / Iron | Coal | Iron
   crafting:
     enabled: true
     shape:
-      - "GGG"
-      - "GAG"
-      - "GGG"
+      - "ICI"
+      - "CEC"
+      - "ICI"
     ingredients:
-      G: GOLD_INGOT
-      A: AMETHYST_SHARD
+      I: IRON_INGOT
+      C: COAL
+      E: EGG
   victory-altar:
     material: LODESTONE
     accept-material-anywhere: false

@@ -88,6 +88,9 @@ public final class PlaceholderService {
         } catch (Throwable ignored) {
         }
 
+        int winTime = winTimeSeconds();
+        String surviveRemaining = resolveSurviveRemaining(game, winTime);
+
         text = text
                 .replace("%blazechaos_online%", String.valueOf(onlinePlaying))
                 .replace("%blazeschaos_online%", String.valueOf(onlinePlaying))
@@ -101,6 +104,12 @@ public final class PlaceholderService {
                 .replace("%blazeschaos_next_event%", game == null ? "-" : String.valueOf(game.getNextEventSeconds()))
                 .replace("%blazechaos_time%", game == null ? "0" : String.valueOf(resolveTime(game)))
                 .replace("%blazeschaos_time%", game == null ? "0" : String.valueOf(resolveTime(game)))
+                .replace("%blazechaos_win_time%", String.valueOf(winTime))
+                .replace("%blazeschaos_win_time%", String.valueOf(winTime))
+                .replace("%blazechaos_survive_time%", String.valueOf(winTime))
+                .replace("%blazeschaos_survive_time%", String.valueOf(winTime))
+                .replace("%blazechaos_survive_remaining%", surviveRemaining)
+                .replace("%blazeschaos_survive_remaining%", surviveRemaining)
                 .replace("%blazechaos_map%", game == null ? "-" : game.getArena().getDisplayName())
                 .replace("%blazeschaos_map%", game == null ? "-" : game.getArena().getDisplayName())
                 .replace("%blazechaos_mode%", game == null ? "Lobby" : game.getMode().display())
@@ -160,6 +169,27 @@ public final class PlaceholderService {
             return game.getCountdownSecondsLeft();
         }
         return game.getGameSeconds();
+    }
+
+    private int winTimeSeconds() {
+        try {
+            if (plugin.survivalObjective() != null) {
+                return plugin.survivalObjective().winTimeSeconds();
+            }
+        } catch (Throwable ignored) {
+        }
+        return Math.max(1, plugin.getConfig().getInt("solo-survival.win-time-seconds",
+                plugin.getConfig().getInt("solo-survival.survive-seconds", 1200)));
+    }
+
+    private @NotNull String resolveSurviveRemaining(@Nullable GameInstance game, int winTime) {
+        if (game == null || !game.getMode().isSoloSurvival() || !game.getState().isActive()) {
+            return String.valueOf(winTime);
+        }
+        if (game.getSurvivalObjective() != com.blazeschaos.game.SurvivalObjective.SURVIVE) {
+            return "-";
+        }
+        return String.valueOf(Math.max(0, winTime - game.getGameSeconds()));
     }
 
     private @NotNull String currentEventName(@Nullable GameInstance game) {

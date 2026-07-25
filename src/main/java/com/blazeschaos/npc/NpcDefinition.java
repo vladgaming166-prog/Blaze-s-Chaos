@@ -208,10 +208,19 @@ public final class NpcDefinition {
     }
 
     public static @NotNull List<String> defaultHologram(@NotNull NpcMode mode) {
+        if (mode.isAll()) {
+            return List.of(
+                    "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>",
+                    "<white>Choose Mode</white>",
+                    "<gray>Players: <aqua>%blazechaos_online%</aqua></gray>",
+                    "<yellow>Click to Play</yellow>"
+            );
+        }
+        String queueKey = mode == NpcMode.RANDOM ? "random" : mode.name().toLowerCase(Locale.ROOT);
         return List.of(
                 "<gradient:#FF4500:#FFD700><bold>Blaze's Chaos</bold></gradient>",
                 mode.colorName(),
-                "<gray>Players: <aqua>%blazechaos_queue_" + mode.name().toLowerCase(Locale.ROOT) + "%</aqua></gray>",
+                "<gray>Players: <aqua>%blazechaos_queue_" + queueKey + "%</aqua></gray>",
                 "<yellow>Click to Play</yellow>"
         );
     }

@@ -81,6 +81,15 @@ solo-survival:
   shard-spawned: "<gold>A Chaos Shard has appeared in the arena!</gold>"
   need-shard: "<red>You need the Chaos Shard.</red>"
   victory: "<gradient:#FF4500:#FFD700><bold>VICTORY!</bold></gradient> <gray>Solo Survival complete.</gray>"
+  win-time-usage: "<yellow>Usage:</yellow> <white>/bc solosurvivalwintime <seconds></white> <gray>(current: %time%s)</gray>"
+  win-time-set: "<green>Solo Survival win time set to <yellow>%time%s</yellow>.</green> <gray>New matches use this value.</gray>"
+
+troll:
+  must-be-in-match: "<red>You must be inside an active Blaze's Chaos match.</red>"
+  usage: "<yellow>Usage:</yellow> <white>/bc troll <event> <duration></white> <gray>or</gray> <white>/bc troll stop</white>"
+  started: "<green>Troll event <yellow>%event%</yellow> forced for <aqua>%time%s</aqua>.</green>"
+  stopped: "<yellow>All troll events cancelled.</yellow> <gray>Normal chaos scheduler resumed.</gray>"
+  unknown-event: "<red>Unknown troll event:</red> <yellow>%event%</yellow>"
 
 game:
   joined: "<green>You joined <yellow>%arena%</yellow></green> <gray>(%mode%)</gray><green>!</green>"
@@ -191,6 +200,9 @@ help:
   - "<yellow>/bc forcestart</yellow> <gray>- Force start</gray>"
   - "<yellow>/bc stop</yellow> <gray>- Stop game</gray>"
   - "<yellow>/bc next</yellow> <gray>- Force next event</gray>"
+  - "<yellow>/bc troll <event> <duration></yellow> <gray>- Force a troll event</gray>"
+  - "<yellow>/bc troll stop</yellow> <gray>- Cancel troll events</gray>"
+  - "<yellow>/bc solosurvivalwintime <seconds></yellow> <gray>- Solo Survival win timer</gray>"
   - "<yellow>/bc reload</yellow> <gray>- Reload configs</gray>"
   - "<yellow>/bc debug</yellow> <gray>- Toggle debug</gray>"
   - "<yellow>/bc shop</yellow> <gray>- Open coin shop</gray>"
@@ -281,7 +293,7 @@ npc:
   none-nearby: "<red>No NPC nearby.</red>"
   double-click: "<gray>Double-click the map to join.</gray>"
   info: "<gold>NPC</gold> <yellow>%id%</yellow> <gray>|</gray> <aqua>%mode%</aqua> <gray>|</gray> <white>%animation%</white> <gray>|</gray> <gray>%skin%</gray>"
-  usage-create: "<gray>Usage:</gray> <yellow>/bc npc create <solo|duos|trios|squads|random></yellow>"
+  usage-create: "<gray>Usage:</gray> <yellow>/bc npc create <all|solo|teams|mega|solo_survival|duos|trios|squads|random></yellow>"
   usage-skin: "<gray>Usage:</gray> <yellow>/bc npc skin player <name></yellow> <gray>or</gray> <yellow>/bc npc skin url <url></yellow>"
   usage-hologram: "<gray>Usage:</gray> <yellow>/bc npc hologram <add|remove|clear|reset></yellow>"
   usage-animation: "<gray>Usage:</gray> <yellow>/bc npc animation [idle|wave|spin|look_around|jump|celebrate|random|walk_in_place]</yellow>"

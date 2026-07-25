@@ -81,8 +81,19 @@ public final class BlazeChaosExpansion extends PlaceholderExpansion {
             case "countdown" -> game == null || game.getState() != com.blazeschaos.game.GameState.STARTING
                     ? "0"
                     : String.valueOf(game.getCountdownSecondsLeft());
+            case "win_time", "survive_time" -> String.valueOf(plugin.survivalObjective().winTimeSeconds());
+            case "survive_remaining" -> {
+                int win = plugin.survivalObjective().winTimeSeconds();
+                if (game == null || !game.getMode().isSoloSurvival() || !game.getState().isActive()) {
+                    yield String.valueOf(win);
+                }
+                if (game.getSurvivalObjective() != com.blazeschaos.game.SurvivalObjective.SURVIVE) {
+                    yield "-";
+                }
+                yield String.valueOf(Math.max(0, win - game.getGameSeconds()));
+            }
             case "map" -> game == null ? "-" : game.getArena().getDisplayName();
-            case "mode" -> game == null ? "Lobby" : "Solo";
+            case "mode" -> game == null ? "Lobby" : game.getMode().display();
             case "state" -> game == null ? "Lobby" : game.getState().display();
             case "wins" -> stats(player, s -> String.valueOf(s.wins()));
             case "games" -> stats(player, s -> String.valueOf(s.games()));

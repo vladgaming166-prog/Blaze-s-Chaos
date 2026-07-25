@@ -2,6 +2,7 @@ package com.blazeschaos.command;
 
 import com.blazeschaos.BlazesChaosPlugin;
 import com.blazeschaos.arena.Arena;
+import com.blazeschaos.event.ChaosEvent;
 import com.blazeschaos.game.GameInstance;
 import com.blazeschaos.game.GameModeType;
 import com.blazeschaos.util.ColorUtil;
@@ -59,6 +60,8 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             case "chestlootrarity", "lootrarity" -> handleLootRarity(sender, args);
             case "enablemultimodesforsinglemap" -> handleEnableMultiModes(sender, args);
             case "setvictoryaltar" -> handleSetVictoryAltar(sender, args);
+            case "solosurvivalwintime", "survivalwintime", "wintime" -> handleSoloSurvivalWinTime(sender, args);
+            case "troll" -> handleTroll(sender, args);
             case "npc" -> plugin.npcCommands().handle(sender, args);
             case "version" -> plugin.lang().send(sender, "general.version",
                     Map.of("version", plugin.getPluginMeta().getVersion()));
@@ -66,6 +69,105 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             default -> plugin.lang().send(sender, "general.unknown-command");
         }
         return true;
+    }
+
+    private void handleSoloSurvivalWinTime(@NotNull CommandSender sender, @NotNull String[] args) {
+        if (!sender.hasPermission("blazechaos.admin")) {
+            plugin.lang().send(sender, "general.no-permission");
+            return;
+        }
+        if (args.length < 2) {
+            plugin.lang().send(sender, "solo-survival.win-time-usage", Map.of(
+                    "time", String.valueOf(plugin.survivalObjective().winTimeSeconds())
+            ));
+            return;
+        }
+        int seconds;
+        try {
+            seconds = Integer.parseInt(args[1]);
+        } catch (NumberFormatException ex) {
+            plugin.lang().send(sender, "general.invalid-number");
+            return;
+        }
+        if (seconds < 1) {
+            plugin.lang().send(sender, "general.invalid-number");
+            return;
+        }
+        plugin.survivalObjective().setWinTimeSeconds(seconds);
+        plugin.reloadPlugin();
+        plugin.lang().send(sender, "solo-survival.win-time-set", Map.of("time", String.valueOf(seconds)));
+    }
+
+    private void handleTroll(@NotNull CommandSender sender, @NotNull String[] args) {
+        if (!sender.hasPermission("blazechaos.admin")) {
+            plugin.lang().send(sender, "general.no-permission");
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            plugin.lang().send(sender, "general.player-only");
+            return;
+        }
+        GameInstance game = plugin.gameManager().getByPlayer(player);
+        if (game == null || !game.getState().isActive() || game.isSpectator(player.getUniqueId())) {
+            plugin.lang().send(player, "troll.must-be-in-match");
+            return;
+        }
+        if (args.length < 2) {
+            plugin.lang().send(player, "troll.usage");
+            return;
+        }
+        String eventArg = args[1].toLowerCase(Locale.ROOT);
+        if (eventArg.equals("stop")) {
+            game.stopTrollEvents();
+            plugin.lang().send(player, "troll.stopped");
+            return;
+        }
+        if (args.length < 3) {
+            plugin.lang().send(player, "troll.usage");
+            return;
+        }
+        int duration;
+        try {
+            duration = Integer.parseInt(args[2]);
+        } catch (NumberFormatException ex) {
+            plugin.lang().send(player, "general.invalid-number");
+            return;
+        }
+        if (duration < 1) {
+            plugin.lang().send(player, "general.invalid-number");
+            return;
+        }
+        ChaosEvent event = resolveTrollEvent(eventArg);
+        if (event == null) {
+            plugin.lang().send(player, "troll.unknown-event", Map.of("event", args[1]));
+            return;
+        }
+        game.startTrollEvent(event, duration);
+        plugin.lang().send(player, "troll.started", Map.of(
+                "event", event.getId(),
+                "time", String.valueOf(duration)
+        ));
+    }
+
+    private @Nullable ChaosEvent resolveTrollEvent(@NotNull String raw) {
+        String key = raw.toLowerCase(Locale.ROOT).replace('_', '-');
+        if (key.equals("random")) {
+            return plugin.eventManager().pickRandom(List.of());
+        }
+        String mapped = switch (key) {
+            case "lava" -> "lava-rising";
+            case "flood" -> "flood";
+            case "meteor" -> "meteor-shower";
+            case "lightning" -> "lightning-storm";
+            case "tornado" -> "tornado";
+            case "explosionrain", "explosion-rain", "explosions" -> "tnt-rain";
+            default -> key;
+        };
+        ChaosEvent event = plugin.eventManager().get(mapped);
+        if (event != null) {
+            return event;
+        }
+        return plugin.eventManager().get(key);
     }
 
     private void handleEnableMultiModes(@NotNull CommandSender sender, @NotNull String[] args) {
@@ -466,7 +568,8 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
                     "setup", "reload", "forcestart", "stop", "next", "debug", "info", "version",
                     "coins", "balance", "shop", "language", "enablerandomchestloot",
                     "eventsdifficulty", "chestlootrarity", "npc",
-                    "enablemultimodesforsinglemap", "setvictoryaltar"
+                    "enablemultimodesforsinglemap", "setvictoryaltar",
+                    "solosurvivalwintime", "troll"
             ));
         }
         if (args.length >= 2 && args[0].equalsIgnoreCase("npc")) {
@@ -487,11 +590,31 @@ public final class BlazeChaosCommand implements CommandExecutor, TabCompleter {
             if (sub.equals("chestlootrarity") || sub.equals("lootrarity")) {
                 return filter(args[1], Arrays.asList("common", "uncommon", "normal", "mythic", "legendary", "extreme"));
             }
+            if (sub.equals("solosurvivalwintime") || sub.equals("survivalwintime") || sub.equals("wintime")) {
+                return filter(args[1], Arrays.asList("300", "600", "900", "1200", "1800"));
+            }
+            if (sub.equals("troll")) {
+                return filter(args[1], trollEventSuggestions());
+            }
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("join")) {
             return filter(args[2], Arrays.asList("solo", "teams", "mega", "solo_survival"));
         }
+        if (args.length == 3 && args[0].equalsIgnoreCase("troll")
+                && !args[1].equalsIgnoreCase("stop")) {
+            return filter(args[2], Arrays.asList("15", "30", "45", "60", "90", "120"));
+        }
         return List.of();
+    }
+
+    private @NotNull List<String> trollEventSuggestions() {
+        List<String> out = new ArrayList<>(Arrays.asList(
+                "stop", "lava", "flood", "meteor", "lightning", "tornado", "explosionrain", "random"
+        ));
+        for (ChaosEvent event : plugin.eventManager().all()) {
+            out.add(event.getId());
+        }
+        return out;
     }
 
     private @NotNull List<String> filter(@NotNull String input, @NotNull List<String> options) {
